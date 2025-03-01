@@ -44,6 +44,10 @@ const Admin = () => {
     navigate('/admin/login');
   };
 
+  const navigateTo = (path: string) => {
+    navigate(path);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -84,31 +88,31 @@ const Admin = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <Button 
                     className="h-32 bg-mainBlue hover:bg-blue-900"
-                    onClick={() => navigate('/admin/greeting')}
+                    onClick={() => navigateTo('/admin/greeting')}
                   >
                     인사말 관리
                   </Button>
                   <Button 
                     className="h-32 bg-mainBlue hover:bg-blue-900"
-                    onClick={() => navigate('/admin/recommendations')}
+                    onClick={() => navigateTo('/admin/recommendations')}
                   >
                     추천의 글 관리
                   </Button>
                   <Button 
                     className="h-32 bg-mainBlue hover:bg-blue-900"
-                    onClick={() => navigate('/admin/course-goal')}
+                    onClick={() => navigateTo('/admin/course-goal')}
                   >
                     과정의 목표 관리
                   </Button>
                   <Button 
                     className="h-32 bg-mainBlue hover:bg-blue-900"
-                    onClick={() => navigate('/admin/course-benefits')}
+                    onClick={() => navigateTo('/admin/course-benefits')}
                   >
                     과정의 특전 관리
                   </Button>
                   <Button 
                     className="h-32 bg-mainBlue hover:bg-blue-900"
-                    onClick={() => navigate('/admin/professors')}
+                    onClick={() => navigateTo('/admin/professors')}
                   >
                     운영 교수진 관리
                   </Button>
