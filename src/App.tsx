@@ -20,6 +20,10 @@ import RecommendationsManage from "./pages/admin/RecommendationsManage";
 import CourseGoalManage from "./pages/admin/CourseGoalManage";
 import CourseBenefitsManage from "./pages/admin/CourseBenefitsManage";
 import ProfessorsManage from "./pages/admin/ProfessorsManage";
+import UsersManage from "./pages/admin/UsersManage";
+import ScheduleManage from "./pages/admin/ScheduleManage";
+import GalleryManage from "./pages/admin/GalleryManage";
+import NoticesManage from "./pages/admin/NoticesManage";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +48,10 @@ const App = () => (
           <Route path="/admin/course-goal" element={<CourseGoalManage />} />
           <Route path="/admin/course-benefits" element={<CourseBenefitsManage />} />
           <Route path="/admin/professors" element={<ProfessorsManage />} />
+          <Route path="/admin/users" element={<UsersManage />} />
+          <Route path="/admin/schedule" element={<ScheduleManage />} />
+          <Route path="/admin/gallery" element={<GalleryManage />} />
+          <Route path="/admin/notices" element={<NoticesManage />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>

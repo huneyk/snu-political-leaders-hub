@@ -186,9 +186,6 @@ const Admin = () => {
                     <span className="text-lg font-medium">회원 목록 보기</span>
                   </Button>
                 </Link>
-                <div className="mt-4 text-center text-sm text-gray-400">
-                  <p>개발 중인 기능입니다.</p>
-                </div>
               </CardContent>
             </Card>
           )}
@@ -205,9 +202,6 @@ const Admin = () => {
                     <span className="text-lg font-medium">일정 관리하기</span>
                   </Button>
                 </Link>
-                <div className="mt-4 text-center text-sm text-gray-400">
-                  <p>개발 중인 기능입니다.</p>
-                </div>
               </CardContent>
             </Card>
           )}
@@ -224,9 +218,6 @@ const Admin = () => {
                     <span className="text-lg font-medium">갤러리 관리하기</span>
                   </Button>
                 </Link>
-                <div className="mt-4 text-center text-sm text-gray-400">
-                  <p>개발 중인 기능입니다.</p>
-                </div>
               </CardContent>
             </Card>
           )}
@@ -243,9 +234,6 @@ const Admin = () => {
                     <span className="text-lg font-medium">공지사항 관리하기</span>
                   </Button>
                 </Link>
-                <div className="mt-4 text-center text-sm text-gray-400">
-                  <p>개발 중인 기능입니다.</p>
-                </div>
               </CardContent>
             </Card>
           )}
