@@ -14,6 +14,13 @@ import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 
+// 관리자 페이지 컴포넌트 추가
+import GreetingManage from "./pages/admin/GreetingManage";
+import RecommendationsManage from "./pages/admin/RecommendationsManage";
+import CourseGoalManage from "./pages/admin/CourseGoalManage";
+import CourseBenefitsManage from "./pages/admin/CourseBenefitsManage";
+import ProfessorsManage from "./pages/admin/ProfessorsManage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -30,6 +37,14 @@ const App = () => (
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          
+          {/* 관리자 페이지 경로 추가 */}
+          <Route path="/admin/greeting" element={<GreetingManage />} />
+          <Route path="/admin/recommendations" element={<RecommendationsManage />} />
+          <Route path="/admin/course-goal" element={<CourseGoalManage />} />
+          <Route path="/admin/course-benefits" element={<CourseBenefitsManage />} />
+          <Route path="/admin/professors" element={<ProfessorsManage />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
