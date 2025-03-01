@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -16,6 +15,7 @@ interface Schedule {
   id: string;
   title: string;
   date: string;
+  time: string;
   location: string;
   description: string;
 }
@@ -23,12 +23,14 @@ interface Schedule {
 const ScheduleManage = () => {
   const navigate = useNavigate();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     date: '',
+    time: '',
     location: '',
     description: '',
   });
@@ -56,24 +58,27 @@ const ScheduleManage = () => {
         const sampleSchedules = [
           {
             id: '1',
-            title: '개강식',
-            date: '2024-03-02',
-            location: '서울대학교 행정대학원 57-1동 113호',
-            description: '서울대학교 정치지도자 과정 제23기 개강식',
+            title: '오리엔테이션',
+            date: '2023-03-15',
+            time: '10:00',
+            location: '서울대학교 국제회의실',
+            description: '과정 소개 및 오리엔테이션',
           },
           {
             id: '2',
-            title: '특별 강연',
-            date: '2024-03-15',
-            location: '서울대학교 행정대학원 57-1동 113호',
-            description: '정치와 민주주의의 미래: 21세기 정치 리더십의 방향',
+            title: '특강: 정치 리더십',
+            date: '2023-03-22',
+            time: '14:00',
+            location: '서울대학교 법학관 대강당',
+            description: '정치 리더십의 현대적 의미와 실천 방안',
           },
           {
             id: '3',
-            title: '워크숍',
-            date: '2024-04-10',
-            location: '제주도 연수원',
-            description: '지방자치와 지역 발전 전략 워크숍',
+            title: '워크숍: 정책 개발',
+            date: '2023-04-05',
+            time: '09:00',
+            location: '서울대학교 행정대학원',
+            description: '정책 개발 프로세스 및 실습',
           },
         ];
         localStorage.setItem('schedules', JSON.stringify(sampleSchedules));
@@ -84,6 +89,36 @@ const ScheduleManage = () => {
     loadSchedules();
   }, []);
 
+  const filteredSchedules = schedules.filter(
+    (schedule) =>
+      schedule.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      schedule.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      schedule.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleAddClick = () => {
+    setFormData({
+      title: '',
+      date: '',
+      time: '',
+      location: '',
+      description: '',
+    });
+    setIsAddDialogOpen(true);
+  };
+
+  const handleEditClick = (schedule: Schedule) => {
+    setSelectedSchedule(schedule);
+    setFormData({
+      title: schedule.title,
+      date: schedule.date,
+      time: schedule.time,
+      location: schedule.location,
+      description: schedule.description,
+    });
+    setIsEditDialogOpen(true);
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({
@@ -93,49 +128,20 @@ const ScheduleManage = () => {
   };
 
   const handleAddSchedule = () => {
-    // 필수 필드 확인
-    if (!formData.title || !formData.date) {
-      toast({
-        title: "입력 오류",
-        description: "제목과 날짜는 필수 입력 항목입니다.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const newSchedule = {
       id: Date.now().toString(),
       ...formData,
     };
-
+    
     const updatedSchedules = [...schedules, newSchedule];
     localStorage.setItem('schedules', JSON.stringify(updatedSchedules));
     setSchedules(updatedSchedules);
     setIsAddDialogOpen(false);
     
-    // 폼 데이터 초기화
-    setFormData({
-      title: '',
-      date: '',
-      location: '',
-      description: '',
-    });
-    
     toast({
       title: "일정 추가",
-      description: "새 일정이 성공적으로 추가되었습니다.",
+      description: "새로운 일정이 성공적으로 추가되었습니다.",
     });
-  };
-
-  const handleEditClick = (schedule: Schedule) => {
-    setSelectedSchedule(schedule);
-    setFormData({
-      title: schedule.title,
-      date: schedule.date,
-      location: schedule.location,
-      description: schedule.description,
-    });
-    setIsEditDialogOpen(true);
   };
 
   const handleSaveChanges = () => {
@@ -172,7 +178,6 @@ const ScheduleManage = () => {
   };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('ko-KR', {
       year: 'numeric',
@@ -186,41 +191,47 @@ const ScheduleManage = () => {
       <Header />
       <div className="container mx-auto py-20 px-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-2xl font-bold text-mainBlue">일정 관리</CardTitle>
-            <div className="flex space-x-2">
-              <Button onClick={() => navigate('/admin')}>관리자 홈으로</Button>
-              <Button onClick={() => {
-                setFormData({
-                  title: '',
-                  date: '',
-                  location: '',
-                  description: '',
-                });
-                setIsAddDialogOpen(true);
-              }}>
-                일정 추가
-              </Button>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-2xl font-bold text-mainBlue">일정 관리</CardTitle>
+              <div className="flex gap-4">
+                <Button onClick={handleAddClick}>새 일정 추가</Button>
+                <Button onClick={() => navigate('/admin')}>관리자 홈으로</Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
+            <div className="mb-6">
+              <Input
+                type="text"
+                placeholder="제목, 장소, 설명으로 검색"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>제목</TableHead>
                     <TableHead>날짜</TableHead>
+                    <TableHead>시간</TableHead>
                     <TableHead>장소</TableHead>
+                    <TableHead>설명</TableHead>
                     <TableHead>관리</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {schedules.length > 0 ? (
-                    schedules.map((schedule) => (
+                  {filteredSchedules.length > 0 ? (
+                    filteredSchedules.map((schedule) => (
                       <TableRow key={schedule.id}>
                         <TableCell className="font-medium">{schedule.title}</TableCell>
                         <TableCell>{formatDate(schedule.date)}</TableCell>
+                        <TableCell>{schedule.time}</TableCell>
                         <TableCell>{schedule.location}</TableCell>
+                        <TableCell className="max-w-xs truncate">{schedule.description}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
                             <Button
@@ -243,8 +254,8 @@ const ScheduleManage = () => {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4">
-                        등록된 일정이 없습니다.
+                      <TableCell colSpan={6} className="text-center py-4">
+                        일정이 없거나 검색 결과가 없습니다.
                       </TableCell>
                     </TableRow>
                   )}
@@ -256,13 +267,13 @@ const ScheduleManage = () => {
 
         {/* 일정 추가 다이얼로그 */}
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>새 일정 추가</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="title">제목 *</Label>
+                <Label htmlFor="title">제목</Label>
                 <Input
                   id="title"
                   name="title"
@@ -271,15 +282,27 @@ const ScheduleManage = () => {
                   placeholder="일정 제목을 입력하세요"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="date">날짜 *</Label>
-                <Input
-                  id="date"
-                  name="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={handleInputChange}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">날짜</Label>
+                  <Input
+                    id="date"
+                    name="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="time">시간</Label>
+                  <Input
+                    id="time"
+                    name="time"
+                    type="time"
+                    value={formData.time}
+                    onChange={handleInputChange}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="location">장소</Label>
@@ -293,13 +316,12 @@ const ScheduleManage = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">설명</Label>
-                <Textarea
+                <Input
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
                   placeholder="일정에 대한 설명을 입력하세요"
-                  rows={3}
                 />
               </div>
             </div>
@@ -314,13 +336,13 @@ const ScheduleManage = () => {
 
         {/* 일정 수정 다이얼로그 */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>일정 수정</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-title">제목 *</Label>
+                <Label htmlFor="edit-title">제목</Label>
                 <Input
                   id="edit-title"
                   name="title"
@@ -328,15 +350,27 @@ const ScheduleManage = () => {
                   onChange={handleInputChange}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-date">날짜 *</Label>
-                <Input
-                  id="edit-date"
-                  name="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={handleInputChange}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-date">날짜</Label>
+                  <Input
+                    id="edit-date"
+                    name="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-time">시간</Label>
+                  <Input
+                    id="edit-time"
+                    name="time"
+                    type="time"
+                    value={formData.time}
+                    onChange={handleInputChange}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-location">장소</Label>
@@ -349,12 +383,11 @@ const ScheduleManage = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-description">설명</Label>
-                <Textarea
+                <Input
                   id="edit-description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  rows={3}
                 />
               </div>
             </div>

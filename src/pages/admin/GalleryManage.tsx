@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -23,14 +22,14 @@ interface GalleryItem {
 const GalleryManage = () => {
   const navigate = useNavigate();
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     imageUrl: '',
-    date: '',
   });
 
   // Admin 인증 체크
@@ -56,24 +55,24 @@ const GalleryManage = () => {
         const sampleItems = [
           {
             id: '1',
-            title: '개강식',
-            description: '제23기 정치지도자 과정 개강식 현장',
-            imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87',
-            date: '2024-03-02',
+            title: '입학식',
+            description: '2023년 봄학기 입학식 현장',
+            imageUrl: 'https://placehold.co/600x400?text=입학식',
+            date: new Date(2023, 2, 2).toISOString(),
           },
           {
             id: '2',
             title: '특별 강연',
-            description: '정치와 민주주의의 미래 특별 강연',
-            imageUrl: 'https://images.unsplash.com/photo-1588492069485-d05b56b2831d',
-            date: '2024-03-15',
+            description: '국제 정치 특별 강연 세미나',
+            imageUrl: 'https://placehold.co/600x400?text=특별강연',
+            date: new Date(2023, 3, 15).toISOString(),
           },
           {
             id: '3',
-            title: '워크숍',
-            description: '제주도 연수원에서의 워크숍',
-            imageUrl: 'https://images.unsplash.com/photo-1495055154266-57bbdeada43e',
-            date: '2024-04-10',
+            title: '워크샵',
+            description: '리더십 개발 워크샵',
+            imageUrl: 'https://placehold.co/600x400?text=워크샵',
+            date: new Date(2023, 4, 10).toISOString(),
           },
         ];
         localStorage.setItem('galleryItems', JSON.stringify(sampleItems));
@@ -84,6 +83,31 @@ const GalleryManage = () => {
     loadGalleryItems();
   }, []);
 
+  const filteredItems = galleryItems.filter(
+    (item) =>
+      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleAddClick = () => {
+    setFormData({
+      title: '',
+      description: '',
+      imageUrl: '',
+    });
+    setIsAddDialogOpen(true);
+  };
+
+  const handleEditClick = (item: GalleryItem) => {
+    setSelectedItem(item);
+    setFormData({
+      title: item.title,
+      description: item.description,
+      imageUrl: item.imageUrl,
+    });
+    setIsEditDialogOpen(true);
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({
@@ -93,50 +117,21 @@ const GalleryManage = () => {
   };
 
   const handleAddItem = () => {
-    // 필수 필드 확인
-    if (!formData.title || !formData.imageUrl) {
-      toast({
-        title: "입력 오류",
-        description: "제목과 이미지 URL은 필수 입력 항목입니다.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const newItem = {
       id: Date.now().toString(),
       ...formData,
-      date: formData.date || new Date().toISOString().split('T')[0],
+      date: new Date().toISOString(),
     };
-
+    
     const updatedItems = [...galleryItems, newItem];
     localStorage.setItem('galleryItems', JSON.stringify(updatedItems));
     setGalleryItems(updatedItems);
     setIsAddDialogOpen(false);
     
-    // 폼 데이터 초기화
-    setFormData({
-      title: '',
-      description: '',
-      imageUrl: '',
-      date: '',
-    });
-    
     toast({
-      title: "갤러리 추가",
-      description: "새 갤러리 항목이 성공적으로 추가되었습니다.",
+      title: "갤러리 항목 추가",
+      description: "새로운 갤러리 항목이 성공적으로 추가되었습니다.",
     });
-  };
-
-  const handleEditClick = (item: GalleryItem) => {
-    setSelectedItem(item);
-    setFormData({
-      title: item.title,
-      description: item.description,
-      imageUrl: item.imageUrl,
-      date: item.date,
-    });
-    setIsEditDialogOpen(true);
   };
 
   const handleSaveChanges = () => {
@@ -153,7 +148,7 @@ const GalleryManage = () => {
     setIsEditDialogOpen(false);
     
     toast({
-      title: "갤러리 수정",
+      title: "갤러리 항목 수정",
       description: "갤러리 항목이 성공적으로 수정되었습니다.",
     });
   };
@@ -165,7 +160,7 @@ const GalleryManage = () => {
       setGalleryItems(updatedItems);
       
       toast({
-        title: "갤러리 삭제",
+        title: "갤러리 항목 삭제",
         description: "갤러리 항목이 성공적으로 삭제되었습니다.",
         variant: "destructive",
       });
@@ -173,7 +168,6 @@ const GalleryManage = () => {
   };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('ko-KR', {
       year: 'numeric',
@@ -182,113 +176,93 @@ const GalleryManage = () => {
     });
   };
 
-  // 이미지 미리보기 컴포넌트
-  const ImagePreview = ({ url }: { url: string }) => (
-    <div className="w-20 h-20 overflow-hidden rounded-md bg-gray-100 flex items-center justify-center">
-      {url ? (
-        <img src={url} alt="Preview" className="w-full h-full object-cover" />
-      ) : (
-        <span className="text-gray-400 text-xs text-center">이미지 없음</span>
-      )}
-    </div>
-  );
-
   return (
     <>
       <Header />
       <div className="container mx-auto py-20 px-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-2xl font-bold text-mainBlue">갤러리 관리</CardTitle>
-            <div className="flex space-x-2">
-              <Button onClick={() => navigate('/admin')}>관리자 홈으로</Button>
-              <Button onClick={() => {
-                setFormData({
-                  title: '',
-                  description: '',
-                  imageUrl: '',
-                  date: new Date().toISOString().split('T')[0],
-                });
-                setIsAddDialogOpen(true);
-              }}>
-                갤러리 추가
-              </Button>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-2xl font-bold text-mainBlue">갤러리 관리</CardTitle>
+              <div className="flex gap-4">
+                <Button onClick={handleAddClick}>새 항목 추가</Button>
+                <Button onClick={() => navigate('/admin')}>관리자 홈으로</Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>이미지</TableHead>
-                    <TableHead>제목</TableHead>
-                    <TableHead>날짜</TableHead>
-                    <TableHead>설명</TableHead>
-                    <TableHead>관리</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {galleryItems.length > 0 ? (
-                    galleryItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <ImagePreview url={item.imageUrl} />
-                        </TableCell>
-                        <TableCell className="font-medium">{item.title}</TableCell>
-                        <TableCell>{formatDate(item.date)}</TableCell>
-                        <TableCell className="max-w-xs truncate">{item.description}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditClick(item)}
-                            >
-                              수정
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeleteItem(item.id)}
-                            >
-                              삭제
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-4">
-                        등록된 갤러리 항목이 없습니다.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+            <div className="mb-6">
+              <Input
+                type="text"
+                placeholder="제목 또는 설명으로 검색"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+              {filteredItems.map((item) => (
+                <div key={item.id} className="border rounded-md overflow-hidden shadow-sm">
+                  <div className="aspect-w-16 aspect-h-9 w-full">
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      className="object-cover w-full h-40"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold">{item.title}</h3>
+                    <p className="text-sm text-gray-500 mt-1">{formatDate(item.date)}</p>
+                    <p className="text-sm mt-2">{item.description}</p>
+                    <div className="flex mt-4 space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditClick(item)}
+                      >
+                        수정
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteItem(item.id)}
+                      >
+                        삭제
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {filteredItems.length === 0 && (
+                <div className="col-span-full text-center py-8">
+                  갤러리 항목이 없거나 검색 결과가 없습니다.
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* 갤러리 추가 다이얼로그 */}
+        {/* 갤러리 항목 추가 다이얼로그 */}
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>새 갤러리 항목 추가</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="title">제목 *</Label>
+                <Label htmlFor="title">제목</Label>
                 <Input
                   id="title"
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
-                  placeholder="갤러리 제목을 입력하세요"
+                  placeholder="갤러리 항목 제목을 입력하세요"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">이미지 URL *</Label>
+                <Label htmlFor="imageUrl">이미지 URL</Label>
                 <Input
                   id="imageUrl"
                   name="imageUrl"
@@ -296,32 +270,15 @@ const GalleryManage = () => {
                   onChange={handleInputChange}
                   placeholder="이미지 URL을 입력하세요"
                 />
-                {formData.imageUrl && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500 mb-1">미리보기:</p>
-                    <ImagePreview url={formData.imageUrl} />
-                  </div>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="date">날짜</Label>
-                <Input
-                  id="date"
-                  name="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={handleInputChange}
-                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">설명</Label>
-                <Textarea
+                <Input
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
                   placeholder="갤러리 항목에 대한 설명을 입력하세요"
-                  rows={3}
                 />
               </div>
             </div>
@@ -334,15 +291,15 @@ const GalleryManage = () => {
           </DialogContent>
         </Dialog>
 
-        {/* 갤러리 수정 다이얼로그 */}
+        {/* 갤러리 항목 수정 다이얼로그 */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>갤러리 항목 수정</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-title">제목 *</Label>
+                <Label htmlFor="edit-title">제목</Label>
                 <Input
                   id="edit-title"
                   name="title"
@@ -351,38 +308,21 @@ const GalleryManage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-imageUrl">이미지 URL *</Label>
+                <Label htmlFor="edit-imageUrl">이미지 URL</Label>
                 <Input
                   id="edit-imageUrl"
                   name="imageUrl"
                   value={formData.imageUrl}
                   onChange={handleInputChange}
                 />
-                {formData.imageUrl && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500 mb-1">미리보기:</p>
-                    <ImagePreview url={formData.imageUrl} />
-                  </div>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-date">날짜</Label>
-                <Input
-                  id="edit-date"
-                  name="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={handleInputChange}
-                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-description">설명</Label>
-                <Textarea
+                <Input
                   id="edit-description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  rows={3}
                 />
               </div>
             </div>
