@@ -15,6 +15,7 @@ const ContentTab = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Link to="/admin/greeting" className="block">
             <Button 
+              variant="outline"
               className="h-32 w-full bg-mainBlue hover:bg-blue-900 flex flex-col items-center justify-center gap-2"
             >
               <FileText className="h-6 w-6" />
