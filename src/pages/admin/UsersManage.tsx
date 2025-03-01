@@ -2,202 +2,183 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
-// 간단한 관리자 인증 확인 훅
-const useAdminAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  createdAt: string;
+}
 
+const UsersManage = () => {
+  const navigate = useNavigate();
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+  });
+
+  // Admin 인증 체크
   useEffect(() => {
     const checkAuth = () => {
       const auth = localStorage.getItem('adminAuth');
       if (auth !== 'true') {
         navigate('/admin/login');
-        return;
       }
-      setIsAuthenticated(true);
-      setIsLoading(false);
     };
     
     checkAuth();
   }, [navigate]);
 
-  return { isAuthenticated, isLoading };
-};
-
-// 가상의 회원 데이터
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  registeredAt: string;
-  status: 'active' | 'inactive' | 'pending';
-}
-
-const initialUsers: User[] = [
-  {
-    id: 1,
-    name: '김철수',
-    email: 'chulsoo@example.com',
-    phone: '010-1234-5678',
-    registeredAt: '2023-05-15',
-    status: 'active'
-  },
-  {
-    id: 2,
-    name: '이영희',
-    email: 'younghee@example.com',
-    phone: '010-8765-4321',
-    registeredAt: '2023-06-20',
-    status: 'active'
-  },
-  {
-    id: 3,
-    name: '박지민',
-    email: 'jimin@example.com',
-    phone: '010-9876-5432',
-    registeredAt: '2023-07-10',
-    status: 'pending'
-  },
-  {
-    id: 4,
-    name: '홍길동',
-    email: 'hong@example.com',
-    phone: '010-4567-8901',
-    registeredAt: '2023-07-25',
-    status: 'inactive'
-  },
-  {
-    id: 5,
-    name: '최민지',
-    email: 'minji@example.com',
-    phone: '010-3456-7890',
-    registeredAt: '2023-08-05',
-    status: 'active'
-  }
-];
-
-const UsersManage = () => {
-  const { isAuthenticated, isLoading } = useAdminAuth();
-  const [users, setUsers] = useState<User[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
+  // 회원 데이터 로드
   useEffect(() => {
-    // 실제 구현에서는 API 호출을 통해 회원 데이터를 가져옵니다.
-    // 현재는 임시 데이터를 사용합니다.
-    const savedUsers = localStorage.getItem('admin-users');
-    if (savedUsers) {
-      try {
-        setUsers(JSON.parse(savedUsers));
-      } catch (error) {
-        console.error('Failed to parse users:', error);
-        setUsers(initialUsers);
+    const loadUsers = () => {
+      const storedUsers = localStorage.getItem('users');
+      if (storedUsers) {
+        setUsers(JSON.parse(storedUsers));
+      } else {
+        // 샘플 데이터
+        const sampleUsers = [
+          {
+            id: '1',
+            name: '홍길동',
+            email: 'hong@example.com',
+            phone: '010-1234-5678',
+            createdAt: new Date(2023, 1, 15).toISOString(),
+          },
+          {
+            id: '2',
+            name: '김철수',
+            email: 'kim@example.com',
+            phone: '010-8765-4321',
+            createdAt: new Date(2023, 2, 20).toISOString(),
+          },
+          {
+            id: '3',
+            name: '이영희',
+            email: 'lee@example.com',
+            phone: '010-9876-5432',
+            createdAt: new Date(2023, 3, 10).toISOString(),
+          },
+        ];
+        localStorage.setItem('users', JSON.stringify(sampleUsers));
+        setUsers(sampleUsers);
       }
-    } else {
-      setUsers(initialUsers);
-    }
+    };
+    
+    loadUsers();
   }, []);
-  
-  const filteredUsers = users.filter(user => 
-    user.name.includes(searchTerm) || 
-    user.email.includes(searchTerm) || 
-    user.phone.includes(searchTerm)
-  );
-  
-  const handleStatusChange = (userId: number, newStatus: 'active' | 'inactive' | 'pending') => {
-    const updatedUsers = users.map(user => 
-      user.id === userId ? { ...user, status: newStatus } : user
-    );
-    setUsers(updatedUsers);
-    localStorage.setItem('admin-users', JSON.stringify(updatedUsers));
-    toast({
-      title: "상태 변경",
-      description: "회원 상태가 성공적으로 변경되었습니다.",
-    });
-  };
-  
-  const handleDeleteUser = (userId: number) => {
-    const updatedUsers = users.filter(user => user.id !== userId);
-    setUsers(updatedUsers);
-    localStorage.setItem('admin-users', JSON.stringify(updatedUsers));
-    toast({
-      title: "회원 삭제",
-      description: "회원이 성공적으로 삭제되었습니다.",
-    });
-    setIsDialogOpen(false);
-  };
-  
-  const confirmDelete = (user: User) => {
-    setSelectedUser(user);
-    setIsDialogOpen(true);
-  };
-  
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>로딩 중...</p>
-      </div>
-    );
-  }
 
-  if (!isAuthenticated) {
-    return null; // 인증 확인 중이거나 실패 시 빈 화면 표시
-  }
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.phone.includes(searchTerm)
+  );
+
+  const handleEditClick = (user: User) => {
+    setSelectedUser(user);
+    setFormData({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleSaveChanges = () => {
+    if (!selectedUser) return;
+    
+    const updatedUsers = users.map((user) =>
+      user.id === selectedUser.id
+        ? { ...user, ...formData }
+        : user
+    );
+    
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    setUsers(updatedUsers);
+    setIsEditDialogOpen(false);
+    
+    toast({
+      title: "회원 정보 수정",
+      description: "회원 정보가 성공적으로 수정되었습니다.",
+    });
+  };
+
+  const handleDeleteUser = (id: string) => {
+    if (window.confirm('정말로 이 회원을 삭제하시겠습니까?')) {
+      const updatedUsers = users.filter(user => user.id !== id);
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      setUsers(updatedUsers);
+      
+      toast({
+        title: "회원 삭제",
+        description: "회원이 성공적으로 삭제되었습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
 
   return (
     <>
       <Header />
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-mainBlue">회원 관리</h1>
-          <Button onClick={() => {
-            navigate('/admin');
-          }}>관리자 대시보드로 돌아가기</Button>
-        </div>
-        
-        <Card className="mb-8">
-          <CardHeader className="pb-3">
-            <CardTitle>회원 검색</CardTitle>
+      <div className="container mx-auto py-20 px-4">
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-2xl font-bold text-mainBlue">회원 관리</CardTitle>
+              <Button onClick={() => navigate('/admin')}>관리자 홈으로</Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-2">
-              <Input 
-                placeholder="이름, 이메일 또는 전화번호로 검색" 
+            <div className="mb-6">
+              <Input
+                type="text"
+                placeholder="이름, 이메일 또는 전화번호로 검색"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="max-w-sm"
               />
-              <Button variant="outline" onClick={() => setSearchTerm('')}>초기화</Button>
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>회원 목록</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
+
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
                     <TableHead>이름</TableHead>
                     <TableHead>이메일</TableHead>
                     <TableHead>전화번호</TableHead>
                     <TableHead>가입일</TableHead>
-                    <TableHead>상태</TableHead>
                     <TableHead>관리</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -205,37 +186,34 @@ const UsersManage = () => {
                   {filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell>{user.id}</TableCell>
-                        <TableCell>{user.name}</TableCell>
+                        <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{user.phone}</TableCell>
-                        <TableCell>{user.registeredAt}</TableCell>
+                        <TableCell>{formatDate(user.createdAt)}</TableCell>
                         <TableCell>
-                          <select
-                            value={user.status}
-                            onChange={(e) => handleStatusChange(user.id, e.target.value as any)}
-                            className="p-1 border rounded"
-                          >
-                            <option value="active">활성</option>
-                            <option value="inactive">비활성</option>
-                            <option value="pending">대기중</option>
-                          </select>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => confirmDelete(user)}
-                          >
-                            삭제
-                          </Button>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditClick(user)}
+                            >
+                              수정
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteUser(user.id)}
+                            >
+                              삭제
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center">
-                        검색 결과가 없습니다.
+                      <TableCell colSpan={5} className="text-center py-4">
+                        회원이 없거나 검색 결과가 없습니다.
                       </TableCell>
                     </TableRow>
                   )}
@@ -244,23 +222,47 @@ const UsersManage = () => {
             </div>
           </CardContent>
         </Card>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>회원 삭제 확인</DialogTitle>
-              <DialogDescription>
-                {selectedUser && `${selectedUser.name}(${selectedUser.email}) 회원을 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
-              </DialogDescription>
+              <DialogTitle>회원 정보 수정</DialogTitle>
             </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">이름</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">이메일</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">전화번호</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>취소</Button>
-              <Button 
-                variant="destructive" 
-                onClick={() => selectedUser && handleDeleteUser(selectedUser.id)}
-              >
-                삭제
-              </Button>
+              <DialogClose asChild>
+                <Button variant="outline">취소</Button>
+              </DialogClose>
+              <Button onClick={handleSaveChanges}>저장</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
