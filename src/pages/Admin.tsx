@@ -1,9 +1,8 @@
 
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -35,7 +34,24 @@ const useAdminAuth = () => {
 const Admin = () => {
   const { isAuthenticated, isLoading } = useAdminAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('content');
+  const location = useLocation();
+  
+  // Determine which tab is active based on current path
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path.includes('/admin/users')) return 'users';
+    if (path.includes('/admin/schedule')) return 'schedule';
+    if (path.includes('/admin/gallery')) return 'gallery';
+    if (path.includes('/admin/notices')) return 'notice';
+    return 'content';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getCurrentTab());
+
+  useEffect(() => {
+    // Update active tab when location changes
+    setActiveTab(getCurrentTab());
+  }, [location]);
 
   const handleLogout = () => {
     localStorage.removeItem('adminAuth');
@@ -44,10 +60,6 @@ const Admin = () => {
       description: "관리자 계정에서 로그아웃되었습니다.",
     });
     navigate('/admin/login');
-  };
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
   };
 
   if (isLoading) {
@@ -71,26 +83,45 @@ const Admin = () => {
           <Button onClick={handleLogout} variant="destructive">로그아웃</Button>
         </div>
 
-        <Tabs defaultValue="content" onValueChange={handleTabChange}>
-          <TabsList className="mb-6 w-full overflow-x-auto flex-nowrap">
-            <TabsTrigger value="content" asChild>
-              <Link to="/admin">콘텐츠 관리</Link>
-            </TabsTrigger>
-            <TabsTrigger value="users" asChild>
-              <Link to="/admin/users">회원 관리</Link>
-            </TabsTrigger>
-            <TabsTrigger value="schedule" asChild>
-              <Link to="/admin/schedule">일정 관리</Link>
-            </TabsTrigger>
-            <TabsTrigger value="gallery" asChild>
-              <Link to="/admin/gallery">갤러리 관리</Link>
-            </TabsTrigger>
-            <TabsTrigger value="notice" asChild>
-              <Link to="/admin/notices">공지사항 관리</Link>
-            </TabsTrigger>
-          </TabsList>
+        {/* Replace Tabs component with custom navigation */}
+        <div className="mb-6">
+          <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full overflow-x-auto flex-nowrap">
+            <Link 
+              to="/admin" 
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${activeTab === 'content' ? 'bg-background text-foreground shadow-sm' : ''}`}
+            >
+              콘텐츠 관리
+            </Link>
+            <Link 
+              to="/admin/users" 
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${activeTab === 'users' ? 'bg-background text-foreground shadow-sm' : ''}`}
+            >
+              회원 관리
+            </Link>
+            <Link 
+              to="/admin/schedule" 
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${activeTab === 'schedule' ? 'bg-background text-foreground shadow-sm' : ''}`}
+            >
+              일정 관리
+            </Link>
+            <Link 
+              to="/admin/gallery" 
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${activeTab === 'gallery' ? 'bg-background text-foreground shadow-sm' : ''}`}
+            >
+              갤러리 관리
+            </Link>
+            <Link 
+              to="/admin/notices" 
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${activeTab === 'notice' ? 'bg-background text-foreground shadow-sm' : ''}`}
+            >
+              공지사항 관리
+            </Link>
+          </div>
+        </div>
 
-          <TabsContent value="content" className="space-y-6">
+        {/* Content area */}
+        <div className="space-y-6">
+          {activeTab === 'content' && (
             <Card>
               <CardHeader>
                 <CardTitle>콘텐츠 관리</CardTitle>
@@ -101,64 +132,49 @@ const Admin = () => {
                   <Link to="/admin/greeting" className="block">
                     <Button 
                       className="h-32 w-full bg-mainBlue hover:bg-blue-900 flex flex-col items-center justify-center gap-2"
-                      asChild
                     >
-                      <div>
-                        <span className="text-lg font-medium">인사말 관리</span>
-                        <span className="text-sm opacity-80">인사말 페이지 내용 수정</span>
-                      </div>
+                      <span className="text-lg font-medium">인사말 관리</span>
+                      <span className="text-sm opacity-80">인사말 페이지 내용 수정</span>
                     </Button>
                   </Link>
                   <Link to="/admin/recommendations" className="block">
                     <Button 
                       className="h-32 w-full bg-mainBlue hover:bg-blue-900 flex flex-col items-center justify-center gap-2"
-                      asChild
                     >
-                      <div>
-                        <span className="text-lg font-medium">추천의 글 관리</span>
-                        <span className="text-sm opacity-80">추천의 글 페이지 내용 수정</span>
-                      </div>
+                      <span className="text-lg font-medium">추천의 글 관리</span>
+                      <span className="text-sm opacity-80">추천의 글 페이지 내용 수정</span>
                     </Button>
                   </Link>
                   <Link to="/admin/course-goal" className="block">
                     <Button 
                       className="h-32 w-full bg-mainBlue hover:bg-blue-900 flex flex-col items-center justify-center gap-2"
-                      asChild
                     >
-                      <div>
-                        <span className="text-lg font-medium">과정의 목표 관리</span>
-                        <span className="text-sm opacity-80">과정 목표 페이지 내용 수정</span>
-                      </div>
+                      <span className="text-lg font-medium">과정의 목표 관리</span>
+                      <span className="text-sm opacity-80">과정 목표 페이지 내용 수정</span>
                     </Button>
                   </Link>
                   <Link to="/admin/course-benefits" className="block">
                     <Button 
                       className="h-32 w-full bg-mainBlue hover:bg-blue-900 flex flex-col items-center justify-center gap-2"
-                      asChild
                     >
-                      <div>
-                        <span className="text-lg font-medium">과정의 특전 관리</span>
-                        <span className="text-sm opacity-80">과정 특전 페이지 내용 수정</span>
-                      </div>
+                      <span className="text-lg font-medium">과정의 특전 관리</span>
+                      <span className="text-sm opacity-80">과정 특전 페이지 내용 수정</span>
                     </Button>
                   </Link>
                   <Link to="/admin/professors" className="block">
                     <Button 
                       className="h-32 w-full bg-mainBlue hover:bg-blue-900 flex flex-col items-center justify-center gap-2"
-                      asChild
                     >
-                      <div>
-                        <span className="text-lg font-medium">운영 교수진 관리</span>
-                        <span className="text-sm opacity-80">교수진 정보 수정</span>
-                      </div>
+                      <span className="text-lg font-medium">운영 교수진 관리</span>
+                      <span className="text-sm opacity-80">교수진 정보 수정</span>
                     </Button>
                   </Link>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="users">
+          {activeTab === 'users' && (
             <Card>
               <CardHeader>
                 <CardTitle>회원 관리</CardTitle>
@@ -166,10 +182,8 @@ const Admin = () => {
               <CardContent className="pt-4">
                 <p className="text-gray-500 mb-4">회원 정보를 관리합니다.</p>
                 <Link to="/admin/users" className="block w-full">
-                  <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900" asChild>
-                    <div>
-                      <span className="text-lg font-medium">회원 목록 보기</span>
-                    </div>
+                  <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900">
+                    <span className="text-lg font-medium">회원 목록 보기</span>
                   </Button>
                 </Link>
                 <div className="mt-4 text-center text-sm text-gray-400">
@@ -177,9 +191,9 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="schedule">
+          {activeTab === 'schedule' && (
             <Card>
               <CardHeader>
                 <CardTitle>일정 관리</CardTitle>
@@ -187,10 +201,8 @@ const Admin = () => {
               <CardContent className="pt-4">
                 <p className="text-gray-500 mb-4">강의 및 행사 일정을 관리합니다.</p>
                 <Link to="/admin/schedule" className="block w-full">
-                  <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900" asChild>
-                    <div>
-                      <span className="text-lg font-medium">일정 관리하기</span>
-                    </div>
+                  <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900">
+                    <span className="text-lg font-medium">일정 관리하기</span>
                   </Button>
                 </Link>
                 <div className="mt-4 text-center text-sm text-gray-400">
@@ -198,9 +210,9 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="gallery">
+          {activeTab === 'gallery' && (
             <Card>
               <CardHeader>
                 <CardTitle>갤러리 관리</CardTitle>
@@ -208,10 +220,8 @@ const Admin = () => {
               <CardContent className="pt-4">
                 <p className="text-gray-500 mb-4">갤러리 이미지를 관리합니다.</p>
                 <Link to="/admin/gallery" className="block w-full">
-                  <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900" asChild>
-                    <div>
-                      <span className="text-lg font-medium">갤러리 관리하기</span>
-                    </div>
+                  <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900">
+                    <span className="text-lg font-medium">갤러리 관리하기</span>
                   </Button>
                 </Link>
                 <div className="mt-4 text-center text-sm text-gray-400">
@@ -219,9 +229,9 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="notice">
+          {activeTab === 'notice' && (
             <Card>
               <CardHeader>
                 <CardTitle>공지사항 관리</CardTitle>
@@ -229,10 +239,8 @@ const Admin = () => {
               <CardContent className="pt-4">
                 <p className="text-gray-500 mb-4">공지사항을 관리합니다.</p>
                 <Link to="/admin/notices" className="block w-full">
-                  <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900" asChild>
-                    <div>
-                      <span className="text-lg font-medium">공지사항 관리하기</span>
-                    </div>
+                  <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900">
+                    <span className="text-lg font-medium">공지사항 관리하기</span>
                   </Button>
                 </Link>
                 <div className="mt-4 text-center text-sm text-gray-400">
@@ -240,8 +248,8 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
       <Footer />
     </>
