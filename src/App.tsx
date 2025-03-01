@@ -11,6 +11,8 @@ import AdmissionApply from "./pages/AdmissionApply";
 import ScheduleLecturers from "./pages/ScheduleLecturers";
 import Gallery from "./pages/Gallery";
 import NotFound from "./pages/NotFound";
+import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/admission/apply" element={<AdmissionApply />} />
           <Route path="/schedule/lecturers" element={<ScheduleLecturers />} />
           <Route path="/gallery" element={<Gallery />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
