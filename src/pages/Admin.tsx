@@ -35,6 +35,7 @@ const useAdminAuth = () => {
 const Admin = () => {
   const { isAuthenticated, isLoading } = useAdminAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('content');
 
   const handleLogout = () => {
     localStorage.removeItem('adminAuth');
@@ -43,6 +44,10 @@ const Admin = () => {
       description: "관리자 계정에서 로그아웃되었습니다.",
     });
     navigate('/admin/login');
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
   };
 
   if (isLoading) {
@@ -66,7 +71,7 @@ const Admin = () => {
           <Button onClick={handleLogout} variant="destructive">로그아웃</Button>
         </div>
 
-        <Tabs defaultValue="content">
+        <Tabs defaultValue="content" onValueChange={handleTabChange}>
           <TabsList className="mb-6 w-full overflow-x-auto flex-nowrap">
             <TabsTrigger value="content">콘텐츠 관리</TabsTrigger>
             <TabsTrigger value="users">회원 관리</TabsTrigger>
@@ -134,9 +139,14 @@ const Admin = () => {
                 <CardTitle>회원 관리</CardTitle>
               </CardHeader>
               <CardContent className="pt-4">
-                <div className="p-8 text-center">
-                  <p className="text-gray-500 mb-2">회원 관리 기능은 아직 구현되지 않았습니다.</p>
-                  <p className="text-sm text-gray-400">개발 중인 기능입니다.</p>
+                <p className="text-gray-500 mb-4">회원 정보를 관리합니다.</p>
+                <Link to="/admin/users" className="block">
+                  <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900">
+                    <span className="text-lg font-medium">회원 목록 보기</span>
+                  </Button>
+                </Link>
+                <div className="mt-4 text-center text-sm text-gray-400">
+                  <p>개발 중인 기능입니다.</p>
                 </div>
               </CardContent>
             </Card>
@@ -148,9 +158,14 @@ const Admin = () => {
                 <CardTitle>일정 관리</CardTitle>
               </CardHeader>
               <CardContent className="pt-4">
-                <div className="p-8 text-center">
-                  <p className="text-gray-500 mb-2">일정 관리 기능은 아직 구현되지 않았습니다.</p>
-                  <p className="text-sm text-gray-400">개발 중인 기능입니다.</p>
+                <p className="text-gray-500 mb-4">강의 및 행사 일정을 관리합니다.</p>
+                <Link to="/admin/schedule" className="block">
+                  <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900">
+                    <span className="text-lg font-medium">일정 관리하기</span>
+                  </Button>
+                </Link>
+                <div className="mt-4 text-center text-sm text-gray-400">
+                  <p>개발 중인 기능입니다.</p>
                 </div>
               </CardContent>
             </Card>
@@ -162,9 +177,14 @@ const Admin = () => {
                 <CardTitle>갤러리 관리</CardTitle>
               </CardHeader>
               <CardContent className="pt-4">
-                <div className="p-8 text-center">
-                  <p className="text-gray-500 mb-2">갤러리 관리 기능은 아직 구현되지 않았습니다.</p>
-                  <p className="text-sm text-gray-400">개발 중인 기능입니다.</p>
+                <p className="text-gray-500 mb-4">갤러리 이미지를 관리합니다.</p>
+                <Link to="/admin/gallery" className="block">
+                  <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900">
+                    <span className="text-lg font-medium">갤러리 관리하기</span>
+                  </Button>
+                </Link>
+                <div className="mt-4 text-center text-sm text-gray-400">
+                  <p>개발 중인 기능입니다.</p>
                 </div>
               </CardContent>
             </Card>
@@ -176,9 +196,14 @@ const Admin = () => {
                 <CardTitle>공지사항 관리</CardTitle>
               </CardHeader>
               <CardContent className="pt-4">
-                <div className="p-8 text-center">
-                  <p className="text-gray-500 mb-2">공지사항 관리 기능은 아직 구현되지 않았습니다.</p>
-                  <p className="text-sm text-gray-400">개발 중인 기능입니다.</p>
+                <p className="text-gray-500 mb-4">공지사항을 관리합니다.</p>
+                <Link to="/admin/notices" className="block">
+                  <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900">
+                    <span className="text-lg font-medium">공지사항 관리하기</span>
+                  </Button>
+                </Link>
+                <div className="mt-4 text-center text-sm text-gray-400">
+                  <p>개발 중인 기능입니다.</p>
                 </div>
               </CardContent>
             </Card>
