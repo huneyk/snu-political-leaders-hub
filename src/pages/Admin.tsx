@@ -83,7 +83,7 @@ const Admin = () => {
               <CardContent>
                 <p className="text-gray-500 mb-4">홈페이지의 콘텐츠를 관리합니다.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <Link to="/admin/greeting">
+                  <Link to="/admin/greeting" className="block">
                     <Button 
                       className="h-32 w-full bg-mainBlue hover:bg-blue-900 flex flex-col items-center justify-center gap-2"
                     >
@@ -91,7 +91,7 @@ const Admin = () => {
                       <span className="text-sm opacity-80">인사말 페이지 내용 수정</span>
                     </Button>
                   </Link>
-                  <Link to="/admin/recommendations">
+                  <Link to="/admin/recommendations" className="block">
                     <Button 
                       className="h-32 w-full bg-mainBlue hover:bg-blue-900 flex flex-col items-center justify-center gap-2"
                     >
@@ -99,7 +99,7 @@ const Admin = () => {
                       <span className="text-sm opacity-80">추천의 글 페이지 내용 수정</span>
                     </Button>
                   </Link>
-                  <Link to="/admin/course-goal">
+                  <Link to="/admin/course-goal" className="block">
                     <Button 
                       className="h-32 w-full bg-mainBlue hover:bg-blue-900 flex flex-col items-center justify-center gap-2"
                     >
@@ -107,7 +107,7 @@ const Admin = () => {
                       <span className="text-sm opacity-80">과정 목표 페이지 내용 수정</span>
                     </Button>
                   </Link>
-                  <Link to="/admin/course-benefits">
+                  <Link to="/admin/course-benefits" className="block">
                     <Button 
                       className="h-32 w-full bg-mainBlue hover:bg-blue-900 flex flex-col items-center justify-center gap-2"
                     >
@@ -115,7 +115,7 @@ const Admin = () => {
                       <span className="text-sm opacity-80">과정 특전 페이지 내용 수정</span>
                     </Button>
                   </Link>
-                  <Link to="/admin/professors">
+                  <Link to="/admin/professors" className="block">
                     <Button 
                       className="h-32 w-full bg-mainBlue hover:bg-blue-900 flex flex-col items-center justify-center gap-2"
                     >
