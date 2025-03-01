@@ -39,10 +39,10 @@ const Admin = () => {
   // Determine which tab is active based on current path
   const getCurrentTab = () => {
     const path = location.pathname;
-    if (path === '/admin/users') return 'users';
-    if (path === '/admin/schedule') return 'schedule';
-    if (path === '/admin/gallery') return 'gallery';
-    if (path === '/admin/notices') return 'notice';
+    if (path.includes('/admin/users')) return 'users';
+    if (path.includes('/admin/schedule')) return 'schedule';
+    if (path.includes('/admin/gallery')) return 'gallery';
+    if (path.includes('/admin/notices')) return 'notice';
     return 'content';
   };
   
