@@ -73,11 +73,21 @@ const Admin = () => {
 
         <Tabs defaultValue="content" onValueChange={handleTabChange}>
           <TabsList className="mb-6 w-full overflow-x-auto flex-nowrap">
-            <TabsTrigger value="content">콘텐츠 관리</TabsTrigger>
-            <TabsTrigger value="users">회원 관리</TabsTrigger>
-            <TabsTrigger value="schedule">일정 관리</TabsTrigger>
-            <TabsTrigger value="gallery">갤러리 관리</TabsTrigger>
-            <TabsTrigger value="notice">공지사항 관리</TabsTrigger>
+            <TabsTrigger value="content" asChild>
+              <Link to="/admin">콘텐츠 관리</Link>
+            </TabsTrigger>
+            <TabsTrigger value="users" asChild>
+              <Link to="/admin/users">회원 관리</Link>
+            </TabsTrigger>
+            <TabsTrigger value="schedule" asChild>
+              <Link to="/admin/schedule">일정 관리</Link>
+            </TabsTrigger>
+            <TabsTrigger value="gallery" asChild>
+              <Link to="/admin/gallery">갤러리 관리</Link>
+            </TabsTrigger>
+            <TabsTrigger value="notice" asChild>
+              <Link to="/admin/notices">공지사항 관리</Link>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="content" className="space-y-6">
@@ -140,7 +150,7 @@ const Admin = () => {
               </CardHeader>
               <CardContent className="pt-4">
                 <p className="text-gray-500 mb-4">회원 정보를 관리합니다.</p>
-                <Link to="/admin/users" className="block">
+                <Link to="/admin/users" className="block w-full">
                   <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900">
                     <span className="text-lg font-medium">회원 목록 보기</span>
                   </Button>
@@ -159,7 +169,7 @@ const Admin = () => {
               </CardHeader>
               <CardContent className="pt-4">
                 <p className="text-gray-500 mb-4">강의 및 행사 일정을 관리합니다.</p>
-                <Link to="/admin/schedule" className="block">
+                <Link to="/admin/schedule" className="block w-full">
                   <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900">
                     <span className="text-lg font-medium">일정 관리하기</span>
                   </Button>
@@ -178,7 +188,7 @@ const Admin = () => {
               </CardHeader>
               <CardContent className="pt-4">
                 <p className="text-gray-500 mb-4">갤러리 이미지를 관리합니다.</p>
-                <Link to="/admin/gallery" className="block">
+                <Link to="/admin/gallery" className="block w-full">
                   <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900">
                     <span className="text-lg font-medium">갤러리 관리하기</span>
                   </Button>
@@ -197,7 +207,7 @@ const Admin = () => {
               </CardHeader>
               <CardContent className="pt-4">
                 <p className="text-gray-500 mb-4">공지사항을 관리합니다.</p>
-                <Link to="/admin/notices" className="block">
+                <Link to="/admin/notices" className="block w-full">
                   <Button className="w-full h-24 bg-mainBlue hover:bg-blue-900">
                     <span className="text-lg font-medium">공지사항 관리하기</span>
                   </Button>
