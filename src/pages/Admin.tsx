@@ -39,10 +39,10 @@ const Admin = () => {
   // Determine which tab is active based on current path
   const getCurrentTab = () => {
     const path = location.pathname;
-    if (path.includes('/admin/users')) return 'users';
-    if (path.includes('/admin/schedule')) return 'schedule';
-    if (path.includes('/admin/gallery')) return 'gallery';
-    if (path.includes('/admin/notices')) return 'notice';
+    if (path === '/admin/users') return 'users';
+    if (path === '/admin/schedule') return 'schedule';
+    if (path === '/admin/gallery') return 'gallery';
+    if (path === '/admin/notices') return 'notice';
     return 'content';
   };
   
@@ -83,7 +83,7 @@ const Admin = () => {
           <Button onClick={handleLogout} variant="destructive">로그아웃</Button>
         </div>
 
-        {/* Replace Tabs component with custom navigation */}
+        {/* Navigation tabs */}
         <div className="mb-6">
           <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full overflow-x-auto flex-nowrap">
             <Link 
