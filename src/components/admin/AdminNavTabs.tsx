@@ -1,13 +1,11 @@
 
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 interface AdminNavTabsProps {
   activeTab: string;
 }
 
 const AdminNavTabs = ({ activeTab }: AdminNavTabsProps) => {
-  const location = useLocation();
-
   return (
     <div className="mb-6">
       <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full overflow-x-auto flex-nowrap">
