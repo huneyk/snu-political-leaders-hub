@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link, useNavigate } from 'react-router-dom';
-import { FileText, MessageSquare, Target, Award, Users } from 'lucide-react';
+import { FileText, MessageSquare, Target, Award, Users, Book, Settings } from 'lucide-react';
 
 const ContentTab = () => {
   const navigate = useNavigate();

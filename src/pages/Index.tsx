@@ -7,6 +7,7 @@ import HomeProfessors from '@/components/HomeProfessors';
 import HomeSchedule from '@/components/HomeSchedule';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import AdminLink from '@/components/AdminLink';
 
 const Index = () => {
   useEffect(() => {
@@ -16,6 +17,7 @@ const Index = () => {
   return (
     <>
       <Header />
+      <AdminLink />
       <main>
         <Hero />
         <ScrollReveal>
