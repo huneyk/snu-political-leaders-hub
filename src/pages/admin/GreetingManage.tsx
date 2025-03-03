@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +10,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AdminNavTabs from '@/components/admin/AdminNavTabs';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { contentService, GreetingContent } from '@/lib/contentService';
 
 const GreetingManage = () => {
   const [title, setTitle] = useState('');
@@ -21,24 +21,24 @@ const GreetingManage = () => {
   const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
   
   useEffect(() => {
-    // 로컬 스토리지에서 기존 데이터 로드
-    const savedTitle = localStorage.getItem('greeting-title');
-    const savedContent = localStorage.getItem('greeting-content');
-    const savedSignText = localStorage.getItem('greeting-sign');
-    
-    if (savedTitle) setTitle(savedTitle);
-    if (savedContent) setContent(savedContent);
-    if (savedSignText) setSignText(savedSignText);
-    else setSignText('정치지도자과정 주임교수 김상배'); // 기본값 설정
+    // Load content from service
+    const greetingData = contentService.getGreetingContent();
+    setTitle(greetingData.title);
+    setContent(greetingData.content);
+    setSignText(greetingData.signText);
   }, []);
   
   const handleSave = () => {
     setIsLoading(true);
     
-    // 로컬 스토리지에 저장
-    localStorage.setItem('greeting-title', title);
-    localStorage.setItem('greeting-content', content);
-    localStorage.setItem('greeting-sign', signText);
+    // Save content using the service
+    const greetingData: GreetingContent = {
+      title,
+      content,
+      signText
+    };
+    
+    contentService.saveGreetingContent(greetingData);
     
     setTimeout(() => {
       setIsLoading(false);
@@ -50,11 +50,14 @@ const GreetingManage = () => {
   };
   
   const handlePreview = () => {
-    // 내용을 저장하고 인사말 페이지로 이동
-    localStorage.setItem('greeting-title', title);
-    localStorage.setItem('greeting-content', content);
-    localStorage.setItem('greeting-sign', signText);
+    // Save content and navigate to greeting page
+    const greetingData: GreetingContent = {
+      title,
+      content,
+      signText
+    };
     
+    contentService.saveGreetingContent(greetingData);
     navigate('/intro/greeting');
   };
   

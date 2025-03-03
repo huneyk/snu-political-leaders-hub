@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import logo from '/public/logo.jpg'; // Update if the logo path changes
+import logo from '/logo.jpg'; // Using the logo.jpg file from the public directory
 
 interface SubMenuItem {
   name: string;
@@ -30,7 +29,7 @@ const menuItems: MenuItem[] = [
     name: '입학 안내',
     path: '/admission',
     submenu: [
-      { name: '입학 지원', path: '/admission/apply' },
+      { name: '입학 지원 안내', path: '/admission/info' },
       { name: '운영 준칙', path: '/admission/rules' },
     ],
   },
@@ -52,6 +51,9 @@ const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const location = useLocation();
+  
+  // Check if we're on the home page
+  const isHomePage = location.pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -87,11 +89,11 @@ const Header = () => {
           <img
             src={logo}
             alt="서울대학교 정치지도자 과정 로고"
-            className="h-12 w-auto"
+            className="h-12 w-auto object-contain"
           />
           <div className="flex flex-col">
-            <span className="text-sm font-medium text-mainBlue">서울대학교 정치지도자 과정</span>
-            <span className="text-xs font-light text-subGray">SNU Political Leaders Program</span>
+            <span className={`text-sm font-medium ${isScrolled ? 'text-mainBlue' : 'text-white'}`}>서울대학교 정치지도자 과정</span>
+            <span className={`text-xs font-light ${isScrolled ? 'text-subGray' : 'text-white/80'}`}>SNU Political Leaders Program</span>
           </div>
         </Link>
 
@@ -100,34 +102,58 @@ const Header = () => {
           {menuItems.map((item) => (
             <div
               key={item.name}
-              className="relative group"
-              onMouseEnter={() => item.submenu && setActiveSubmenu(item.name)}
-              onMouseLeave={() => setActiveSubmenu(null)}
+              className="relative dropdown-container"
             >
-              <Link
-                to={item.path}
-                className={`menu-item py-2 ${isActive(item.path) ? 'active' : ''}`}
-              >
-                {item.name}
-              </Link>
+              {item.submenu ? (
+                <button
+                  className={`menu-item py-2 flex items-center ${
+                    isScrolled || !isHomePage
+                      ? 'text-gray-800 hover:text-mainBlue after:bg-mainBlue' 
+                      : 'text-white hover:text-white/80 after:bg-white'
+                  } ${isActive(item.path) ? 'active' : ''}`}
+                >
+                  {item.name}
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className="ml-1 w-3 h-3"
+                  >
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </button>
+              ) : (
+                <Link
+                  to={item.path}
+                  className={`menu-item py-2 ${
+                    isScrolled || !isHomePage
+                      ? 'text-gray-800 hover:text-mainBlue after:bg-mainBlue' 
+                      : 'text-white hover:text-white/80 after:bg-white'
+                  } ${isActive(item.path) ? 'active' : ''}`}
+                >
+                  {item.name}
+                </Link>
+              )}
               
               {item.submenu && (
-                <div
-                  className={`absolute left-0 mt-1 py-2 bg-white shadow-elegant rounded-md min-w-[160px] transform origin-top transition-all duration-300 ${
-                    activeSubmenu === item.name
-                      ? 'opacity-100 translate-y-0 scale-100'
-                      : 'opacity-0 translate-y-2 scale-95 pointer-events-none'
-                  }`}
-                >
-                  {item.submenu.map((subitem) => (
-                    <Link
-                      key={subitem.name}
-                      to={subitem.path}
-                      className="block px-4 py-2 text-sm hover:bg-gray-50 hover:text-mainBlue transition-colors"
-                    >
-                      {subitem.name}
-                    </Link>
-                  ))}
+                <div className="dropdown-menu" onMouseEnter={(e) => e.stopPropagation()}>
+                  <div className="py-1">
+                    {item.submenu.map((subitem) => (
+                      <Link
+                        key={subitem.name}
+                        to={subitem.path}
+                        className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-50 hover:text-mainBlue transition-colors"
+                      >
+                        {subitem.name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -136,7 +162,7 @@ const Header = () => {
 
         {/* Mobile Menu Button */}
         <button
-          className="lg:hidden z-50 text-mainBlue p-2"
+          className={`lg:hidden z-50 p-2 ${isScrolled || !isHomePage ? 'text-mainBlue' : 'text-white'}`}
           onClick={toggleMobileMenu}
           aria-label="Toggle menu"
         >
@@ -176,18 +202,25 @@ const Header = () => {
                   className="flex justify-between items-center py-2"
                   onClick={() => item.submenu && toggleSubmenu(item.name)}
                 >
-                  <Link
-                    to={item.path}
-                    className={`text-lg font-medium ${
-                      isActive(item.path) ? 'text-mainBlue' : 'text-gray-800'
-                    }`}
-                    onClick={(e) => {
-                      if (item.submenu) e.preventDefault();
-                      else setMobileMenuOpen(false);
-                    }}
-                  >
-                    {item.name}
-                  </Link>
+                  {item.submenu ? (
+                    <button
+                      className={`text-lg font-medium ${
+                        isActive(item.path) ? 'text-mainBlue' : 'text-gray-800'
+                      }`}
+                    >
+                      {item.name}
+                    </button>
+                  ) : (
+                    <Link
+                      to={item.path}
+                      className={`text-lg font-medium ${
+                        isActive(item.path) ? 'text-mainBlue' : 'text-gray-800'
+                      }`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {item.name}
+                    </Link>
+                  )}
                   {item.submenu && (
                     <button
                       className="ml-2 p-1 rounded-full bg-gray-100"

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -65,7 +64,7 @@ const Admin = () => {
           {activeTab === 'users' && <UsersTab />}
           {activeTab === 'schedule' && <ScheduleTab />}
           {activeTab === 'gallery' && <GalleryTab />}
-          {activeTab === 'notice' && <NoticeTab />}
+          {activeTab === 'notices' && <NoticeTab />}
         </div>
       </div>
       <Footer />

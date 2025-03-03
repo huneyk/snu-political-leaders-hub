@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -12,6 +11,14 @@ const Hero = () => {
 
     return () => clearTimeout(timer);
   }, []);
+
+  const handleScrollDown = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const admissionSection = document.getElementById('admission');
+    if (admissionSection) {
+      admissionSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <section className="relative h-screen flex items-center overflow-hidden bg-gradient-to-r from-mainBlue via-mainBlue/95 to-mainBlue/90">
@@ -56,7 +63,12 @@ const Hero = () => {
       </div>
 
       <div className="absolute bottom-8 left-0 right-0 flex justify-center animate-bounce">
-        <a href="#highlights" aria-label="Scroll down" className="text-white/80 hover:text-white">
+        <a 
+          href="#admission" 
+          onClick={handleScrollDown}
+          aria-label="Scroll down" 
+          className="text-white/80 hover:text-white"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 5v14M5 12l7 7 7-7"/>
           </svg>
