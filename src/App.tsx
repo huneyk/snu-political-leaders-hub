@@ -23,6 +23,7 @@ import RecommendationsManage from "./pages/admin/RecommendationsManage";
 import CourseGoalManage from "./pages/admin/CourseGoalManage";
 import CourseBenefitsManage from "./pages/admin/CourseBenefitsManage";
 import ProfessorsManage from "./pages/admin/ProfessorsManage";
+import FacultyManage from "./pages/admin/FacultyManage";
 import UsersManage from "./pages/admin/UsersManage";
 import ScheduleManage from "./pages/admin/ScheduleManage";
 import GalleryManage from "./pages/admin/GalleryManage";
@@ -73,6 +74,7 @@ const App = () => (
             <Route path="/admin/course-goal" element={<CourseGoalManage />} />
             <Route path="/admin/course-benefits" element={<CourseBenefitsManage />} />
             <Route path="/admin/professors" element={<ProfessorsManage />} />
+            <Route path="/admin/faculty" element={<FacultyManage />} />
             <Route path="/admin/users" element={<UsersManage />} />
             <Route path="/admin/schedule" element={<ScheduleManage />} />
             <Route path="/admin/gallery" element={<GalleryManage />} />

@@ -20,17 +20,30 @@ interface Schedule {
   description: string;
 }
 
+// 30분 단위 시간 옵션 생성
+const generateTimeOptions = () => {
+  const options = [];
+  for (let hour = 0; hour < 24; hour++) {
+    const hourStr = hour.toString().padStart(2, '0');
+    options.push(`${hourStr}:00`);
+    options.push(`${hourStr}:30`);
+  }
+  return options;
+};
+
+const TIME_OPTIONS = generateTimeOptions();
+
 const ScheduleManage: React.FC = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('academic');
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [selectedTerm, setSelectedTerm] = useState('2025-1');
+  const [selectedTerm, setSelectedTerm] = useState('1');
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   
   // 새 일정 상태
   const [newSchedule, setNewSchedule] = useState<Schedule>({
     id: '',
-    term: '2025-1',
+    term: '1',
     category: 'academic',
     title: '',
     date: '',
@@ -41,8 +54,40 @@ const ScheduleManage: React.FC = () => {
 
   // 일정 불러오기
   useEffect(() => {
+    // 1학기 중간고사 일정 삭제
+    if (activeTab === 'academic') {
+      removeMiddleExamEvent();
+    }
+    
     loadSchedules();
   }, [activeTab]);
+
+  // 1학기 중간고사 일정 삭제 함수
+  const removeMiddleExamEvent = () => {
+    try {
+      // 학사 일정에서 삭제
+      const savedSchedules = localStorage.getItem('academicSchedules');
+      if (savedSchedules) {
+        const parsedSchedules = JSON.parse(savedSchedules);
+        const filteredSchedules = parsedSchedules.filter(
+          (schedule: Schedule) => 
+            !(schedule.title === '1학기 중간고사' && 
+              schedule.date === '2025-04-20' && 
+              schedule.time === '09:00' && 
+              schedule.location === '서울대학교 행정대학원' && 
+              schedule.description === '1학기 중간고사 실시')
+        );
+        
+        // 변경된 일정 저장
+        if (parsedSchedules.length !== filteredSchedules.length) {
+          localStorage.setItem('academicSchedules', JSON.stringify(filteredSchedules));
+          console.log('1학기 중간고사 일정이 삭제되었습니다.');
+        }
+      }
+    } catch (error) {
+      console.error('일정 삭제 중 오류 발생:', error);
+    }
+  };
 
   const loadSchedules = () => {
     try {
@@ -166,13 +211,13 @@ const ScheduleManage: React.FC = () => {
         <div className="mb-6">
           <Select value={selectedTerm} onValueChange={setSelectedTerm}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="학기 선택" />
+              <SelectValue placeholder="기수 선택" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2025-1">2025년 1학기</SelectItem>
-              <SelectItem value="2025-2">2025년 2학기</SelectItem>
-              <SelectItem value="2026-1">2026년 1학기</SelectItem>
-              <SelectItem value="2026-2">2026년 2학기</SelectItem>
+              <SelectItem value="1">제 1 기</SelectItem>
+              <SelectItem value="2">제 2 기</SelectItem>
+              <SelectItem value="3">제 3 기</SelectItem>
+              <SelectItem value="4">제 4 기</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -205,13 +250,22 @@ const ScheduleManage: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="time">시간</Label>
-                      <Input 
-                        id="time" 
-                        type="time"
-                        value={newSchedule.time}
-                        onChange={(e) => setNewSchedule({...newSchedule, time: e.target.value})}
-                      />
+                      <Label htmlFor="time">시간 (30분 단위)</Label>
+                      <Select 
+                        value={newSchedule.time} 
+                        onValueChange={(value) => setNewSchedule({...newSchedule, time: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="시간 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TIME_OPTIONS.map((time) => (
+                            <SelectItem key={time} value={time}>
+                              {time}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label htmlFor="location">장소</Label>
@@ -255,13 +309,22 @@ const ScheduleManage: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="edit-time">시간</Label>
-                        <Input 
-                          id="edit-time" 
-                          type="time"
-                          value={selectedSchedule.time}
-                          onChange={(e) => setSelectedSchedule({...selectedSchedule, time: e.target.value})}
-                        />
+                        <Label htmlFor="edit-time">시간 (30분 단위)</Label>
+                        <Select 
+                          value={selectedSchedule.time} 
+                          onValueChange={(value) => setSelectedSchedule({...selectedSchedule, time: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="시간 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TIME_OPTIONS.map((time) => (
+                              <SelectItem key={time} value={time}>
+                                {time}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div>
                         <Label htmlFor="edit-location">장소</Label>
@@ -375,13 +438,22 @@ const ScheduleManage: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="special-time">시간</Label>
-                      <Input 
-                        id="special-time" 
-                        type="time"
-                        value={newSchedule.time}
-                        onChange={(e) => setNewSchedule({...newSchedule, time: e.target.value})}
-                      />
+                      <Label htmlFor="special-time">시간 (30분 단위)</Label>
+                      <Select 
+                        value={newSchedule.time} 
+                        onValueChange={(value) => setNewSchedule({...newSchedule, time: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="시간 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TIME_OPTIONS.map((time) => (
+                            <SelectItem key={time} value={time}>
+                              {time}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label htmlFor="special-location">장소</Label>
@@ -441,13 +513,22 @@ const ScheduleManage: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="edit-special-time">시간</Label>
-                        <Input 
-                          id="edit-special-time" 
-                          type="time"
-                          value={selectedSchedule.time}
-                          onChange={(e) => setSelectedSchedule({...selectedSchedule, time: e.target.value})}
-                        />
+                        <Label htmlFor="edit-special-time">시간 (30분 단위)</Label>
+                        <Select 
+                          value={selectedSchedule.time} 
+                          onValueChange={(value) => setSelectedSchedule({...selectedSchedule, time: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="시간 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TIME_OPTIONS.map((time) => (
+                              <SelectItem key={time} value={time}>
+                                {time}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div>
                         <Label htmlFor="edit-special-location">장소</Label>

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { FileText, MessageSquare, Target, Award, Users, GraduationCap } from 'lucide-react';
+import { FileText, MessageSquare, Target, Award, Users, GraduationCap, BookOpen } from 'lucide-react';
 
 const ContentTab = () => {
   const navigate = useNavigate();
@@ -56,6 +56,14 @@ const ContentTab = () => {
             <Users size={24} />
             <span className="text-lg font-medium">운영 교수진 관리</span>
             <span className="text-sm opacity-80">교수진 정보 수정</span>
+          </button>
+          <button 
+            onClick={() => handleNavigation('/admin/faculty')}
+            className="h-32 w-full bg-mainBlue hover:bg-blue-900 text-white flex flex-col items-center justify-center gap-2 rounded-md transition-colors cursor-pointer"
+          >
+            <BookOpen size={24} />
+            <span className="text-lg font-medium">강사진 관리</span>
+            <span className="text-sm opacity-80">기수별 강사진 정보 수정</span>
           </button>
           <button 
             onClick={() => handleNavigation('/admin/admission')}
