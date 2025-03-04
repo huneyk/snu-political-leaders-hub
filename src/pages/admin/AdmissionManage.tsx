@@ -4,10 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2 } from 'lucide-react';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 interface Target {
   text: string;
@@ -179,8 +180,9 @@ const AdmissionManage = () => {
   };
 
   return (
-    <AdminLayout>
-      <div className="container mx-auto py-8">
+    <>
+      <Header />
+      <div className="container mx-auto py-20 px-4">
         <h1 className="text-3xl font-bold mb-6">입학 지원 관리</h1>
         
         <Card className="mb-8">
@@ -324,7 +326,8 @@ const AdmissionManage = () => {
           <Button onClick={handleSave}>저장</Button>
         </div>
       </div>
-    </AdminLayout>
+      <Footer />
+    </>
   );
 };
 

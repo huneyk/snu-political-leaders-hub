@@ -1,46 +1,94 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-type Event = {
-  id: number;
+interface Schedule {
+  id: string;
+  term: string;
+  category: string; // 구분 (학사 일정, 현장 탐방, 해외 연수, 친교 활동)
   title: string;
-  date: Date;
+  date: string;
+  time: string;
+  location: string;
   description: string;
-};
+}
 
 const HomeSchedule = () => {
   const [currentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<Date[]>([]);
-  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<Schedule[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for events
-  const events: Event[] = [
-    {
-      id: 1,
-      title: "입학식",
-      date: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 2),
-      description: "제 15기 정치지도자과정 입학식"
-    },
-    {
-      id: 2,
-      title: "특별 강연",
-      date: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 5),
-      description: "국제 정세와 한국의 정치 리더십"
-    },
-    {
-      id: 3,
-      title: "현장 탐방",
-      date: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 7),
-      description: "국회 방문 및 토론회 참관"
-    },
-    {
-      id: 4,
-      title: "토론 세미나",
-      date: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 12),
-      description: "한국 정치의 발전 방향과 정치 리더십의 역할"
-    }
-  ];
+  useEffect(() => {
+    // Load schedules from localStorage
+    const loadSchedules = () => {
+      setLoading(true);
+      
+      try {
+        console.log('HomeSchedule - Loading schedules from localStorage');
+        const storedSchedules = localStorage.getItem('snu_plp_schedules');
+        
+        if (storedSchedules) {
+          try {
+            const parsedSchedules = JSON.parse(storedSchedules);
+            
+            if (Array.isArray(parsedSchedules)) {
+              console.log('HomeSchedule - Successfully loaded schedules:', parsedSchedules.length);
+              
+              // Filter upcoming events
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              const upcoming = parsedSchedules
+                .filter(schedule => {
+                  const eventDate = new Date(schedule.date);
+                  return eventDate >= today;
+                })
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                .slice(0, 3);
+              
+              setUpcomingEvents(upcoming);
+            } else {
+              console.log('HomeSchedule - Invalid data, using empty array');
+              setUpcomingEvents([]);
+            }
+          } catch (error) {
+            console.error('Error parsing schedules from localStorage:', error);
+            setUpcomingEvents([]);
+          }
+        } else {
+          console.log('HomeSchedule - No data found, using empty array');
+          localStorage.setItem('snu_plp_schedules', JSON.stringify([]));
+          setUpcomingEvents([]);
+        }
+      } catch (error) {
+        console.error('Unexpected error loading schedules:', error);
+        setUpcomingEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadSchedules();
+    
+    // Set up interval to refresh data
+    const intervalId = setInterval(() => {
+      loadSchedules();
+    }, 5000);
+    
+    // Add localStorage change listener
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'snu_plp_schedules') {
+        loadSchedules();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   useEffect(() => {
     // Generate calendar days for the current month
@@ -77,25 +125,20 @@ const HomeSchedule = () => {
     }
     
     setCalendarDays(days);
-
-    // Filter upcoming events
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const upcoming = events
-      .filter(event => event.date >= today)
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
-      .slice(0, 3);
-    
-    setUpcomingEvents(upcoming);
   }, [currentDate]);
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }).format(date);
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }).format(date);
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString;
+    }
   };
 
   const getMonthName = (date: Date) => {
@@ -103,8 +146,11 @@ const HomeSchedule = () => {
   };
 
   const hasEvent = (date: Date) => {
-    const dateStr = date.toDateString();
-    return events.some(event => event.date.toDateString() === dateStr);
+    const dateStr = date.toISOString().split('T')[0];
+    return upcomingEvents.some(event => {
+      const eventDate = new Date(event.date).toISOString().split('T')[0];
+      return eventDate === dateStr;
+    });
   };
 
   const isToday = (date: Date) => {
@@ -171,7 +217,11 @@ const HomeSchedule = () => {
           <div className="bg-white rounded-lg shadow-elegant p-6 md:p-8 reveal reveal-delay-300">
             <h3 className="text-xl font-bold text-mainBlue mb-6">다가오는 일정</h3>
             
-            {upcomingEvents.length > 0 ? (
+            {loading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-mainBlue"></div>
+              </div>
+            ) : upcomingEvents.length > 0 ? (
               <div className="space-y-6">
                 {upcomingEvents.map(event => (
                   <div key={event.id} className="border-l-2 border-mainBlue pl-4 py-1">
