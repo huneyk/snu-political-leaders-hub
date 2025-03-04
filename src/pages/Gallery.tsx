@@ -1,161 +1,409 @@
-
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import ScrollReveal from '@/components/ScrollReveal';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
+import './Gallery.css'; // Import CSS file for gallery styles
 
+// 갤러리 아이템 인터페이스
 interface GalleryItem {
-  id: number;
+  id: string;
   title: string;
+  description: string;
+  imageUrl: string;
   date: string;
-  image: string;
+  term: string;
 }
 
+// 하드코딩된 갤러리 데이터
+const GALLERY_ITEMS: GalleryItem[] = [
+  {
+    id: '1',
+    title: '입학식',
+    description: '2023년 봄학기 입학식 현장',
+    imageUrl: 'https://via.placeholder.com/600x400?text=입학식',
+    date: '2023-03-02',
+    term: '1',
+  },
+  {
+    id: '2',
+    title: '특별 강연',
+    description: '국제 정치 특별 강연 세미나',
+    imageUrl: 'https://via.placeholder.com/600x400?text=특별강연',
+    date: '2023-04-15',
+    term: '1',
+  },
+  {
+    id: '3',
+    title: '워크샵',
+    description: '리더십 개발 워크샵',
+    imageUrl: 'https://via.placeholder.com/600x400?text=워크샵',
+    date: '2023-05-10',
+    term: '2',
+  },
+  {
+    id: '4',
+    title: '졸업식',
+    description: '2023년 1기 졸업식',
+    imageUrl: 'https://via.placeholder.com/600x400?text=졸업식',
+    date: '2023-08-20',
+    term: '1',
+  },
+  {
+    id: '5',
+    title: '해외 연수',
+    description: '미국 워싱턴 DC 방문',
+    imageUrl: 'https://via.placeholder.com/600x400?text=해외연수',
+    date: '2023-06-15',
+    term: '2',
+  },
+  {
+    id: '6',
+    title: '특강',
+    description: '정치 리더십 특강',
+    imageUrl: 'https://via.placeholder.com/600x400?text=특강',
+    date: '2023-07-05',
+    term: '2',
+  }
+];
+
 const Gallery = () => {
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [debugMode, setDebugMode] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryItem | null>(null);
-  
+
   useEffect(() => {
+    // URL에서 debug 파라미터 확인
+    const urlParams = new URLSearchParams(window.location.search);
+    const debug = urlParams.get('debug');
+    setDebugMode(debug === 'true');
+
+    console.log('Gallery useEffect 실행');
     window.scrollTo(0, 0);
+    
+    // 갤러리 데이터 로드
+    loadGalleryData();
+    
+    // 디버깅을 위한 전역 객체 설정
+    (window as any).galleryDebug = {
+      items: galleryItems,
+      component: 'Gallery',
+      reload: loadGalleryData
+    };
   }, []);
-
-  const galleryItems: GalleryItem[] = [
-    {
-      id: 1,
-      title: "14기 입학식",
-      date: "2024-03-15",
-      image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
-    },
-    {
-      id: 2,
-      title: "국회 방문",
-      date: "2024-04-20",
-      image: "https://images.unsplash.com/photo-1426604966848-d7adac402bff"
-    },
-    {
-      id: 3,
-      title: "특별 강연",
-      date: "2024-05-10",
-      image: "https://images.unsplash.com/photo-1439337153520-7082a56a81f4"
-    },
-    {
-      id: 4,
-      title: "토론 세미나",
-      date: "2024-06-05",
-      image: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81"
-    },
-    {
-      id: 5,
-      title: "현장 견학",
-      date: "2024-07-15",
-      image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7"
-    },
-    {
-      id: 6,
-      title: "수료식",
-      date: "2024-08-25",
-      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158"
-    },
-  ];
-
-  const openLightbox = (item: GalleryItem) => {
-    setSelectedImage(item);
-    document.body.style.overflow = 'hidden';
+  
+  const loadGalleryData = () => {
+    setLoading(true);
+    try {
+      const storedItems = localStorage.getItem('galleryItems');
+      if (storedItems) {
+        const parsedItems = JSON.parse(storedItems);
+        if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+          console.log('갤러리 데이터 로드 성공:', parsedItems.length, '개 항목');
+          
+          // 날짜 기준 내림차순 정렬 (최신순)
+          const sortedItems = parsedItems.sort((a, b) => 
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+          
+          console.log('날짜순 정렬 완료 (최신순)');
+          setGalleryItems(sortedItems);
+        } else {
+          console.warn('갤러리 데이터가 비어있거나 배열이 아닙니다.');
+          setGalleryItems(GALLERY_ITEMS);
+        }
+      } else {
+        console.warn('로컬 스토리지에 갤러리 데이터가 없습니다.');
+        setGalleryItems(GALLERY_ITEMS);
+      }
+      setError(null);
+    } catch (err) {
+      console.error('갤러리 데이터 로드 중 오류:', err);
+      setError('갤러리 데이터를 불러오는 중 오류가 발생했습니다.');
+      setGalleryItems(GALLERY_ITEMS);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const closeLightbox = () => {
-    setSelectedImage(null);
-    document.body.style.overflow = 'auto';
+  // 디버그 기능: 갤러리 데이터 확인
+  const checkGalleryData = () => {
+    const storedItems = localStorage.getItem('galleryItems');
+    console.log('현재 갤러리 데이터:', storedItems ? JSON.parse(storedItems) : '없음');
   };
 
+  // 디버그 기능: 갤러리 데이터 새로고침
+  const refreshGalleryData = () => {
+    loadGalleryData();
+  };
+
+  // 전역 디버그 함수 등록
+  useEffect(() => {
+    if (debugMode) {
+      (window as any).checkGalleryData = checkGalleryData;
+      (window as any).refreshGalleryData = refreshGalleryData;
+    }
+
+    return () => {
+      if ((window as any).checkGalleryData) {
+        delete (window as any).checkGalleryData;
+      }
+      if ((window as any).refreshGalleryData) {
+        delete (window as any).refreshGalleryData;
+      }
+    };
+  }, [debugMode]);
+
+  // 기수별로 그룹화
+  const groupedByTerm = useMemo(() => {
+    const grouped: Record<string, GalleryItem[]> = {};
+    
+    galleryItems.forEach(item => {
+      if (!grouped[item.term]) {
+        grouped[item.term] = [];
+      }
+      grouped[item.term].push(item);
+    });
+    
+    // 각 기수 내에서 날짜순으로 정렬 (최신순)
+    Object.keys(grouped).forEach(term => {
+      grouped[term].sort((a, b) => {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      });
+    });
+    
+    return grouped;
+  }, [galleryItems]);
+
+  // 기수 내림차순으로 정렬된 기수 목록
+  const sortedTerms = useMemo(() => {
+    return Object.keys(groupedByTerm).sort((a, b) => Number(b) - Number(a));
+  }, [groupedByTerm]);
+
+  // 날짜 포맷팅 함수
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('ko-KR', {
+    return date.toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    }).format(date);
+    });
   };
+  
+  console.log('Gallery 렌더링 반환');
+    
+  if (loading) {
+    return (
+      <div className="gallery-page">
+        <Header />
+        <section className="pt-24 pb-16">
+          <div className="container mx-auto py-8 flex justify-center items-center min-h-[50vh]">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue mb-4"></div>
+              <p className="text-lg">갤러리 로딩 중...</p>
+            </div>
+          </div>
+        </section>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="gallery-page">
+        <Header />
+        <section className="pt-24 pb-16">
+          <div className="container mx-auto py-8">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">오류!</strong>
+              <span className="block sm:inline"> {error}</span>
+            </div>
+          </div>
+        </section>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (galleryItems.length === 0) {
+    return (
+      <div className="gallery-page">
+        <Header />
+        <section className="pt-24 pb-16">
+          <div className="container mx-auto py-8">
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold mb-4">갤러리 항목이 없습니다</h2>
+              <p className="text-gray-600">
+                아직 갤러리에 등록된 항목이 없습니다. 관리자 페이지에서 항목을 추가해주세요.
+              </p>
+              {debugMode && (
+                <div className="mt-4 p-4 border border-gray-300 rounded-md inline-block">
+                  <h3 className="font-bold mb-2">디버그 메뉴</h3>
+                  <div className="flex gap-2 justify-center">
+                    <Button onClick={checkGalleryData} variant="outline" size="sm">
+                      데이터 확인
+                    </Button>
+                    <Button onClick={refreshGalleryData} variant="outline" size="sm">
+                      새로고침
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
-    <>
+    <div className="gallery-page">
       <Header />
-      <main className="pt-24 pb-16">
-        <ScrollReveal>
-          <section className="py-16 bg-mainBlue text-white">
-            <div className="main-container">
-              <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal">갤러리</h1>
-              <p className="text-white/80 max-w-3xl reveal reveal-delay-100">
-                서울대학교 정치지도자과정의 다양한 활동 사진을 확인하세요.
-              </p>
-            </div>
-          </section>
+      
+      {/* 상단 배너/띠 - 다른 페이지와 일관된 스타일 */}
+      <section className="pt-24 pb-16 bg-mainBlue text-white">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">갤러리</h1>
+          <p className="text-white/80 max-w-3xl">
+            서울대학교 정치리더십과정의 다양한 활동 모습을 확인하세요.
+          </p>
+        </div>
+      </section>
+      
+      <main className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            {debugMode && (
+              <div className="mb-6 p-4 border border-gray-300 rounded-md">
+                <h3 className="font-bold mb-2">디버그 메뉴</h3>
+                <div className="flex gap-2">
+                  <Button onClick={checkGalleryData} variant="outline" size="sm">
+                    데이터 확인
+                  </Button>
+                  <Button onClick={refreshGalleryData} variant="outline" size="sm">
+                    새로고침
+                  </Button>
+                </div>
+              </div>
+            )}
 
-          <section className="py-16">
-            <div className="main-container">
-              <div className="max-w-6xl mx-auto">
-                <h2 className="text-2xl font-bold text-mainBlue mb-8 reveal reveal-delay-200">제 14기</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {galleryItems.map((item, index) => (
-                    <div 
-                      key={item.id}
-                      className={`group relative rounded-lg overflow-hidden shadow-card cursor-pointer transform transition-all duration-500 hover:-translate-y-2 hover:shadow-elegant reveal ${
-                        index % 3 === 0 ? '' : index % 3 === 1 ? 'reveal-delay-100' : 'reveal-delay-200'
-                      }`}
-                      onClick={() => openLightbox(item)}
-                    >
-                      <div className="aspect-w-16 aspect-h-9 h-60">
-                        <img 
-                          src={item.image} 
+            {sortedTerms.map(term => (
+              <div key={term} className="mb-12">
+                <div className="flex items-center mb-6">
+                  <div className="flex items-center bg-mainBlue text-white px-4 py-2 rounded-r-full">
+                    <span className="text-2xl font-bold">{term}</span>
+                    <span className="text-lg ml-1">기</span>
+                  </div>
+                  <div className="h-0.5 bg-mainBlue/30 flex-grow ml-4"></div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {groupedByTerm[term].map((item) => (
+                    <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow border-0 shadow-sm">
+                      <div 
+                        className="relative aspect-video bg-gray-100 cursor-pointer"
+                        onClick={() => setSelectedImage(item)}
+                      >
+                        <img
+                          src={item.imageUrl}
                           alt={item.title}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                          loading="lazy"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error(`이미지 로드 실패: ${item.imageUrl}`);
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            
+                            // 부모 요소에 에러 UI 추가
+                            const parent = target.parentElement;
+                            if (parent) {
+                              const errorDiv = document.createElement('div');
+                              errorDiv.className = 'absolute inset-0 flex flex-col items-center justify-center bg-gray-100 p-4';
+                              errorDiv.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" class="text-gray-400 mb-2">
+                                  <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                                  <circle cx="9" cy="9" r="2"></circle>
+                                  <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                                </svg>
+                                <p class="text-center text-gray-500">이미지를 불러올 수 없습니다</p>
+                              `;
+                              parent.appendChild(errorDiv);
+                            }
+                          }}
                         />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
+                          <div className="bg-white p-2 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
+                              <circle cx="11" cy="11" r="8"></circle>
+                              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                          </div>
+                        </div>
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-70 group-hover:opacity-90 transition-opacity"></div>
-                      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                        <h3 className="font-bold text-lg mb-1 group-hover:text-subYellow transition-colors">{item.title}</h3>
-                        <p className="text-sm text-white/80">{formatDate(item.date)}</p>
-                      </div>
-                    </div>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-xl font-bold">{item.title}</h3>
+                          <Badge variant="outline" className="ml-2">
+                            {item.term}기
+                          </Badge>
+                        </div>
+                        <p className="text-gray-600 mb-2">{item.description}</p>
+                        <p className="text-sm text-gray-500">
+                          {formatDate(item.date)}
+                        </p>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               </div>
-            </div>
-          </section>
-        </ScrollReveal>
+            ))}
+          </div>
+        </div>
       </main>
       <Footer />
 
-      {/* Lightbox */}
-      {selectedImage && (
-        <div 
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-          onClick={closeLightbox}
-        >
-          <button
-            className="absolute top-4 right-4 text-white bg-transparent p-2 rounded-full hover:bg-white/10 transition-colors"
-            onClick={closeLightbox}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </button>
-          
-          <div className="max-w-5xl max-h-[80vh] relative" onClick={(e) => e.stopPropagation()}>
-            <img 
-              src={selectedImage.image} 
-              alt={selectedImage.title}
-              className="max-w-full max-h-[80vh] object-contain"
-            />
-            <div className="bg-black/70 absolute bottom-0 left-0 right-0 p-4">
-              <h3 className="font-bold text-lg text-white mb-1">{selectedImage.title}</h3>
-              <p className="text-sm text-white/80">{formatDate(selectedImage.date)}</p>
-            </div>
+      {/* 이미지 라이트박스 */}
+      <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
+        <DialogContent className="max-w-5xl p-0 overflow-hidden bg-transparent border-none">
+          <div className="relative bg-white rounded-lg overflow-hidden">
+            <DialogClose className="absolute right-4 top-4 z-10 bg-white rounded-full p-1 opacity-70 hover:opacity-100">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </DialogClose>
+            
+            {selectedImage && (
+              <div className="flex flex-col">
+                <div className="relative" style={{ maxHeight: '80vh' }}>
+                  <img 
+                    src={selectedImage.imageUrl} 
+                    alt={selectedImage.title}
+                    className="w-full object-contain max-h-[80vh]"
+                    style={{ maxWidth: '1080px', margin: '0 auto' }}
+                  />
+                </div>
+                <div className="bg-white p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-bold">{selectedImage.title}</h3>
+                    <Badge variant="outline">
+                      {selectedImage.term}기
+                    </Badge>
+                  </div>
+                  <p className="text-gray-700 mb-2">{selectedImage.description}</p>
+                  <p className="text-sm text-gray-500">
+                    {formatDate(selectedImage.date)}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
-    </>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
