@@ -15,10 +15,8 @@ interface Schedule {
   createdAt?: number; // 생성 시간 추가
 }
 
-// 기본 학사 일정 데이터 (빈 배열로 변경)
+// 빈 배열로 초기화
 const DEFAULT_ACADEMIC_SCHEDULES: Schedule[] = [];
-
-// 기본 특별활동 데이터 (빈 배열로 변경)
 const DEFAULT_SPECIAL_ACTIVITIES: Schedule[] = [];
 
 const HomeSchedule = () => {
@@ -34,7 +32,6 @@ const HomeSchedule = () => {
 
   // 일정 데이터 로드 및 업데이트
   useEffect(() => {
-    console.log('HomeSchedule 컴포넌트 마운트');
     isMountedRef.current = true;
     dataLoadedRef.current = false;
     
@@ -55,13 +52,12 @@ const HomeSchedule = () => {
     let intervalId: NodeJS.Timeout | null = null;
     
     if (dataLoadedRef.current && isMountedRef.current) {
-      // 데이터가 로드된 후에만 주기적 갱신 시작
+      // 데이터가 로드된 후에만 주기적 갱신 시작 (60초마다)
       intervalId = setInterval(() => {
         if (isMountedRef.current) {
-          console.log('일정 데이터 주기적 갱신 중...');
           loadSchedules();
         }
-      }, 10000); // 10초마다 갱신
+      }, 60000); // 60초마다 갱신으로 변경
     }
     
     return () => {
@@ -76,7 +72,6 @@ const HomeSchedule = () => {
     if (!isMountedRef.current) return;
     
     if (event.key === 'academicSchedules' || event.key === 'specialActivities') {
-      console.log('localStorage 변경 감지:', event.key);
       loadSchedules();
     }
   };
@@ -85,112 +80,52 @@ const HomeSchedule = () => {
   const loadInitialData = async () => {
     if (!isMountedRef.current) return;
     
-    console.log('초기 데이터 로드 시작');
     setLoading(true);
     
     try {
-      // 기본 데이터 삭제
-      await removeDefaultData();
+      // 학사 일정과 특별활동 동시에 로드
+      const [academicData, specialData] = await Promise.all([
+        loadAcademicSchedules(),
+        loadSpecialActivities()
+      ]);
       
-      // 학사 일정 로드
-      const academicData = await loadAcademicSchedules();
-      
-      // 특별활동 로드
-      const specialData = await loadSpecialActivities();
-      
-      if (!isMountedRef.current) return;
-      
-      // 일정 업데이트
-      await updateUpcomingEvents();
+      // 다가오는 일정 업데이트
+      if (isMountedRef.current) {
+        await updateUpcomingEvents(academicData, specialData);
+      }
       
       // 데이터 로드 완료 표시
       dataLoadedRef.current = true;
       
-      if (!isMountedRef.current) return;
-      setLoading(false);
-      
-      console.log('초기 데이터 로드 완료');
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     } catch (error) {
-      console.error('초기 데이터 로드 오류:', error);
+      console.error('일정 로드 중 오류 발생:', error);
       if (isMountedRef.current) {
         setLoading(false);
       }
     }
   };
 
-  // 모든 일정 데이터 로드
+  // 일정 데이터 로드 함수
   const loadSchedules = async () => {
     if (!isMountedRef.current) return;
     
     try {
-      console.log('일정 데이터 로드 시작...');
+      // 학사 일정과 특별활동 동시에 로드
+      const [academicData, specialData] = await Promise.all([
+        loadAcademicSchedules(),
+        loadSpecialActivities()
+      ]);
       
-      // 학사 일정 로드
-      await loadAcademicSchedules();
-      
-      // 특별활동 로드
-      await loadSpecialActivities();
-      
-      if (!isMountedRef.current) return;
-      
-      // 일정 업데이트
-      await updateUpcomingEvents();
-      
-      console.log('일정 데이터 로드 및 업데이트 완료');
+      // 다가오는 일정 업데이트
+      if (isMountedRef.current) {
+        await updateUpcomingEvents(academicData, specialData);
+      }
     } catch (error) {
       console.error('일정 로드 중 오류 발생:', error);
     }
-  };
-
-  // 기본 데이터 삭제 함수
-  const removeDefaultData = async () => {
-    return new Promise<void>((resolve) => {
-      try {
-        // 기본 학사 일정 데이터 삭제
-        const defaultAcademicTitles = [
-          '입학식', '오리엔테이션', '1학기 중간고사', '1학기 기말고사', 
-          '2학기 개강', '2학기 중간고사', '2학기 기말고사', '수료식'
-        ];
-        
-        const savedAcademicSchedules = localStorage.getItem('academicSchedules');
-        if (savedAcademicSchedules) {
-          const parsedSchedules = JSON.parse(savedAcademicSchedules);
-          const filteredSchedules = parsedSchedules.filter(
-            (schedule: Schedule) => !defaultAcademicTitles.includes(schedule.title)
-          );
-          
-          // 변경된 일정 저장
-          if (parsedSchedules.length !== filteredSchedules.length) {
-            localStorage.setItem('academicSchedules', JSON.stringify(filteredSchedules));
-            console.log('기본 학사 일정이 삭제되었습니다.');
-          }
-        }
-        
-        // 기본 특별활동 데이터 삭제
-        const defaultSpecialTitles = [
-          '국회 방문', '청와대 방문', '미국 의회 방문', '유럽 의회 방문', '동문 네트워킹 행사'
-        ];
-        
-        const savedSpecialActivities = localStorage.getItem('specialActivities');
-        if (savedSpecialActivities) {
-          const parsedActivities = JSON.parse(savedSpecialActivities);
-          const filteredActivities = parsedActivities.filter(
-            (activity: Schedule) => !defaultSpecialTitles.includes(activity.title)
-          );
-          
-          // 변경된 일정 저장
-          if (parsedActivities.length !== filteredActivities.length) {
-            localStorage.setItem('specialActivities', JSON.stringify(filteredActivities));
-            console.log('기본 특별활동 일정이 삭제되었습니다.');
-          }
-        }
-        
-        resolve();
-      } catch (error) {
-        console.error('기본 데이터 삭제 중 오류 발생:', error);
-        resolve();
-      }
-    });
   };
 
   // 학사 일정 로드
@@ -202,13 +137,11 @@ const HomeSchedule = () => {
       }
       
       try {
-        console.log('학사 일정 로드 중...');
         const savedSchedules = localStorage.getItem('academicSchedules');
         
         if (savedSchedules) {
           try {
             const parsedSchedules = JSON.parse(savedSchedules);
-            console.log('학사 일정 데이터 로드:', parsedSchedules.length);
             
             if (isMountedRef.current) {
               setAcademicSchedules(parsedSchedules);
@@ -223,7 +156,6 @@ const HomeSchedule = () => {
             resolve([]);
           }
         } else {
-          console.log('저장된 학사 일정 없음, 빈 배열 사용');
           if (isMountedRef.current) {
             setAcademicSchedules([]);
           }
@@ -248,13 +180,11 @@ const HomeSchedule = () => {
       }
       
       try {
-        console.log('특별활동 일정 로드 중...');
         const savedActivities = localStorage.getItem('specialActivities');
         
         if (savedActivities) {
           try {
             const parsedActivities = JSON.parse(savedActivities);
-            console.log('특별활동 데이터 로드:', parsedActivities.length);
             
             if (isMountedRef.current) {
               setSpecialActivities(parsedActivities);
@@ -269,7 +199,6 @@ const HomeSchedule = () => {
             resolve([]);
           }
         } else {
-          console.log('저장된 특별활동 일정 없음, 빈 배열 사용');
           if (isMountedRef.current) {
             setSpecialActivities([]);
           }
@@ -286,7 +215,7 @@ const HomeSchedule = () => {
   };
 
   // 다가오는 일정 업데이트 (오늘 날짜 이후의 일정 5건)
-  const updateUpcomingEvents = async () => {
+  const updateUpcomingEvents = async (academicData?: Schedule[], specialData?: Schedule[]) => {
     return new Promise<void>((resolve) => {
       if (!isMountedRef.current) {
         resolve();
@@ -294,75 +223,41 @@ const HomeSchedule = () => {
       }
       
       try {
-        console.log('일정 업데이트 시작');
-        console.log('현재 학사 일정:', academicSchedules.length);
-        console.log('현재 특별활동:', specialActivities.length);
-        
-    const today = new Date();
+        const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        // 모든 일정을 합치기
-        const allEvents = [...academicSchedules, ...specialActivities];
-        console.log('총 일정 수:', allEvents.length);
+        // 모든 일정을 합치기 (인자로 받은 데이터가 있으면 사용, 없으면 state 사용)
+        let allEvents = [...(academicData || academicSchedules), ...(specialData || specialActivities)];
         
-        if (allEvents.length === 0) {
-          console.log('일정이 없습니다.');
-          if (isMountedRef.current) {
-            setUpcomingEvents([]);
-          }
-          resolve();
-          return;
-        }
-        
-        // 유효한 날짜를 가진 일정만 필터링
-        const validEvents = allEvents.filter(event => {
-          if (!event || !event.date || typeof event.date !== 'string') {
-            console.warn('유효하지 않은 일정 또는 날짜 형식:', event);
-            return false;
-          }
-          
+        // 오늘 이후의 일정만 필터링
+        const futureEvents = allEvents.filter(event => {
           try {
-            // 날짜 형식 검증
             const eventDate = parseISO(event.date);
-            if (isNaN(eventDate.getTime())) {
-              console.warn('유효하지 않은 날짜:', event.date);
-              return false;
-            }
-            
-            // 오늘 날짜 이후의 일정만 필터링
-            const isToday = eventDate.toDateString() === today.toDateString();
-            const isFuture = isAfter(eventDate, today);
-            
-            return isFuture || isToday;
+            return isAfter(eventDate, today) || eventDate.getTime() === today.getTime();
           } catch (error) {
-            console.error('날짜 파싱 오류:', error, event);
             return false;
           }
         });
         
-        console.log('유효한 일정 수:', validEvents.length);
-        
         // 날짜순으로 정렬
-        const sortedEvents = validEvents.sort((a, b) => {
+        const sortedEvents = futureEvents.sort((a, b) => {
           try {
             return compareAsc(parseISO(a.date), parseISO(b.date));
           } catch (error) {
-            console.error('날짜 비교 오류:', error);
             return 0;
           }
         });
         
-        // 최대 5개의 일정만 표시
-        const limitedEvents = sortedEvents.slice(0, 5);
-        console.log('표시할 일정 5건:', limitedEvents);
+        // 최대 5개까지만 표시
+        const upcomingEvents = sortedEvents.slice(0, 5);
         
         if (isMountedRef.current) {
-          setUpcomingEvents(limitedEvents);
+          setUpcomingEvents(upcomingEvents);
         }
         
         resolve();
       } catch (error) {
-        console.error('일정 업데이트 중 오류 발생:', error);
+        console.error('다가오는 일정 업데이트 중 오류:', error);
         if (isMountedRef.current) {
           setUpcomingEvents([]);
         }
@@ -371,90 +266,97 @@ const HomeSchedule = () => {
     });
   };
 
-  // 날짜 포맷팅
+  // 날짜 포맷팅 함수
   const formatDate = (dateString: string) => {
     try {
-      const date = parseISO(dateString);
-      return format(date, 'yyyy년 M월 d일 (EEEE)', { locale: ko });
+      return format(parseISO(dateString), 'yyyy년 MM월 dd일 (eee)', { locale: ko });
     } catch (error) {
       console.error('날짜 포맷팅 오류:', error);
       return dateString;
     }
   };
-
-  // 카테고리 이름 가져오기
+  
+  // 카테고리 이름 변환 함수
   const getCategoryName = (category: string) => {
-    const categories: Record<string, string> = {
-      'academic': '학사 일정',
-      'field': '현장 탐방',
-      'overseas': '해외 연수',
-      'social': '친교 활동'
-    };
-    
-    return categories[category] || '기타 활동';
+    switch (category) {
+      case 'academic': return '학사 일정';
+      case 'field': return '현장 탐방';
+      case 'overseas': return '해외 연수';
+      case 'social': return '친교 활동';
+      default: return '기타 활동';
+    }
   };
 
   return (
-    <section className="py-16 bg-white" id="schedule">
+    <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">전체 일정</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-mainBlue mb-4">학사 일정</h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             정치지도자과정의 주요 일정을 확인하세요
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto mb-10">
-          <h3 className="text-xl font-bold text-gray-800 mb-6">다가오는 일정</h3>
-          
+        <div className="max-w-4xl mx-auto">
           {loading ? (
-            <div className="flex justify-center items-center h-40">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
             </div>
           ) : upcomingEvents.length === 0 ? (
-            <div className="text-center py-8 bg-white rounded-lg shadow-md">
-              <p className="text-gray-500">현재 표시할 일정이 없습니다.</p>
-              <p className="text-sm text-gray-400 mt-2">관리자 페이지에서 일정을 추가해 주세요.</p>
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">예정된 일정이 없습니다</h3>
+              <p className="text-gray-500">현재 등록된 일정이 없습니다.</p>
             </div>
-          ) : (
+            ) : (
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="divide-y divide-gray-100">
-                {upcomingEvents.map((event) => (
-                  <div key={event.id} className="p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                      <div className="mb-2 md:mb-0">
-                        <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800 mr-2">
-                          {getCategoryName(event.category)}
-                        </span>
-                        <span className="text-gray-500 text-sm">{event.term}</span>
-          </div>
-                      <div className="text-sm text-gray-500">
-                      {formatDate(event.date)}
-                        {event.time && ` ${event.time}`}
-                      </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">다가오는 일정</h3>
+                <div className="space-y-6">
+                  {upcomingEvents.map((event) => (
+                    <div key={event.id} className="flex flex-col md:flex-row gap-4 border-b border-gray-100 pb-4">
+                      <div className="md:w-1/4 flex-shrink-0">
+                        <div className="bg-mainBlue/10 text-mainBlue rounded-lg p-3 text-center">
+                          <div className="text-sm font-medium">{formatDate(event.date)}</div>
+                          {event.time && <div className="text-xs mt-1">{event.time}</div>}
+                </div>
                     </div>
-                    <h4 className="font-medium text-lg mt-1">{event.title}</h4>
-                    {event.location && (
-                      <div className="text-sm text-gray-600 mt-1">
-                        <span className="font-medium">장소:</span> {event.location}
-                      </div>
-                    )}
-                    {event.description && (
-                      <p className="text-sm text-gray-600 mt-2 line-clamp-2">{event.description}</p>
-                    )}
+                      <div className="md:w-3/4">
+                        <h4 className="font-bold text-gray-900">{event.title}</h4>
+                        <div className="flex flex-wrap gap-2 mt-2 text-sm">
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                            {getCategoryName(event.category)}
+                          </span>
+                          {event.location && (
+                            <span className="text-gray-600 flex items-center text-xs">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              {event.location}
+                            </span>
+                  )}
+                </div>
+                        {event.description && (
+                          <p className="text-gray-600 mt-2 text-sm line-clamp-2">{event.description}</p>
+                        )}
+          </div>
+                    </div>
+                  ))}
                   </div>
-                ))}
               </div>
             </div>
             )}
         </div>
 
-        <div className="text-center">
+        <div className="text-center mt-6">
               <Link 
                 to="/schedule/calendar" 
-            className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 transition-colors duration-300"
+                className="inline-block px-4 py-2 bg-mainBlue/70 text-white font-medium rounded hover:bg-blue-900/70 transition-colors duration-300 text-sm"
               >
-            자세히 보기
+                자세한 내용 보기 {'>'}
               </Link>
         </div>
       </div>

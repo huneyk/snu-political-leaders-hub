@@ -84,10 +84,14 @@ const CourseGoalManage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // In a real application, you would upload this file to a server
-    // For this demo, we'll use a local URL
-    const imageUrl = URL.createObjectURL(file);
-    handleGoalChange(index, 'imageUrl', imageUrl);
+    // Convert the file to Base64 string
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      // Save the Base64 string as the image URL
+      handleGoalChange(index, 'imageUrl', base64String);
+    };
+    reader.readAsDataURL(file);
   };
   
   return (

@@ -74,14 +74,18 @@ const DEFAULT_SPECIAL_ACTIVITIES: Schedule[] = [
 ];
 
 const ScheduleActivities: React.FC = () => {
-  const [selectedTerm, setSelectedTerm] = useState('1');
+  const [selectedTerm, setSelectedTerm] = useState<string>('1');
   const [activeTab, setActiveTab] = useState('all');
   const [specialActivities, setSpecialActivities] = useState<Schedule[]>(DEFAULT_SPECIAL_ACTIVITIES);
+  const [availableTerms, setAvailableTerms] = useState<string[]>(['1']);
   const navigate = useNavigate();
   
   // 컴포넌트 마운트 시 localStorage에서 특별활동 일정 로드
   useEffect(() => {
     loadSpecialActivities();
+    
+    // 사용 가능한 기수 목록 로드
+    loadAvailableTerms();
   }, []);
   
   // 특별활동 일정 로드 함수
@@ -104,6 +108,55 @@ const ScheduleActivities: React.FC = () => {
     } catch (error) {
       console.error('특별활동 일정 로드 중 오류 발생:', error);
       setSpecialActivities(DEFAULT_SPECIAL_ACTIVITIES);
+    }
+  };
+  
+  // 사용 가능한 기수 목록 로드
+  const loadAvailableTerms = () => {
+    try {
+      const terms = new Set<string>();
+      
+      // 학사 일정에서 기수 추출
+      const savedAcademicSchedules = localStorage.getItem('academicSchedules');
+      if (savedAcademicSchedules) {
+        const parsedSchedules = JSON.parse(savedAcademicSchedules);
+        parsedSchedules.forEach((schedule: Schedule) => {
+          if (schedule.term) {
+            terms.add(schedule.term);
+          }
+        });
+      }
+      
+      // 특별활동에서 기수 추출
+      const savedSpecialActivities = localStorage.getItem('specialActivities');
+      if (savedSpecialActivities) {
+        const parsedActivities = JSON.parse(savedSpecialActivities);
+        parsedActivities.forEach((activity: Schedule) => {
+          if (activity.term) {
+            terms.add(activity.term);
+          }
+        });
+      }
+      
+      // 기수가 없으면 기본값 사용
+      if (terms.size === 0) {
+        setAvailableTerms(['1']);
+        setSelectedTerm('1');
+        return;
+      }
+      
+      // 기수를 숫자로 변환하여 정렬
+      const sortedTerms = Array.from(terms).sort((a, b) => parseInt(b) - parseInt(a));
+      setAvailableTerms(sortedTerms);
+      
+      // 가장 최근 기수(가장 큰 숫자)를 기본값으로 설정
+      setSelectedTerm(sortedTerms[0]);
+      
+      console.log('사용 가능한 기수:', sortedTerms);
+    } catch (error) {
+      console.error('기수 목록 로드 중 오류 발생:', error);
+      setAvailableTerms(['1']);
+      setSelectedTerm('1');
     }
   };
   
@@ -174,10 +227,11 @@ const ScheduleActivities: React.FC = () => {
                   <SelectValue placeholder="기수 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">제 1 기</SelectItem>
-                  <SelectItem value="2">제 2 기</SelectItem>
-                  <SelectItem value="3">제 3 기</SelectItem>
-                  <SelectItem value="4">제 4 기</SelectItem>
+                  {availableTerms.map((term) => (
+                    <SelectItem key={term} value={term}>
+                      제 {term} 기
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -208,16 +262,19 @@ const ScheduleActivities: React.FC = () => {
                         <div className="space-y-4">
                           <div>
                             <p className="font-medium">{formatDate(activity.date)}</p>
-                            <p className="text-gray-500">{activity.time}</p>
+                            {activity.time && <p className="text-gray-500">{activity.time}</p>}
                           </div>
-                          <div>
-                            <p className="font-medium">장소</p>
-                            <p>{activity.location}</p>
-                          </div>
-                          <div>
-                            <p className="font-medium">설명</p>
-                            <p className="text-gray-700">{activity.description}</p>
-                          </div>
+                          {activity.location && (
+                            <div>
+                              <p className="font-medium">장소</p>
+                              <p>{activity.location}</p>
+                            </div>
+                          )}
+                          {activity.description && (
+                            <div>
+                              <p className="whitespace-pre-line">{activity.description}</p>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

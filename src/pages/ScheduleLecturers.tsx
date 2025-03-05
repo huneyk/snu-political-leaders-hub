@@ -52,13 +52,13 @@ const defaultTerms: TermFaculty[] = [
         faculty: [
           {
             id: "1",
-            name: "김상배",
+      name: "김상배",
             imageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80",
             biography: "국제정치학, 정보혁명과 네트워크 세계정치, 신흥안보 전문가"
           },
           {
             id: "2",
-            name: "임혜란",
+      name: "임혜란",
             imageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80",
             biography: "비교정치경제, 동아시아 발전국가 연구 전문가"
           }
@@ -236,10 +236,10 @@ const ScheduleLecturers = () => {
           <h1 className="text-3xl md:text-4xl font-bold mb-4">강사진 소개</h1>
           <p className="text-white/80 max-w-3xl">
             서울대학교 정치리더십 프로그램의 강사진을 소개합니다.
-          </p>
-        </div>
-      </section>
-      
+              </p>
+            </div>
+          </section>
+
       <div className="container mx-auto px-4 py-12">
         {loading ? (
           <div className="flex justify-center items-center h-64">
@@ -252,7 +252,7 @@ const ScheduleLecturers = () => {
               <h2 className="text-xl font-semibold mb-3">기수 선택</h2>
               <div className="flex flex-wrap gap-2 mb-4">
                 {terms.map((term, index) => (
-                  <button
+                    <button
                     key={`term-${term.term}`}
                     className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
                       activeTermIndex === index
@@ -265,7 +265,7 @@ const ScheduleLecturers = () => {
                     }}
                   >
                     제 {term.term} 기
-                  </button>
+                    </button>
                 ))}
               </div>
             </div>
@@ -275,7 +275,7 @@ const ScheduleLecturers = () => {
               <h2 className="text-xl font-semibold mb-3">카테고리 선택</h2>
               <div className="flex mb-6 border-b">
                 {currentTerm?.categories.map((category, index) => (
-                  <button
+                    <button
                     key={`category-${category.id}`}
                     className={`px-4 py-2 font-medium transition-all duration-200 ${
                       activeCategoryIndex === index
@@ -285,10 +285,10 @@ const ScheduleLecturers = () => {
                     onClick={() => setActiveCategoryIndex(index)}
                   >
                     {category.name}
-                  </button>
+                    </button>
                 ))}
-              </div>
-            </div>
+                  </div>
+                </div>
 
             {/* 강사 카드 목록 */}
             {displayFaculty.length > 0 ? (
@@ -336,12 +336,12 @@ const ScheduleLecturers = () => {
                           ) : (
                             <p className="text-gray-400 italic">약력 정보가 없습니다.</p>
                           )}
-                        </div>
+                      </div>
                       </div>
                     </div>
                   );
                 })}
-              </div>
+                </div>
             ) : (
               <div className="text-center py-12 bg-white rounded-lg shadow">
                 <p className="text-gray-500 text-lg">등록된 강사가 없습니다.</p>
@@ -350,10 +350,10 @@ const ScheduleLecturers = () => {
             )}
           </div>
         )}
-      </div>
+            </div>
       <Footer />
     </div>
   );
 };
 
-export default ScheduleLecturers; 
+export default ScheduleLecturers;

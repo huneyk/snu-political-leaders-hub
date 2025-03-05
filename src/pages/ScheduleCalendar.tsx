@@ -29,11 +29,12 @@ const DEFAULT_ACADEMIC_SCHEDULES: Schedule[] = [];
 const DEFAULT_SPECIAL_ACTIVITIES: Schedule[] = [];
 
 const ScheduleCalendar: React.FC = () => {
-  const [selectedTerm, setSelectedTerm] = useState('1');
+  const [selectedTerm, setSelectedTerm] = useState<string>('1');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [academicSchedules, setAcademicSchedules] = useState<Schedule[]>(DEFAULT_ACADEMIC_SCHEDULES);
   const [specialActivities, setSpecialActivities] = useState<Schedule[]>(DEFAULT_SPECIAL_ACTIVITIES);
   const [activeTab, setActiveTab] = useState('calendar');
+  const [availableTerms, setAvailableTerms] = useState<string[]>(['1']);
   const navigate = useNavigate();
   
   // 컴포넌트 마운트 시 localStorage에서 학사 일정과 특별활동 일정 로드
@@ -41,9 +42,48 @@ const ScheduleCalendar: React.FC = () => {
     // 기본 데이터 삭제
     removeDefaultData();
     
+    // 2025-1 기수 데이터 삭제
+    removeTermData('2025-1');
+    
     loadAcademicSchedules();
     loadSpecialActivities();
+    
+    // 사용 가능한 기수 목록 로드
+    loadAvailableTerms();
   }, []);
+  
+  // 특정 기수의 모든 데이터 삭제 함수
+  const removeTermData = (termToRemove: string) => {
+    try {
+      // 학사 일정에서 해당 기수 데이터 삭제
+      const savedAcademicSchedules = localStorage.getItem('academicSchedules');
+      if (savedAcademicSchedules) {
+        const parsedSchedules = JSON.parse(savedAcademicSchedules);
+        const filteredSchedules = parsedSchedules.filter(
+          (schedule: Schedule) => schedule.term !== termToRemove
+        );
+        
+        // 변경된 일정 저장
+        localStorage.setItem('academicSchedules', JSON.stringify(filteredSchedules));
+        console.log(`${termToRemove} 기수의 학사 일정이 삭제되었습니다.`);
+      }
+      
+      // 특별활동에서 해당 기수 데이터 삭제
+      const savedSpecialActivities = localStorage.getItem('specialActivities');
+      if (savedSpecialActivities) {
+        const parsedActivities = JSON.parse(savedSpecialActivities);
+        const filteredActivities = parsedActivities.filter(
+          (activity: Schedule) => activity.term !== termToRemove
+        );
+        
+        // 변경된 일정 저장
+        localStorage.setItem('specialActivities', JSON.stringify(filteredActivities));
+        console.log(`${termToRemove} 기수의 특별활동 일정이 삭제되었습니다.`);
+      }
+    } catch (error) {
+      console.error(`${termToRemove} 기수 데이터 삭제 중 오류 발생:`, error);
+    }
+  };
   
   // 기본 데이터 삭제 함수
   const removeDefaultData = () => {
@@ -137,6 +177,55 @@ const ScheduleCalendar: React.FC = () => {
     }
   };
   
+  // 사용 가능한 기수 목록 로드
+  const loadAvailableTerms = () => {
+    try {
+      const terms = new Set<string>();
+      
+      // 학사 일정에서 기수 추출
+      const savedAcademicSchedules = localStorage.getItem('academicSchedules');
+      if (savedAcademicSchedules) {
+        const parsedSchedules = JSON.parse(savedAcademicSchedules);
+        parsedSchedules.forEach((schedule: Schedule) => {
+          if (schedule.term) {
+            terms.add(schedule.term);
+          }
+        });
+      }
+      
+      // 특별활동에서 기수 추출
+      const savedSpecialActivities = localStorage.getItem('specialActivities');
+      if (savedSpecialActivities) {
+        const parsedActivities = JSON.parse(savedSpecialActivities);
+        parsedActivities.forEach((activity: Schedule) => {
+          if (activity.term) {
+            terms.add(activity.term);
+          }
+        });
+      }
+      
+      // 기수가 없으면 기본값 사용
+      if (terms.size === 0) {
+        setAvailableTerms(['1']);
+        setSelectedTerm('1');
+        return;
+      }
+      
+      // 기수를 숫자로 변환하여 정렬
+      const sortedTerms = Array.from(terms).sort((a, b) => parseInt(b) - parseInt(a));
+      setAvailableTerms(sortedTerms);
+      
+      // 가장 최근 기수(가장 큰 숫자)를 기본값으로 설정
+      setSelectedTerm(sortedTerms[0]);
+      
+      console.log('사용 가능한 기수:', sortedTerms);
+    } catch (error) {
+      console.error('기수 목록 로드 중 오류 발생:', error);
+      setAvailableTerms(['1']);
+      setSelectedTerm('1');
+    }
+  };
+  
   // 선택된 학기에 해당하는 모든 일정 (학사 + 특별활동) 필터링
   const allSchedules = [...academicSchedules, ...specialActivities].filter(
     schedule => schedule.term === selectedTerm
@@ -217,10 +306,11 @@ const ScheduleCalendar: React.FC = () => {
                   <SelectValue placeholder="기수 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">제 1 기</SelectItem>
-                  <SelectItem value="2">제 2 기</SelectItem>
-                  <SelectItem value="3">제 3 기</SelectItem>
-                  <SelectItem value="4">제 4 기</SelectItem>
+                  {availableTerms.map((term) => (
+                    <SelectItem key={term} value={term}>
+                      제 {term} 기
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -274,17 +364,20 @@ const ScheduleCalendar: React.FC = () => {
                             </span>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <p className="font-medium">시간</p>
-                              <p>{schedule.time}</p>
-                            </div>
-                            <div>
-                              <p className="font-medium">장소</p>
-                              <p>{schedule.location}</p>
-                            </div>
+                            {schedule.time && (
+                              <div>
+                                <p className="font-medium">시간</p>
+                                <p>{schedule.time}</p>
+                              </div>
+                            )}
+                            {schedule.location && (
+                              <div>
+                                <p className="font-medium">장소</p>
+                                <p>{schedule.location}</p>
+                              </div>
+                            )}
                             <div className="md:col-span-2">
-                              <p className="font-medium">설명</p>
-                              <p>{schedule.description}</p>
+                              <p className="whitespace-pre-line">{schedule.description}</p>
                             </div>
                           </div>
                         </div>
@@ -318,17 +411,20 @@ const ScheduleCalendar: React.FC = () => {
                           <p className="font-medium text-gray-600">{formatDate(schedule.date)}</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                          <div>
-                            <p className="font-medium">시간</p>
-                            <p>{schedule.time}</p>
-                          </div>
-                          <div>
-                            <p className="font-medium">장소</p>
-                            <p>{schedule.location}</p>
-                          </div>
+                          {schedule.time && (
+                            <div>
+                              <p className="font-medium">시간</p>
+                              <p>{schedule.time}</p>
+                            </div>
+                          )}
+                          {schedule.location && (
+                            <div>
+                              <p className="font-medium">장소</p>
+                              <p>{schedule.location}</p>
+                            </div>
+                          )}
                           <div className="md:col-span-1">
-                            <p className="font-medium">설명</p>
-                            <p>{schedule.description}</p>
+                            <p className="whitespace-pre-line">{schedule.description}</p>
                           </div>
                         </div>
                       </div>

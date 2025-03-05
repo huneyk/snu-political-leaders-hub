@@ -99,8 +99,8 @@ const HomeObjectives = () => {
         
         <div className="text-center">
           <Link to="/intro/objectives">
-            <Button className="bg-mainBlue hover:bg-blue-700 transition-colors">
-              <span>자세한 내용 보기</span>
+            <Button className="bg-mainBlue/70 hover:bg-blue-900/70 transition-colors text-white h-9 text-sm px-4">
+              <span>자세한 내용 보기 {'>'}</span>
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>

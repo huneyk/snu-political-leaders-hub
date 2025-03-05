@@ -76,8 +76,8 @@ const Footer = () => {
               className="h-10 w-auto object-contain"
             />
             <div>
-              <h2 className="text-xl font-bold text-mainBlue">서울대학교 정치지도자과정</h2>
-              <p className="text-gray-600 mt-1">Political Leaders Program</p>
+              <h4 className="text-sm text-mainBlue">서울대학교 정치지도자과정</h4>
+              <p className="text-gray-600 text-xs ">Political Leaders Program</p>
             </div>
           </div>
           

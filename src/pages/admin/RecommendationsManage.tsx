@@ -88,10 +88,14 @@ const RecommendationsManage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // In a real application, you would upload this file to a server
-    // For this demo, we'll use a local URL
-    const imageUrl = URL.createObjectURL(file);
-    handleRecommendationChange(index, 'photoUrl', imageUrl);
+    // Convert the file to Base64 string
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      // Save the Base64 string as the photo URL
+      handleRecommendationChange(index, 'photoUrl', base64String);
+    };
+    reader.readAsDataURL(file);
   };
   
   return (

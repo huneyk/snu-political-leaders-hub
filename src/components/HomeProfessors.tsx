@@ -153,9 +153,9 @@ const HomeProfessors = () => {
             <div className="text-center reveal reveal-delay-300">
               <Link 
                 to="/intro/professors" 
-                className="btn-primary"
+                className="inline-block px-4 py-2 bg-mainBlue/70 text-white font-medium rounded hover:bg-blue-900/70 transition-colors duration-300 text-sm"
               >
-                자세한 내용 보기
+                자세한 내용 보기 {'>'}
               </Link>
             </div>
           </div>

@@ -129,10 +129,7 @@ const HomeNotices: React.FC = () => {
   return (
     <section className="py-12 bg-gray-50">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h4 className="text-3xl font-bold text-gray-900 mb-4">주요 공지사항</h4>
 
-        </div>
 
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-6">
@@ -145,9 +142,9 @@ const HomeNotices: React.FC = () => {
               <span className="text-sm text-gray-600">작성자: {notice.author}</span>
               <Link
                 to="/notices"
-                className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-300"
+                className="inline-block px-4 py-2 bg-mainBlue/70 text-white font-medium rounded hover:bg-blue-900/70 transition-colors duration-300 text-sm"
               >
-                더 보기
+                자세한 내용 보기 {'>'}
               </Link>
             </div>
           </div>

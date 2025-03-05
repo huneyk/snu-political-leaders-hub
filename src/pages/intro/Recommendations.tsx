@@ -17,6 +17,37 @@ const Recommendations = () => {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 이미지 URL을 처리하는 함수
+  const processImageUrl = (url: string) => {
+    if (!url) return '';
+    
+    // 디버깅을 위해 원본 URL 출력
+    console.log('Processing image URL:', url);
+    
+    // Base64 인코딩된 이미지 데이터인 경우 (data:image로 시작)
+    if (url.startsWith('data:image')) {
+      return url;
+    }
+    
+    // URL이 이미 절대 경로인 경우 (http:// 또는 https://로 시작)
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    
+    // URL이 /로 시작하는 경우 (루트 상대 경로)
+    if (url.startsWith('/')) {
+      return `${window.location.origin}${url}`;
+    }
+    
+    // 이미지 경로가 'images/'로 시작하는 경우 (admin에서 업로드한 이미지)
+    if (url.startsWith('images/')) {
+      return `${window.location.origin}/${url}`;
+    }
+    
+    // 그 외의 경우 public/images 폴더 내의 경로로 간주
+    return `${window.location.origin}/images/${url}`;
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
     
@@ -28,15 +59,18 @@ const Recommendations = () => {
     if (savedRecommendations) {
       try {
         const parsedRecommendations = JSON.parse(savedRecommendations);
-        // Handle old format without title
+        console.log('Raw recommendations data:', parsedRecommendations);
+        
+        // Handle old format without title and process image URLs
         const updatedRecommendations = parsedRecommendations.map((rec: any) => ({
           title: rec.title || '',
           text: rec.text || rec.text || '', // Fallback for old data structure
           author: rec.author || '',
           position: rec.position || '',
-          photoUrl: rec.photoUrl || ''
+          photoUrl: processImageUrl(rec.photoUrl || '')
         }));
         setRecommendations(updatedRecommendations);
+        console.log('Loaded recommendations with processed image URLs:', updatedRecommendations);
       } catch (error) {
         console.error('Failed to parse recommendations:', error);
       }
@@ -113,8 +147,13 @@ const Recommendations = () => {
                             alt={`${recommendation.author} 사진`} 
                             className="w-full h-full object-cover"
                             onError={(e) => {
+                              console.error(`Image failed to load: ${recommendation.photoUrl}`);
                               // Fallback if image fails to load
-                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=No+Image';
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Profile';
+                              // 플레이스홀더 이미지도 로드 실패하면 기본 색상 배경 유지
+                              (e.target as HTMLImageElement).onerror = () => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              };
                             }}
                           />
                         </div>

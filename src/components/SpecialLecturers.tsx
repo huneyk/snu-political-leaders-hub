@@ -176,9 +176,9 @@ const SpecialLecturers = () => {
             <div className="text-center mt-8">
               <Link 
                 to="/schedule/lecturers" 
-                className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 transition-colors duration-300"
+                className="inline-block px-4 py-2 bg-mainBlue/70 text-white font-medium rounded hover:bg-blue-900/70 transition-colors duration-300 text-sm"
               >
-                자세히 보기
+                자세한 내용 보기 {'>'}
               </Link>
             </div>
           </>
