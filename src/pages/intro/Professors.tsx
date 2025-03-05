@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import MobileFloatingMenu from '@/components/MobileFloatingMenu';
 import { motion } from 'framer-motion';
 
 interface Professor {
@@ -135,7 +134,6 @@ const Professors = () => {
         </div>
       </main>
       <Footer />
-      <MobileFloatingMenu />
     </>
   );
 };

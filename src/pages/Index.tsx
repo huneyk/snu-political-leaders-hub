@@ -9,7 +9,6 @@ import HomeAdmission from '@/components/HomeAdmission';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AdminLink from '@/components/AdminLink';
-import MobileFloatingMenu from '@/components/MobileFloatingMenu';
 
 const Index = () => {
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +134,6 @@ const Index = () => {
         </ScrollReveal>
       </main>
       <Footer />
-      <MobileFloatingMenu />
     </>
   );
 };

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
-import MobileFloatingMenu from '@/components/MobileFloatingMenu';
 
 interface Recommendation {
   text: string;
@@ -121,7 +120,6 @@ const Recommendations = () => {
         </div>
       </main>
       <Footer />
-      <MobileFloatingMenu />
     </>
   );
 };
