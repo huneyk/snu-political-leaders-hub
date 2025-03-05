@@ -38,25 +38,25 @@ const Hero = () => {
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
             }`}
           >
-            SNU Political Leaders Program
+            Political Leaders Program
           </p>
           <p 
             className={`mb-12 max-w-2xl mx-auto transition-all duration-1000 delay-500 ease-out ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
             }`}
           >
-            미래 정치를 이끌어갈 지도자를 양성하는 국내 최고 수준의 정치 교육 프로그램
+            정치지도자 과정(PLP)은 서울대학교 정치외교학부가 주관하는 국내 최고 수준의 정치 교육 프로그램입니다
           </p>
           <div 
             className={`flex flex-col sm:flex-row justify-center gap-4 transition-all duration-1000 delay-700 ease-out ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
             }`}
           >
-            <Link to="/admission/apply" className="btn-secondary">
+            <Link to="/admission/info" className="btn-secondary">
               입학 안내
             </Link>
-            <Link to="/intro/greeting" className="bg-white/10 backdrop-blur-sm text-white border border-white/30 px-6 py-3 rounded-md transition-all duration-300 hover:bg-white/20 transform hover:-translate-y-1 active:translate-y-0">
-              과정 소개
+            <Link to="/intro/Benefits" className="bg-white/10 backdrop-blur-sm text-white border border-white/30 px-6 py-3 rounded-md transition-all duration-300 hover:bg-white/20 transform hover:-translate-y-1 active:translate-y-0">
+              과정의 특전
             </Link>
           </div>
         </div>

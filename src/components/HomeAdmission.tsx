@@ -46,16 +46,16 @@ const HomeAdmission = () => {
   }, []);
 
   return (
-    <section className="py-20 bg-gray-50" id="admission">
+    <section className="py-16 bg-gray-50" id="admission">
       <div className="main-container">
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold text-mainBlue mb-4 reveal">입학 안내</h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto reveal reveal-delay-100">
             정치지도자 과정 모집 일정 및 입학지원서 다운로드
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-elegant p-8 md:p-12 max-w-4xl mx-auto reveal reveal-delay-200">
+        <div className="bg-white rounded-lg shadow-md p-6 md:p-8 max-w-4xl mx-auto mb-10 reveal reveal-delay-200">
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
@@ -141,15 +141,15 @@ const HomeAdmission = () => {
               </div>
             </div>
           )}
+        </div>
 
-          <div className="flex justify-center pt-6 mt-6 border-t border-gray-100">
-            <Link 
-              to="/admission/info" 
-              className="btn-primary"
-            >
-              자세한 입학 안내 보기
-            </Link>
-          </div>
+        <div className="text-center">
+          <Link 
+            to="/admission/info" 
+            className="btn-primary"
+          >
+            자세한 입학 안내 보기
+          </Link>
         </div>
       </div>
     </section>

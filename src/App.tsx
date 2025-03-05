@@ -8,16 +8,13 @@ import { lazy, Suspense } from 'react';
 import Index from "./pages/Index";
 import Greeting from "./pages/Greeting";
 import AdmissionInfo from "./pages/AdmissionInfo";
-import ScheduleLecturers from "./pages/ScheduleLecturers";
-import ScheduleCalendar from "./pages/ScheduleCalendar";
-import ScheduleActivities from "./pages/ScheduleActivities";
-import Gallery from "./pages/Gallery";
-import NotFound from "./pages/NotFound";
+import Recommendations from "./pages/Recommendations";
+import Objectives from "./pages/intro/Objectives";
+import CourseBenefits from "./pages/intro/CourseBenefits";
+import Professors from "./pages/intro/Professors";
+import Rules from "./pages/admission/Rules";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
-import Rules from "./pages/admission/Rules";
-
-// 관리자 페이지 컴포넌트 추가
 import GreetingManage from "./pages/admin/GreetingManage";
 import RecommendationsManage from "./pages/admin/RecommendationsManage";
 import CourseGoalManage from "./pages/admin/CourseGoalManage";
@@ -29,12 +26,13 @@ import ScheduleManage from "./pages/admin/ScheduleManage";
 import GalleryManage from "./pages/admin/GalleryManage";
 import NoticesManage from "./pages/admin/NoticesManage";
 import AdmissionManage from "./pages/admin/AdmissionManage";
-
-// 소개 페이지 컴포넌트 (lazy loading)
-const Recommendations = lazy(() => import('./pages/intro/Recommendations'));
-const Objectives = lazy(() => import('./pages/intro/Objectives'));
-const CourseBenefits = lazy(() => import('./pages/intro/CourseBenefits'));
-const Professors = lazy(() => import('./pages/intro/Professors'));
+import FooterManage from "./pages/admin/FooterManage";
+import ScheduleLecturers from "./pages/ScheduleLecturers";
+import ScheduleCalendar from "./pages/ScheduleCalendar";
+import ScheduleActivities from "./pages/ScheduleActivities";
+import Gallery from "./pages/Gallery";
+import Notices from "./pages/Notices";
+import NotFound from "./pages/NotFound";
 
 // Loading component
 const Loading = () => (
@@ -42,6 +40,22 @@ const Loading = () => (
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
   </div>
 );
+
+import withAdminHomeButton from "./components/admin/withAdminHomeButton";
+
+// Apply HOC to admin pages
+const GreetingManageWithButton = withAdminHomeButton(GreetingManage);
+const RecommendationsManageWithButton = withAdminHomeButton(RecommendationsManage);
+const CourseGoalManageWithButton = withAdminHomeButton(CourseGoalManage);
+const CourseBenefitsManageWithButton = withAdminHomeButton(CourseBenefitsManage);
+const ProfessorsManageWithButton = withAdminHomeButton(ProfessorsManage);
+const FacultyManageWithButton = withAdminHomeButton(FacultyManage);
+const UsersManageWithButton = withAdminHomeButton(UsersManage);
+const ScheduleManageWithButton = withAdminHomeButton(ScheduleManage);
+const GalleryManageWithButton = withAdminHomeButton(GalleryManage);
+const NoticesManageWithButton = withAdminHomeButton(NoticesManage);
+const AdmissionManageWithButton = withAdminHomeButton(AdmissionManage);
+const FooterManageWithButton = withAdminHomeButton(FooterManage);
 
 const queryClient = new QueryClient();
 
@@ -65,21 +79,23 @@ const App = () => (
             <Route path="/schedule/calendar" element={<ScheduleCalendar />} />
             <Route path="/schedule/activities" element={<ScheduleActivities />} />
             <Route path="/gallery" element={<Gallery />} />
+            <Route path="/notices" element={<Notices />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             
             {/* 관리자 페이지 경로 추가 */}
-            <Route path="/admin/greeting" element={<GreetingManage />} />
-            <Route path="/admin/recommendations" element={<RecommendationsManage />} />
-            <Route path="/admin/course-goal" element={<CourseGoalManage />} />
-            <Route path="/admin/course-benefits" element={<CourseBenefitsManage />} />
-            <Route path="/admin/professors" element={<ProfessorsManage />} />
-            <Route path="/admin/faculty" element={<FacultyManage />} />
-            <Route path="/admin/users" element={<UsersManage />} />
-            <Route path="/admin/schedule" element={<ScheduleManage />} />
-            <Route path="/admin/gallery" element={<GalleryManage />} />
-            <Route path="/admin/notices" element={<NoticesManage />} />
-            <Route path="/admin/admission" element={<AdmissionManage />} />
+            <Route path="/admin/greeting" element={<GreetingManageWithButton />} />
+            <Route path="/admin/recommendations" element={<RecommendationsManageWithButton />} />
+            <Route path="/admin/course-goal" element={<CourseGoalManageWithButton />} />
+            <Route path="/admin/course-benefits" element={<CourseBenefitsManageWithButton />} />
+            <Route path="/admin/professors" element={<ProfessorsManageWithButton />} />
+            <Route path="/admin/faculty" element={<FacultyManageWithButton />} />
+            <Route path="/admin/users" element={<UsersManageWithButton />} />
+            <Route path="/admin/schedule" element={<ScheduleManageWithButton />} />
+            <Route path="/admin/gallery" element={<GalleryManageWithButton />} />
+            <Route path="/admin/notices" element={<NoticesManageWithButton />} />
+            <Route path="/admin/admission" element={<AdmissionManageWithButton />} />
+            <Route path="/admin/footer" element={<FooterManageWithButton />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

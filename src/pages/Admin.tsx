@@ -8,10 +8,10 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { getCurrentTab } from '@/utils/adminUtils';
 import AdminNavTabs from '@/components/admin/AdminNavTabs';
 import ContentTab from '@/components/admin/ContentTab';
-import UsersTab from '@/components/admin/UsersTab';
 import ScheduleTab from '@/components/admin/ScheduleTab';
 import GalleryTab from '@/components/admin/GalleryTab';
 import NoticeTab from '@/components/admin/NoticeTab';
+import FooterTab from '@/components/admin/FooterTab';
 
 const Admin = () => {
   const { isAuthenticated, isLoading } = useAdminAuth();
@@ -49,7 +49,7 @@ const Admin = () => {
   return (
     <>
       <Header />
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto pt-24 pb-8 px-4">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-mainBlue">관리자 대시보드</h1>
           <Button onClick={handleLogout} variant="destructive">로그아웃</Button>
@@ -61,10 +61,10 @@ const Admin = () => {
         {/* Content area */}
         <div className="space-y-6">
           {activeTab === 'content' && <ContentTab />}
-          {activeTab === 'users' && <UsersTab />}
           {activeTab === 'schedule' && <ScheduleTab />}
           {activeTab === 'gallery' && <GalleryTab />}
           {activeTab === 'notices' && <NoticeTab />}
+          {activeTab === 'footer' && <FooterTab />}
         </div>
       </div>
       <Footer />

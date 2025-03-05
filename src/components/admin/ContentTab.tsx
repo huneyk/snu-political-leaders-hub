@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { FileText, MessageSquare, Target, Award, Users, GraduationCap, BookOpen } from 'lucide-react';
+import { FileText, MessageSquare, Target, Award, Users, GraduationCap, BookOpen, Calendar, Image, Bell, FileDown, UserCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const ContentTab = () => {
   const navigate = useNavigate();
@@ -61,9 +62,17 @@ const ContentTab = () => {
             onClick={() => handleNavigation('/admin/faculty')}
             className="h-32 w-full bg-mainBlue hover:bg-blue-900 text-white flex flex-col items-center justify-center gap-2 rounded-md transition-colors cursor-pointer"
           >
-            <BookOpen size={24} />
+            <UserCheck size={24} />
             <span className="text-lg font-medium">강사진 관리</span>
-            <span className="text-sm opacity-80">기수별 강사진 정보 수정</span>
+            <span className="text-sm opacity-80">강사진 정보 수정</span>
+          </button>
+          <button 
+            onClick={() => handleNavigation('/admin/schedule')}
+            className="h-32 w-full bg-mainBlue hover:bg-blue-900 text-white flex flex-col items-center justify-center gap-2 rounded-md transition-colors cursor-pointer"
+          >
+            <Calendar size={24} />
+            <span className="text-lg font-medium">일정 관리</span>
+            <span className="text-sm opacity-80">강의 및 행사 일정 관리</span>
           </button>
           <button 
             onClick={() => handleNavigation('/admin/admission')}
@@ -73,6 +82,20 @@ const ContentTab = () => {
             <span className="text-lg font-medium">입학 지원 관리</span>
             <span className="text-sm opacity-80">입학 지원 정보 수정</span>
           </button>
+          <Button 
+            onClick={() => handleNavigation('/admin/notices')}
+            className="w-full h-24 bg-blue-500 hover:bg-blue-600 flex items-center justify-center gap-3"
+          >
+            <Bell className="h-6 w-6" />
+            <span className="text-lg font-medium">공지사항 관리</span>
+          </Button>
+          <Button 
+            onClick={() => handleNavigation('/admin/footer')}
+            className="w-full h-24 bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center gap-3"
+          >
+            <FileDown className="h-6 w-6" />
+            <span className="text-lg font-medium">Footer 관리</span>
+          </Button>
         </div>
       </CardContent>
     </Card>

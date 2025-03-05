@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
+import AdminHomeButton from '@/components/admin/AdminHomeButton';
 
 interface GoalItem {
   title: string;

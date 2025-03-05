@@ -10,6 +10,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
+import AdminHomeButton from '@/components/admin/AdminHomeButton';
 
 interface Faculty {
   id: string;
@@ -457,8 +458,12 @@ const FacultyManage = () => {
   return (
     <>
       <Header />
-      <main className="pt-24 pb-16">
-        <Card className="max-w-4xl mx-auto">
+      <main className="container mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6">강사진 관리</h1>
+        
+        <AdminHomeButton />
+        
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle className="text-2xl font-bold">강사진 관리</CardTitle>
             <p className="text-gray-500 mt-2">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import MobileFloatingMenu from '@/components/MobileFloatingMenu';
 import { motion } from 'framer-motion';
 
 interface Professor {
@@ -46,30 +47,8 @@ const Professors = () => {
           console.error('Failed to parse professors:', error);
         }
       } else {
-        // 기본 데이터 설정
-        setSections([{
-          title: "교수진 소개",
-          professors: [
-            {
-              name: "김상배",
-              position: "서울대학교 정치외교학부 교수",
-              organization: "서울대학교",
-              profile: ""
-            },
-            {
-              name: "임혜란",
-              position: "서울대학교 정치외교학부 교수",
-              organization: "서울대학교",
-              profile: ""
-            },
-            {
-              name: "김의영",
-              position: "서울대학교 정치외교학부 교수",
-              organization: "서울대학교",
-              profile: ""
-            }
-          ]
-        }]);
+        // 빈 배열로 초기화
+        setSections([]);
       }
     }
     
@@ -156,6 +135,7 @@ const Professors = () => {
         </div>
       </main>
       <Footer />
+      <MobileFloatingMenu />
     </>
   );
 };

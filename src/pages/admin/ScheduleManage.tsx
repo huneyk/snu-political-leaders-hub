@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
+import AdminHomeButton from '@/components/admin/AdminHomeButton';
 
 // 일정 인터페이스 정의
 interface Schedule {
@@ -202,6 +203,8 @@ const ScheduleManage: React.FC = () => {
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">일정 관리</h1>
       
+      <AdminHomeButton />
+      
       <Tabs defaultValue="academic" onValueChange={setActiveTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="academic">학사 일정</TabsTrigger>
@@ -209,17 +212,14 @@ const ScheduleManage: React.FC = () => {
         </TabsList>
         
         <div className="mb-6">
-          <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="기수 선택" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">제 1 기</SelectItem>
-              <SelectItem value="2">제 2 기</SelectItem>
-              <SelectItem value="3">제 3 기</SelectItem>
-              <SelectItem value="4">제 4 기</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label htmlFor="term">학기</Label>
+          <Input 
+            type="number"
+            value={selectedTerm}
+            onChange={(e) => setSelectedTerm(e.target.value)}
+            className="w-[180px]"
+            placeholder="학기 입력"
+          />
         </div>
         
         <TabsContent value="academic" className="space-y-6">

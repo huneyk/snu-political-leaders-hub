@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import logo from '/logo.jpg'; // Using the logo.jpg file from the public directory
+import logo from '/logo.png'; // Using the logo.png file from the public directory
+import logoWhite from '/logo-white.png'; // Using the white logo for dark backgrounds
 
 interface SubMenuItem {
   name: string;
@@ -37,7 +38,7 @@ const menuItems: MenuItem[] = [
     name: '학사 일정',
     path: '/schedule',
     submenu: [
-      { name: '학사 일정', path: '/schedule/calendar' },
+      { name: '전체 일정', path: '/schedule/calendar' },
       { name: '특별 활동', path: '/schedule/activities' },
       { name: '강 사 진', path: '/schedule/lecturers' },
     ],
@@ -87,13 +88,13 @@ const Header = () => {
       <div className="main-container flex justify-between items-center">
         <Link to="/" className="flex items-center gap-3 animate-fade-in">
           <img
-            src={logo}
+            src={isScrolled || !isHomePage ? logo : logoWhite}
             alt="서울대학교 정치지도자 과정 로고"
             className="h-12 w-auto object-contain"
           />
           <div className="flex flex-col">
-            <span className={`text-sm font-medium ${isScrolled ? 'text-mainBlue' : 'text-white'}`}>서울대학교 정치지도자 과정</span>
-            <span className={`text-xs font-light ${isScrolled ? 'text-subGray' : 'text-white/80'}`}>SNU Political Leaders Program</span>
+            <span className={`text-sm font-medium ${isScrolled || !isHomePage ? 'text-mainBlue' : 'text-white'}`}>서울대학교 정치지도자 과정</span>
+            <span className={`text-xs font-light ${isScrolled || !isHomePage ? 'text-subGray' : 'text-white/80'}`}>SNU Political Leaders Program</span>
           </div>
         </Link>
 

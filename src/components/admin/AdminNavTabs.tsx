@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { FileDown } from 'lucide-react';
 
 interface AdminNavTabsProps {
   activeTab?: string;
@@ -9,20 +10,21 @@ const AdminNavTabs = ({ activeTab }: AdminNavTabsProps) => {
   const navigate = useNavigate();
   const path = location.pathname;
   
-  // Determine if we're on any content management page
-  const isContentPage = path.includes('/admin/greeting') || 
-                       path.includes('/admin/recommendations') || 
-                       path.includes('/admin/course-goal') || 
-                       path.includes('/admin/course-benefits') || 
-                       path.includes('/admin/professors') ||
-                       path === '/admin';
+  // Determine if we're on content management page
+  const isContentPage = path.includes('/admin/content') || 
+                       path.includes('/admin/gallery') || 
+                       path.includes('/admin/notices');
   
   // Determine if we're on admission management page
   const isAdmissionPage = path.includes('/admin/admission');
   
+  // Determine if we're on footer management page
+  const isFooterPage = path.includes('/admin/footer');
+  
   // Use the determined content page status or the activeTab prop
   const effectiveActiveTab = isContentPage ? 'content' : 
                             isAdmissionPage ? 'admission' : 
+                            isFooterPage ? 'footer' :
                             activeTab || '';
   
   const handleNavigation = (path: string) => {
@@ -37,12 +39,6 @@ const AdminNavTabs = ({ activeTab }: AdminNavTabsProps) => {
           className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${effectiveActiveTab === 'content' ? 'bg-background text-foreground shadow-sm' : ''}`}
         >
           콘텐츠 관리
-        </button>
-        <button 
-          onClick={() => handleNavigation('/admin/users')}
-          className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${effectiveActiveTab === 'users' ? 'bg-background text-foreground shadow-sm' : ''}`}
-        >
-          회원 관리
         </button>
         <button 
           onClick={() => handleNavigation('/admin/admission')}
@@ -67,6 +63,19 @@ const AdminNavTabs = ({ activeTab }: AdminNavTabsProps) => {
           className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${effectiveActiveTab === 'notices' ? 'bg-background text-foreground shadow-sm' : ''}`}
         >
           공지사항 관리
+        </button>
+        <button
+          onClick={() => handleNavigation('/admin/footer')}
+          className={`px-6 py-3 rounded-md text-lg font-medium transition-colors ${
+            effectiveActiveTab === 'footer'
+              ? 'bg-indigo-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <FileDown className="h-5 w-5" />
+            <span>Footer 관리</span>
+          </div>
         </button>
       </div>
     </div>

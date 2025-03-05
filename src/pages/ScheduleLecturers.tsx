@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ScrollReveal from '@/components/ScrollReveal';
+import './ScheduleLecturers.css'; // Import CSS file for lecturers styles
 
 // 강사진 데이터 인터페이스
 interface Faculty {
@@ -226,19 +227,23 @@ const ScheduleLecturers = () => {
   const displayFaculty = currentCategory?.faculty || [];
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 lecturers-page">
       <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">강사진 소개</h1>
-          <p className="text-gray-600">
+      
+      {/* 배너 섹션 */}
+      <section className="pt-24 pb-16 bg-mainBlue text-white">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">강사진 소개</h1>
+          <p className="text-white/80 max-w-3xl">
             서울대학교 정치리더십 프로그램의 강사진을 소개합니다.
           </p>
         </div>
-
+      </section>
+      
+      <div className="container mx-auto px-4 py-12">
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
           </div>
         ) : (
           <div>
@@ -251,7 +256,7 @@ const ScheduleLecturers = () => {
                     key={`term-${term.term}`}
                     className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
                       activeTermIndex === index
-                        ? "bg-blue-600 text-white shadow-md"
+                        ? "bg-mainBlue text-white shadow-md"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     }`}
                     onClick={() => {
@@ -274,7 +279,7 @@ const ScheduleLecturers = () => {
                     key={`category-${category.id}`}
                     className={`px-4 py-2 font-medium transition-all duration-200 ${
                       activeCategoryIndex === index
-                        ? "text-blue-600 border-b-2 border-blue-600"
+                        ? "text-mainBlue border-b-2 border-mainBlue"
                         : "text-gray-500 hover:text-gray-700"
                     }`}
                     onClick={() => setActiveCategoryIndex(index)}
@@ -285,44 +290,19 @@ const ScheduleLecturers = () => {
               </div>
             </div>
 
-            {/* 현재 선택된 기수와 카테고리 정보 */}
-            <div className="mb-6 p-5 bg-white rounded-lg shadow">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-bold text-gray-800">
-                  제 {currentTerm?.term} 기 {currentCategory?.name}
-                </h3>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                  {displayFaculty.length}명
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 mb-2">
-                현재 표시 중인 강사진:
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {displayFaculty.map((f, i) => (
-                  <span key={i} className="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                    {f.name}
-                  </span>
-                ))}
-                {displayFaculty.length === 0 && (
-                  <span className="text-gray-400 text-xs italic">등록된 강사가 없습니다</span>
-                )}
-              </div>
-            </div>
-
             {/* 강사 카드 목록 */}
             {displayFaculty.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center">
                 {displayFaculty.map((faculty, index) => {
                   console.log(`렌더링 중: ${index + 1}/${displayFaculty.length}`, faculty.name);
                   return (
                     <div
                       key={`${faculty.id || index}-${faculty.name}`}
-                      className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
+                      className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1 w-72"
                     >
-                      <div className="p-6">
-                        <div className="flex flex-col items-center mb-6">
-                          <div className="w-40 h-40 rounded-full bg-gray-200 mb-4 overflow-hidden">
+                      <div className="p-5">
+                        <div className="flex flex-col items-center mb-5">
+                          <div className="w-52 h-52 rounded-lg bg-gray-200 mb-4 overflow-hidden shadow-md">
                             {faculty.imageUrl ? (
                               <img
                                 src={faculty.imageUrl}
@@ -336,19 +316,18 @@ const ScheduleLecturers = () => {
                             )}
                           </div>
                           <div className="text-center">
-                            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">
                               {faculty.name || "이름 없음"}
                             </h3>
                           </div>
                         </div>
                         <div className="prose prose-sm max-w-none text-gray-600 border-t pt-4">
                           {faculty.biography ? (
-                            <div className="space-y-2">
+                            <div>
                               {faculty.biography
-                                .replace(/\\n/g, '\n') // \n 문자열을 실제 줄바꿈으로 변환
                                 .split('\n')
                                 .map((line, i) => (
-                                  <p key={i} className={`${i === 0 ? 'font-medium text-gray-800' : 'text-gray-600'}`}>
+                                  <p key={i} className={`${i === 0 ? 'font-medium text-gray-800' : 'text-gray-600'} mb-1`}>
                                     {line || <br />}
                                   </p>
                                 ))
