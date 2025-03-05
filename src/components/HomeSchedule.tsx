@@ -291,8 +291,8 @@ const HomeSchedule = () => {
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-mainBlue mb-4">학사 일정</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-mainBlue mb-4" style={{ wordBreak: 'keep-all' }}>학사 일정</h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto" style={{ wordBreak: 'keep-all' }}>
             정치지도자과정의 주요 일정을 확인하세요
           </p>
         </div>
@@ -307,13 +307,13 @@ const HomeSchedule = () => {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">예정된 일정이 없습니다</h3>
-              <p className="text-gray-500">현재 등록된 일정이 없습니다.</p>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2" style={{ wordBreak: 'keep-all' }}>예정된 일정이 없습니다</h3>
+              <p className="text-gray-500" style={{ wordBreak: 'keep-all' }}>현재 등록된 일정이 없습니다.</p>
             </div>
             ) : (
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">다가오는 일정</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4" style={{ wordBreak: 'keep-all' }}>다가오는 일정</h3>
                 <div className="space-y-6">
                   {upcomingEvents.map((event) => (
                     <div key={event.id} className="flex flex-col md:flex-row gap-4 border-b border-gray-100 pb-4">
@@ -324,13 +324,13 @@ const HomeSchedule = () => {
                 </div>
                     </div>
                       <div className="md:w-3/4">
-                        <h4 className="font-bold text-gray-900">{event.title}</h4>
+                        <h4 className="font-bold text-gray-900" style={{ wordBreak: 'keep-all' }}>{event.title}</h4>
                         <div className="flex flex-wrap gap-2 mt-2 text-sm">
-                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs" style={{ wordBreak: 'keep-all' }}>
                             {getCategoryName(event.category)}
                           </span>
                           {event.location && (
-                            <span className="text-gray-600 flex items-center text-xs">
+                            <span className="text-gray-600 flex items-center text-xs" style={{ wordBreak: 'keep-all' }}>
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -340,7 +340,7 @@ const HomeSchedule = () => {
                   )}
                 </div>
                         {event.description && (
-                          <p className="text-gray-600 mt-2 text-sm line-clamp-2">{event.description}</p>
+                          <p className="text-gray-600 mt-2 text-sm line-clamp-2" style={{ wordBreak: 'keep-all' }}>{event.description}</p>
                         )}
           </div>
                     </div>

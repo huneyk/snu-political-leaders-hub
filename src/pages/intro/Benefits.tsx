@@ -69,7 +69,7 @@ const Benefits = () => {
       <Header />
       <main className="pt-24 pb-16">
         <div className="main-container">
-          <h1 className="section-title text-center mb-12">{sectionTitle}</h1>
+          <h1 className="section-title text-center mb-12" style={{ wordBreak: 'keep-all' }}>{sectionTitle}</h1>
           
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
@@ -77,7 +77,7 @@ const Benefits = () => {
             </div>
           ) : benefits.length === 0 ? (
             <div className="text-center text-gray-500 py-12">
-              <p>등록된 특전이 없습니다.</p>
+              <p style={{ wordBreak: 'keep-all' }}>등록된 특전이 없습니다.</p>
             </div>
           ) : (
             <motion.div 
@@ -100,10 +100,10 @@ const Benefits = () => {
                       
                       <div className="flex-1">
                         {benefit.title && (
-                          <h2 className="text-xl md:text-2xl font-bold text-mainBlue mb-3">{benefit.title}</h2>
+                          <h2 className="text-xl md:text-2xl font-bold text-mainBlue mb-3" style={{ wordBreak: 'keep-all' }}>{benefit.title}</h2>
                         )}
                         
-                        <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-line">
+                        <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-line" style={{ wordBreak: 'keep-all' }}>
                           {benefit.content}
                         </div>
                       </div>

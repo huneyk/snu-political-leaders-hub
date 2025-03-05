@@ -76,8 +76,8 @@ const Footer = () => {
               className="h-10 w-auto object-contain"
             />
             <div>
-              <h4 className="text-sm text-mainBlue">서울대학교 정치지도자과정</h4>
-              <p className="text-gray-600 text-xs ">Political Leaders Program</p>
+              <h4 className="text-sm text-mainBlue" style={{ wordBreak: 'keep-all' }}>서울대학교 정치지도자과정</h4>
+              <p className="text-gray-600 text-xs" style={{ wordBreak: 'keep-all' }}>Political Leaders Program</p>
             </div>
           </div>
           
@@ -90,7 +90,7 @@ const Footer = () => {
               className="flex items-center gap-1 bg-[#666666] hover:bg-[#555555] text-white"
             >
               <FileDown size={16} />
-              <span>입학지원서 (Word) 다운로드</span>
+              <span style={{ wordBreak: 'keep-all' }}>입학지원서 (Word) 다운로드</span>
             </Button>
             
             <Button 
@@ -101,7 +101,7 @@ const Footer = () => {
               className="flex items-center gap-1 bg-[#666666] hover:bg-[#555555] text-white"
             >
               <FileDown size={16} />
-              <span>입학지원서 (HWP) 다운로드</span>
+              <span style={{ wordBreak: 'keep-all' }}>입학지원서 (HWP) 다운로드</span>
             </Button>
             
             <Button 
@@ -112,7 +112,7 @@ const Footer = () => {
               className="flex items-center gap-1 bg-[#666666] hover:bg-[#555555] text-white"
             >
               <FileDown size={16} />
-              <span>과정안내서 (PDF) 다운로드</span>
+              <span style={{ wordBreak: 'keep-all' }}>과정안내서 (PDF) 다운로드</span>
             </Button>
             
             <Button 
@@ -123,7 +123,7 @@ const Footer = () => {
               className="flex items-center gap-1 bg-[#666666] hover:bg-[#555555] text-white"
             >
               <Mail size={16} />
-              <span>지원서 이메일 접수</span>
+              <span style={{ wordBreak: 'keep-all' }}>지원서 이메일 접수</span>
             </Button>
           </div>
         </div>
@@ -131,12 +131,12 @@ const Footer = () => {
         <div className="border-t border-gray-300 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-gray-500 text-sm mb-4 md:mb-0">
-              <p>서울특별시 관악구 관악로 1 서울대학교 아시아연구소 517호 정치지도자과정</p>
-              <p>Tel: 02-880-4107  Email : plp@snu.ac.kr</p>
+              <p style={{ wordBreak: 'keep-all' }}>서울특별시 관악구 관악로 1 서울대학교 아시아연구소 517호 정치지도자과정</p>
+              <p style={{ wordBreak: 'keep-all' }}>Tel: 02-880-4107  Email : plp@snu.ac.kr</p>
             </div>
             <div className="text-gray-500 text-sm">
-              {new Date().getFullYear()} 서울대학교 정치외교학부 정치지도자과정 © 
-               All rights reserved.
+              <span style={{ wordBreak: 'keep-all' }}>{new Date().getFullYear()} 서울대학교 정치외교학부 정치지도자과정 © 
+               All rights reserved.</span>
             </div>
           </div>
         </div>

@@ -43,8 +43,8 @@ const Greeting = () => {
         <ScrollReveal>
           <section className="py-16 bg-mainBlue text-white">
             <div className="main-container">
-              <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal">{title}</h1>
-              <p className="text-white/80 max-w-3xl reveal reveal-delay-100">
+              <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal" style={{ wordBreak: 'keep-all' }}>{title}</h1>
+              <p className="text-white/80 max-w-3xl reveal reveal-delay-100" style={{ wordBreak: 'keep-all' }}>
                 서울대학교 정치지도자과정의 인사말입니다.
               </p>
             </div>
@@ -53,13 +53,13 @@ const Greeting = () => {
           <section className="py-16">
             <div className="main-container">
               <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-elegant p-8 md:p-12 reveal reveal-delay-200">
-                <div className="prose prose-lg max-w-none">
+                <div className="prose prose-lg max-w-none" style={{ wordBreak: 'keep-all' }}>
                   {content.map((paragraph, index) => (
                     <p key={index}>{paragraph}</p>
                   ))}
                   
                   <div className="text-right mt-8">
-                    <p className="font-medium text-lg">{signText}</p>
+                    <p className="font-medium text-lg" style={{ wordBreak: 'keep-all' }}>{signText}</p>
                   </div>
                 </div>
               </div>

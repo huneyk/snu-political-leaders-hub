@@ -30,6 +30,7 @@ const Hero = () => {
             className={`text-4xl md:text-5xl lg:text-6xl font-bold mb-6 transition-all duration-1000 ease-out ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
             }`}
+            style={{ wordBreak: 'keep-all' }}
           >
             서울대학교 정치지도자 과정
           </h1>
@@ -37,6 +38,7 @@ const Hero = () => {
             className={`text-xl md:text-2xl font-light mb-8 text-white/80 transition-all duration-1000 delay-300 ease-out ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
             }`}
+            style={{ wordBreak: 'keep-all' }}
           >
             Political Leaders Program
           </p>
@@ -44,6 +46,7 @@ const Hero = () => {
             className={`mb-12 max-w-2xl mx-auto transition-all duration-1000 delay-500 ease-out ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
             }`}
+            style={{ wordBreak: 'keep-all' }}
           >
             정치지도자 과정(PLP)은 서울대학교 정치외교학부가 주관하는 국내 최고 수준의 정치 교육 프로그램입니다
           </p>

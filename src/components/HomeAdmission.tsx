@@ -49,8 +49,8 @@ const HomeAdmission = () => {
     <section className="py-16 bg-gray-50" id="admission">
       <div className="main-container">
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-mainBlue mb-4 reveal">입학 안내</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto reveal reveal-delay-100">
+          <h2 className="text-3xl md:text-4xl font-bold text-mainBlue mb-4 reveal" style={{ wordBreak: 'keep-all' }}>입학 안내</h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto reveal reveal-delay-100" style={{ wordBreak: 'keep-all' }}>
             정치지도자 과정 모집 일정 및 전형 일정
           </p>
         </div>
@@ -77,8 +77,8 @@ const HomeAdmission = () => {
                 </svg>
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-mainBlue mb-2">입학 정보가 준비 중입니다</h3>
-                <p className="text-gray-600">관리자 페이지에서 입학 정보를 등록해주세요.</p>
+                <h3 className="text-2xl font-bold text-mainBlue mb-2" style={{ wordBreak: 'keep-all' }}>입학 정보가 준비 중입니다</h3>
+                <p className="text-gray-600" style={{ wordBreak: 'keep-all' }}>관리자 페이지에서 입학 정보를 등록해주세요.</p>
               </div>
             </div>
           ) : (
@@ -99,7 +99,7 @@ const HomeAdmission = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-mainBlue mb-2">
+                  <h3 className="text-2xl font-bold text-mainBlue mb-2" style={{ wordBreak: 'keep-all' }}>
                     {admissionInfo.title} {admissionInfo.term}기 ({admissionInfo.year}년 {admissionInfo.startMonth}~{admissionInfo.endMonth}월) 지원 안내
                   </h3>
                 </div>
@@ -108,8 +108,8 @@ const HomeAdmission = () => {
               <div className="space-y-6">
                 {/* 모집 인원 섹션 */}
                 <div className="mb-6">
-                  <h4 className="text-xl font-semibold text-mainBlue mb-3">모집 인원</h4>
-                  <p className="text-gray-700 mb-4">{admissionInfo.capacity}명 내외</p>
+                  <h4 className="text-xl font-semibold text-mainBlue mb-3" style={{ wordBreak: 'keep-all' }}>모집 인원</h4>
+                  <p className="text-gray-700 mb-4" style={{ wordBreak: 'keep-all' }}>{admissionInfo.capacity}명 내외</p>
                 </div>
                 
                 {/* 모집 대상 - 모든 섹션에서 찾기 */}
@@ -128,10 +128,10 @@ const HomeAdmission = () => {
                   
                   return (
                     <div className="mb-6">
-                      <h4 className="text-xl font-semibold text-mainBlue mb-3">모집 대상</h4>
+                      <h4 className="text-xl font-semibold text-mainBlue mb-3" style={{ wordBreak: 'keep-all' }}>모집 대상</h4>
                       
                       {sectionToUse.content && (
-                        <p className="text-gray-700 mb-4">{sectionToUse.content}</p>
+                        <p className="text-gray-700 mb-4" style={{ wordBreak: 'keep-all' }}>{sectionToUse.content}</p>
                       )}
                       
                       {sectionToUse.targets && sectionToUse.targets.length > 0 && (
@@ -141,7 +141,7 @@ const HomeAdmission = () => {
                               <li key={targetIndex} className="flex items-start gap-3">
                                 <span className="bg-mainBlue text-white rounded-full w-6 h-6 flex items-center justify-center text-sm flex-shrink-0 mt-0.5">{targetIndex + 1}</span>
                                 <div>
-                                  <p>{target.text}</p>
+                                  <p style={{ wordBreak: 'keep-all' }}>{target.text}</p>
                                 </div>
                               </li>
                             )
@@ -151,8 +151,8 @@ const HomeAdmission = () => {
                       
                       {sectionToUse.subsections && sectionToUse.subsections.length > 0 && sectionToUse.subsections.map((subsection, subIndex) => (
                         <div key={subIndex} className="mt-4">
-                          <p className="font-medium">{subsection.title}</p>
-                          <p className="text-gray-600 mt-1">{subsection.content}</p>
+                          <p className="font-medium" style={{ wordBreak: 'keep-all' }}>{subsection.title}</p>
+                          <p className="text-gray-600 mt-1" style={{ wordBreak: 'keep-all' }}>{subsection.content}</p>
                         </div>
                       ))}
                     </div>
@@ -167,6 +167,7 @@ const HomeAdmission = () => {
           <Link 
             to="/admission/info" 
             className="inline-block px-4 py-2 bg-mainBlue/70 text-white font-medium rounded hover:bg-blue-900/70 transition-colors duration-300 text-sm"
+            style={{ wordBreak: 'keep-all' }}
           >
             자세한 내용 보기 {'>'}
           </Link>

@@ -134,10 +134,10 @@ const HomeNotices: React.FC = () => {
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-900">{notice.title}</h3>
+              <h3 className="text-xl font-bold text-gray-900" style={{ wordBreak: 'keep-all' }}>{notice.title}</h3>
               <span className="text-sm text-gray-500">{formatDate(notice.createdAt)}</span>
             </div>
-            <p className="text-gray-700 mb-4">{summarizeContent(notice.content)}</p>
+            <p className="text-gray-700 mb-4" style={{ wordBreak: 'keep-all' }}>{summarizeContent(notice.content)}</p>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">작성자: {notice.author}</span>
               <Link

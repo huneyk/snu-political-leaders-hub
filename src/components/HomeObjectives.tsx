@@ -46,8 +46,8 @@ const HomeObjectives = () => {
     <section className="py-16 bg-gray-50">
       <div className="main-container">
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-mainBlue mb-4 reveal">{sectionTitle}</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto reveal reveal-delay-100">
+          <h2 className="text-3xl md:text-4xl font-bold text-mainBlue mb-4 reveal" style={{ wordBreak: 'keep-all' }}>{sectionTitle}</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto reveal reveal-delay-100" style={{ wordBreak: 'keep-all' }}>
             서울대학교 정치지도자과정은 다음과 같은 목표를 가지고 있습니다.
           </p>
         </div>
@@ -87,10 +87,10 @@ const HomeObjectives = () => {
                       </div>
                     )}
                   </div>
-                  <h2 className="text-xl md:text-2xl font-bold text-mainBlue">{goal.title}</h2>
+                  <h2 className="text-xl md:text-2xl font-bold text-mainBlue" style={{ wordBreak: 'keep-all' }}>{goal.title}</h2>
                 </div>
                 <div className="prose prose-sm max-w-none mb-4">
-                  <p className="text-gray-700 line-clamp-3">{goal.content}</p>
+                  <p className="text-gray-700 line-clamp-3" style={{ wordBreak: 'keep-all' }}>{goal.content}</p>
                 </div>
               </div>
             ))}

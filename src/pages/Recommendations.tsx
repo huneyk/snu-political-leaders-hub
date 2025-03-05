@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
+import MobileFloatingMenu from '@/components/MobileFloatingMenu';
 
 interface Recommendation {
   text: string;
@@ -62,7 +63,7 @@ const Recommendations = () => {
       <Header />
       <main className="pt-24 pb-16">
         <div className="main-container">
-          <h1 className="section-title text-center mb-12">{title}</h1>
+          <h1 className="section-title text-center mb-12" style={{ wordBreak: 'keep-all' }}>{title}</h1>
           
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
@@ -70,7 +71,7 @@ const Recommendations = () => {
             </div>
           ) : recommendations.length === 0 ? (
             <div className="text-center text-gray-500 py-12">
-              <p>등록된 추천의 글이 없습니다.</p>
+              <p style={{ wordBreak: 'keep-all' }}>등록된 추천의 글이 없습니다.</p>
             </div>
           ) : (
             <motion.div 
@@ -103,13 +104,13 @@ const Recommendations = () => {
                     )}
                     
                     <div className={`flex-1 ${!recommendation.photoUrl ? 'md:pl-0' : ''}`}>
-                      <div className="mb-4 text-lg md:text-xl leading-relaxed text-gray-700 italic">
+                      <div className="mb-4 text-lg md:text-xl leading-relaxed text-gray-700 italic" style={{ wordBreak: 'keep-all' }}>
                         "{recommendation.text}"
                       </div>
                       
                       <div className="flex flex-col items-start">
-                        <h3 className="text-xl font-bold text-mainBlue">{recommendation.author}</h3>
-                        <p className="text-gray-600">{recommendation.position}</p>
+                        <h3 className="text-xl font-bold text-mainBlue" style={{ wordBreak: 'keep-all' }}>{recommendation.author}</h3>
+                        <p className="text-gray-600" style={{ wordBreak: 'keep-all' }}>{recommendation.position}</p>
                       </div>
                     </div>
                   </div>
@@ -120,6 +121,7 @@ const Recommendations = () => {
         </div>
       </main>
       <Footer />
+      <MobileFloatingMenu />
     </>
   );
 };
