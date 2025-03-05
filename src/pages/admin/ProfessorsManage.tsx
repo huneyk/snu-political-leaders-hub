@@ -4,6 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import AdminNavTabs from '@/components/admin/AdminNavTabs';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useNavigate } from 'react-router-dom';
+import AdminHomeButton from '@/components/admin/AdminHomeButton';
 
 interface Professor {
   name: string;
@@ -25,6 +31,8 @@ const ProfessorsManage = () => {
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
+  const navigate = useNavigate();
   
   useEffect(() => {
     // 로컬 스토리지에서 기존 데이터 로드
@@ -121,147 +129,171 @@ const ProfessorsManage = () => {
     }, 500);
   };
   
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>로딩 중...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    navigate('/admin/login');
+    return null;
+  }
+  
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-mainBlue">운영 교수진 관리</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-8">
-        {sections.map((section, sectionIndex) => (
-          <div key={sectionIndex} className="border border-gray-200 rounded-lg p-5 space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-2 flex-1">
-                <label htmlFor={`section-title-${sectionIndex}`} className="text-sm font-medium">
-                  섹션 제목 <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  id={`section-title-${sectionIndex}`}
-                  value={section.title}
-                  onChange={(e) => handleSectionTitleChange(sectionIndex, e.target.value)}
-                  placeholder="교수진 섹션의 제목을 입력하세요"
-                  required
-                />
-                {section.title.trim() === '' && (
-                  <p className="text-xs text-red-500">섹션 제목은 필수 입력 항목입니다.</p>
-                )}
-              </div>
-              
-              {sections.length > 1 && (
-                <Button 
-                  type="button" 
-                  variant="destructive" 
-                  onClick={() => removeSection(sectionIndex)}
-                  size="sm"
-                  className="ml-4 mt-6"
-                >
-                  섹션 삭제
-                </Button>
-              )}
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">교수 목록</h3>
-                <p className="text-xs text-gray-500">각 항목은 '교수 # - 이름 - 직위'가 한 세트로 구성됩니다</p>
-              </div>
-              
-              {section.professors.map((professor, professorIndex) => (
-                <div key={professorIndex} className="border p-4 rounded-md space-y-4 bg-gray-50">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-medium">교수 #{professorIndex + 1}</h3>
+    <>
+      <Header />
+      <div className="container mx-auto py-8 px-4 pt-24">
+        <h1 className="text-3xl font-bold text-mainBlue mb-6">관리자 대시보드</h1>
+        
+        <AdminNavTabs activeTab="content" />
+        <AdminHomeButton />
+        
+        <Card className="w-full mt-6">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-mainBlue">운영 교수진 관리</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            {sections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className="border border-gray-200 rounded-lg p-5 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2 flex-1">
+                    <label htmlFor={`section-title-${sectionIndex}`} className="text-sm font-medium">
+                      섹션 제목 <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      id={`section-title-${sectionIndex}`}
+                      value={section.title}
+                      onChange={(e) => handleSectionTitleChange(sectionIndex, e.target.value)}
+                      placeholder="교수진 섹션의 제목을 입력하세요"
+                      required
+                    />
+                    {section.title.trim() === '' && (
+                      <p className="text-xs text-red-500">섹션 제목은 필수 입력 항목입니다.</p>
+                    )}
+                  </div>
+                  
+                  {sections.length > 1 && (
                     <Button 
                       type="button" 
                       variant="destructive" 
-                      onClick={() => removeProfessor(sectionIndex, professorIndex)}
-                      disabled={section.professors.length <= 1}
+                      onClick={() => removeSection(sectionIndex)}
                       size="sm"
+                      className="ml-4 mt-6"
                     >
-                      삭제
+                      섹션 삭제
                     </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">이름 <span className="text-red-500">*</span></label>
-                      <Input
-                        value={professor.name}
-                        onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'name', e.target.value)}
-                        placeholder="교수 이름"
-                        required
-                      />
-                      {professor.name.trim() === '' && (
-                        <p className="text-xs text-red-500">이름은 필수 입력 항목입니다.</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">직위 <span className="text-red-500">*</span></label>
-                      <Input
-                        value={professor.position}
-                        onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'position', e.target.value)}
-                        placeholder="직위"
-                        required
-                      />
-                      {professor.position.trim() === '' && (
-                        <p className="text-xs text-red-500">직위는 필수 입력 항목입니다.</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">소속</label>
-                      <Input
-                        value={professor.organization}
-                        onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'organization', e.target.value)}
-                        placeholder="소속"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">프로필 설명</label>
-                    <Textarea
-                      value={professor.profile}
-                      onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'profile', e.target.value)}
-                      placeholder="교수 프로필 정보"
-                      rows={3}
-                    />
-                  </div>
+                  )}
                 </div>
-              ))}
-              
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => addProfessor(sectionIndex)} 
-                className="w-full flex items-center justify-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                교수 추가
-              </Button>
-            </div>
-          </div>
-        ))}
-        
-        <Button 
-          type="button" 
-          variant="secondary" 
-          onClick={addSection} 
-          className="w-full flex items-center justify-center gap-2"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          새 섹션 추가
-        </Button>
-      </CardContent>
-      <CardFooter>
-        <Button onClick={handleSave} disabled={isLoading} className="ml-auto">
-          {isLoading ? '저장 중...' : '저장하기'}
-        </Button>
-      </CardFooter>
-    </Card>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">교수 목록</h3>
+                    <p className="text-xs text-gray-500">각 항목은 '교수 # - 이름 - 직위'가 한 세트로 구성됩니다</p>
+                  </div>
+                  
+                  {section.professors.map((professor, professorIndex) => (
+                    <div key={professorIndex} className="border p-4 rounded-md space-y-4 bg-gray-50">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-medium">교수 #{professorIndex + 1}</h3>
+                        <Button 
+                          type="button" 
+                          variant="destructive" 
+                          onClick={() => removeProfessor(sectionIndex, professorIndex)}
+                          disabled={section.professors.length <= 1}
+                          size="sm"
+                        >
+                          삭제
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">이름 <span className="text-red-500">*</span></label>
+                          <Input
+                            value={professor.name}
+                            onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'name', e.target.value)}
+                            placeholder="교수 이름"
+                            required
+                          />
+                          {professor.name.trim() === '' && (
+                            <p className="text-xs text-red-500">이름은 필수 입력 항목입니다.</p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">직위 <span className="text-red-500">*</span></label>
+                          <Input
+                            value={professor.position}
+                            onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'position', e.target.value)}
+                            placeholder="직위"
+                            required
+                          />
+                          {professor.position.trim() === '' && (
+                            <p className="text-xs text-red-500">직위는 필수 입력 항목입니다.</p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">소속</label>
+                          <Input
+                            value={professor.organization}
+                            onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'organization', e.target.value)}
+                            placeholder="소속"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">프로필 설명</label>
+                        <Textarea
+                          value={professor.profile}
+                          onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'profile', e.target.value)}
+                          placeholder="교수 프로필 정보"
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => addProfessor(sectionIndex)} 
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    교수 추가
+                  </Button>
+                </div>
+              </div>
+            ))}
+            
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={addSection} 
+              className="w-full flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              새 섹션 추가
+            </Button>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={handleSave} disabled={isLoading} className="ml-auto">
+              {isLoading ? '저장 중...' : '저장하기'}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+      <Footer />
+    </>
   );
 };
 

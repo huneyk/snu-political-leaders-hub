@@ -82,6 +82,14 @@ const ContentTab = () => {
             <span className="text-lg font-medium">입학 지원 관리</span>
             <span className="text-sm opacity-80">입학 지원 정보 수정</span>
           </button>
+          <button 
+            onClick={() => handleNavigation('/admin/gallery')}
+            className="h-32 w-full bg-mainBlue hover:bg-blue-900 text-white flex flex-col items-center justify-center gap-2 rounded-md transition-colors cursor-pointer"
+          >
+            <Image size={24} />
+            <span className="text-lg font-medium">갤러리 관리</span>
+            <span className="text-sm opacity-80">갤러리 이미지 및 내용 관리</span>
+          </button>
           <Button 
             onClick={() => handleNavigation('/admin/notices')}
             className="w-full h-24 bg-blue-500 hover:bg-blue-600 flex items-center justify-center gap-3"

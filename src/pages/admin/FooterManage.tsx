@@ -188,15 +188,18 @@ const FooterManage: React.FC = () => {
               </div>
               
               <div>
-                <Label htmlFor="email">지원서 이메일 접수 주소</Label>
+                <Label htmlFor="email">문의 이메일</Label>
                 <Input
                   id="email"
                   type="email"
                   value={footerConfig.email}
                   onChange={handleEmailChange}
-                  placeholder="example@snu.ac.kr"
-                  className="mt-2"
+                  placeholder="예: plp@snu.ac.kr"
+                  className="max-w-md mt-2"
                 />
+                <p className="text-sm text-gray-500 mt-1">
+                  이 이메일은 Footer의 '문의하기' 버튼을 클릭했을 때 사용됩니다.
+                </p>
               </div>
             </div>
             
@@ -213,7 +216,7 @@ const FooterManage: React.FC = () => {
                   과정안내서 (PDF) 다운로드
                 </Button>
                 <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.email}>
-                  지원서 이메일 접수
+                  문의하기
                 </Button>
               </div>
               {footerConfig.email && (

@@ -76,7 +76,7 @@ const GreetingManage = () => {
   return (
     <>
       <Header />
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto py-8 px-4 pt-24">
         <h1 className="text-3xl font-bold text-mainBlue mb-6">관리자 대시보드</h1>
         
         <AdminNavTabs activeTab="content" />
@@ -97,7 +97,7 @@ const GreetingManage = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="content">내용</Label>
-              <p className="text-sm text-gray-500">문단 구분은 빈 줄(엔터 두 번)로 합니다.</p>
+              <p className="text-sm text-gray-500">문단 구분은 빈 줄(엔터 두 번)로 합니다. 문단 사이에는 자동으로 간격이 추가됩니다.</p>
               <Textarea
                 id="content"
                 value={content}

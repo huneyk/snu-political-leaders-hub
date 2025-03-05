@@ -61,7 +61,7 @@ const Footer = () => {
 
   const handleEmailClick = () => {
     if (footerConfig.email) {
-      window.location.href = `mailto:${footerConfig.email}?subject=서울대학교 정치리더십과정 입학지원서`;
+      window.location.href = `mailto:${footerConfig.email}?subject=서울대학교 정치지도자과정 지원서 접수`;
     }
   };
 
@@ -135,7 +135,7 @@ const Footer = () => {
               <p style={{ wordBreak: 'keep-all' }}>Tel: 02-880-4107  Email : plp@snu.ac.kr</p>
             </div>
             <div className="text-gray-500 text-sm">
-              <span style={{ wordBreak: 'keep-all' }}>{new Date().getFullYear()} 서울대학교 정치외교학부 정치지도자과정 © 
+              <span style={{ wordBreak: 'keep-all' }}>{new Date().getFullYear()} © 2025 서울대학교 정치외교학부 정치지도자과정 
                All rights reserved.</span>
             </div>
           </div>

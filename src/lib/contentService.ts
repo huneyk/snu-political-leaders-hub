@@ -59,6 +59,8 @@ export const contentService = {
 
   // Helper to parse content into paragraphs
   parseContentToParagraphs: (content: string): string[] => {
-    return content.split('\n\n').filter(paragraph => paragraph.trim() !== '');
+    // 연속된 줄바꿈(\n\n)을 기준으로 문단을 나눕니다.
+    // 다양한 줄바꿈 패턴을 처리하기 위해 정규식을 사용합니다.
+    return content.split(/\n\s*\n/).filter(paragraph => paragraph.trim() !== '');
   }
 }; 

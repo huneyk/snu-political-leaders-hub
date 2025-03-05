@@ -4,6 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import AdminNavTabs from '@/components/admin/AdminNavTabs';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useNavigate } from 'react-router-dom';
+import AdminHomeButton from '@/components/admin/AdminHomeButton';
 
 interface Benefit {
   title: string;
@@ -16,6 +22,8 @@ const CourseBenefitsManage = () => {
     { title: '', content: '' }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
+  const navigate = useNavigate();
   
   useEffect(() => {
     // 로컬 스토리지에서 기존 데이터 로드
@@ -79,89 +87,113 @@ const CourseBenefitsManage = () => {
     }, 500);
   };
   
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>로딩 중...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    navigate('/admin/login');
+    return null;
+  }
+  
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-mainBlue">과정의 특전 관리</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <label htmlFor="title" className="text-sm font-medium">섹션 제목</label>
-          <Input
-            id="title"
-            value={sectionTitle}
-            onChange={(e) => setSectionTitle(e.target.value)}
-            placeholder="과정 특전 섹션의 제목을 입력하세요"
-          />
-        </div>
+    <>
+      <Header />
+      <div className="container mx-auto py-8 px-4 pt-24">
+        <h1 className="text-3xl font-bold text-mainBlue mb-6">관리자 대시보드</h1>
         
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">특전 항목</label>
-            <p className="text-xs text-gray-500">각 항목은 '특전 제목 - 특전 내용'이 한 세트로 구성됩니다</p>
-          </div>
-          
-          {benefits.map((benefit, index) => (
-            <div key={index} className="p-4 border border-gray-200 rounded-md bg-gray-50">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-medium">특전 {index + 1}</h3>
-                <Button 
-                  type="button" 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => removeBenefit(index)}
-                  disabled={benefits.length <= 1}
-                >
-                  삭제
-                </Button>
-              </div>
-              
-              <div className="mb-3">
-                <label className="text-sm font-medium mb-1 block">특전 제목 <span className="text-red-500">*</span></label>
-                <Input
-                  value={benefit.title}
-                  onChange={(e) => handleBenefitChange(index, 'title', e.target.value)}
-                  placeholder={`특전 ${index + 1} 제목`}
-                  className="mb-2"
-                  required
-                />
-                {benefit.title.trim() === '' && (
-                  <p className="text-xs text-red-500 mt-1">특전 제목은 필수 입력 항목입니다.</p>
-                )}
-              </div>
-              
-              <div className="mb-2">
-                <label className="text-sm font-medium mb-1 block">특전 내용</label>
-                <Textarea
-                  value={benefit.content}
-                  onChange={(e) => handleBenefitChange(index, 'content', e.target.value)}
-                  placeholder={`특전 ${index + 1} 내용`}
-                  className="min-h-[100px]"
-                />
-              </div>
+        <AdminNavTabs activeTab="content" />
+        <AdminHomeButton />
+        
+        <Card className="w-full mt-6">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-mainBlue">과정의 특전 관리</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="title" className="text-sm font-medium">섹션 제목</label>
+              <Input
+                id="title"
+                value={sectionTitle}
+                onChange={(e) => setSectionTitle(e.target.value)}
+                placeholder="과정 특전 섹션의 제목을 입력하세요"
+              />
             </div>
-          ))}
-          
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={addBenefit} 
-            className="w-full flex items-center justify-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            새 특전 추가
-          </Button>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button onClick={handleSave} disabled={isLoading} className="ml-auto">
-          {isLoading ? '저장 중...' : '저장하기'}
-        </Button>
-      </CardFooter>
-    </Card>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">특전 항목</label>
+                <p className="text-xs text-gray-500">각 항목은 '특전 제목 - 특전 내용'이 한 세트로 구성됩니다</p>
+              </div>
+              
+              {benefits.map((benefit, index) => (
+                <div key={index} className="p-4 border border-gray-200 rounded-md bg-gray-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium">특전 {index + 1}</h3>
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => removeBenefit(index)}
+                      disabled={benefits.length <= 1}
+                    >
+                      삭제
+                    </Button>
+                  </div>
+                  
+                  <div className="mb-3">
+                    <label className="text-sm font-medium mb-1 block">특전 제목 <span className="text-red-500">*</span></label>
+                    <Input
+                      value={benefit.title}
+                      onChange={(e) => handleBenefitChange(index, 'title', e.target.value)}
+                      placeholder={`특전 ${index + 1} 제목`}
+                      className="mb-2"
+                      required
+                    />
+                    {benefit.title.trim() === '' && (
+                      <p className="text-xs text-red-500 mt-1">특전 제목은 필수 입력 항목입니다.</p>
+                    )}
+                  </div>
+                  
+                  <div className="mb-2">
+                    <label className="text-sm font-medium mb-1 block">특전 내용</label>
+                    <Textarea
+                      value={benefit.content}
+                      onChange={(e) => handleBenefitChange(index, 'content', e.target.value)}
+                      placeholder={`특전 ${index + 1} 내용`}
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={addBenefit} 
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                새 특전 추가
+              </Button>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={handleSave} disabled={isLoading} className="ml-auto">
+              {isLoading ? '저장 중...' : '저장하기'}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+      <Footer />
+    </>
   );
 };
 

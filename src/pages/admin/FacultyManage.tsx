@@ -458,7 +458,7 @@ const FacultyManage = () => {
   return (
     <>
       <Header />
-      <main className="container mx-auto p-6">
+      <main className="container mx-auto p-6 pt-24">
         <h1 className="text-3xl font-bold mb-6">강사진 관리</h1>
         
         <AdminHomeButton />

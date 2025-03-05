@@ -55,7 +55,7 @@ const Greeting = () => {
               <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-elegant p-8 md:p-12 reveal reveal-delay-200">
                 <div className="prose prose-lg max-w-none" style={{ wordBreak: 'keep-all' }}>
                   {content.map((paragraph, index) => (
-                    <p key={index}>{paragraph}</p>
+                    <p key={index} className="mb-6">{paragraph}</p>
                   ))}
                   
                   <div className="text-right mt-8">

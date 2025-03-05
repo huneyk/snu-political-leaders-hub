@@ -23,108 +23,8 @@ interface TermFaculty {
   categories: FacultyCategory[];
 }
 
-// 직접 정의한 기본 데이터
-const defaultTerms: TermFaculty[] = [
-  {
-    term: '3',
-    categories: [
-      {
-        id: '1',
-        name: '특별강사진',
-        faculty: [
-          {
-            id: "1",
-            name: "홍길동",
-            imageUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80",
-            biography: "전 국무총리\n행정 및 정책 전문가"
-          },
-          {
-            id: "2",
-            name: "이몽룡",
-            imageUrl: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80",
-            biography: "전 국회의장\n의회정치 및 입법과정 전문가"
-          }
-        ]
-      },
-      {
-        id: '2',
-        name: '서울대 정치외교학부 교수진',
-        faculty: [
-          {
-            id: "1",
-      name: "김상배",
-            imageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80",
-            biography: "국제정치학, 정보혁명과 네트워크 세계정치, 신흥안보 전문가"
-          },
-          {
-            id: "2",
-      name: "임혜란",
-            imageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80",
-            biography: "비교정치경제, 동아시아 발전국가 연구 전문가"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    term: '2',
-    categories: [
-      {
-        id: '1',
-        name: '특별강사진',
-        faculty: [
-          {
-            id: "3",
-            name: "성춘향",
-            imageUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80",
-            biography: "전 외교부 장관\n국제관계 및 외교정책 전문가"
-          }
-        ]
-      },
-      {
-        id: '2',
-        name: '서울대 정치외교학부 교수진',
-        faculty: [
-          {
-            id: "3",
-            name: "김의영",
-            imageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80",
-            biography: "비교정치, 시민사회, 거버넌스 전문가"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    term: '1',
-    categories: [
-      {
-        id: '1',
-        name: '특별강사진',
-        faculty: [
-          {
-            id: "4",
-            name: "방자",
-            imageUrl: "",
-            biography: "전 국회의원\n정치 및 입법 전문가"
-          }
-        ]
-      },
-      {
-        id: '2',
-        name: '서울대 정치외교학부 교수진',
-        faculty: [
-          {
-            id: "4",
-            name: "박원호",
-            imageUrl: "",
-            biography: "정치행태, 정치심리학, 선거연구 전문가"
-          }
-        ]
-      }
-    ]
-  }
-];
+// 빈 배열로 초기화
+const defaultTerms: TermFaculty[] = [];
 
 const ScheduleLecturers = () => {
   // 상태 관리
@@ -132,6 +32,7 @@ const ScheduleLecturers = () => {
   const [activeTermIndex, setActiveTermIndex] = useState(0);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [noData, setNoData] = useState(false);
 
   // 컴포넌트 마운트 시 한 번만 실행
   useEffect(() => {
@@ -191,30 +92,35 @@ const ScheduleLecturers = () => {
               });
               
               setTerms(sortedTerms);
+              setNoData(false);
               console.log('유효한 기수 데이터 설정 (내림차순):', sortedTerms.length, '개');
               
               // 가장 최근 기수(첫 번째 항목)를 기본으로 선택
               setActiveTermIndex(0);
             } else {
-              console.log('유효한 강사 데이터가 없음, 기본 데이터 사용');
-              setTerms(defaultTerms);
+              console.log('유효한 강사 데이터가 없음');
+              setTerms([]);
+              setNoData(true);
             }
           } else {
-            console.log('유효한 데이터 형식이 아님, 기본 데이터 사용');
-            setTerms(defaultTerms);
+            console.log('유효한 데이터 형식이 아님');
+            setTerms([]);
+            setNoData(true);
           }
         } catch (parseError) {
           console.error('JSON 파싱 오류:', parseError);
-          console.log('파싱 오류로 기본 데이터 사용');
-          setTerms(defaultTerms);
+          setTerms([]);
+          setNoData(true);
         }
       } else {
-        console.log('저장된 강사진 데이터 없음, 기본 데이터 사용');
-        setTerms(defaultTerms);
+        console.log('저장된 강사진 데이터 없음');
+        setTerms([]);
+        setNoData(true);
       }
     } catch (error) {
       console.error('강사진 데이터 로드 실패:', error);
-      setTerms(defaultTerms);
+      setTerms([]);
+      setNoData(true);
     } finally {
       setLoading(false);
       console.log('데이터 로드 완료');
@@ -236,121 +142,104 @@ const ScheduleLecturers = () => {
           <h1 className="text-3xl md:text-4xl font-bold mb-4">강사진 소개</h1>
           <p className="text-white/80 max-w-3xl">
             서울대학교 정치리더십 프로그램의 강사진을 소개합니다.
-              </p>
-            </div>
-          </section>
+          </p>
+        </div>
+      </section>
 
       <div className="container mx-auto px-4 py-12">
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
           </div>
+        ) : noData ? (
+          <div className="text-center py-16">
+            <h2 className="text-2xl font-bold text-gray-700 mb-4">등록된 강사진 정보가 없습니다</h2>
+            <p className="text-gray-500">관리자 페이지에서 강사진 정보를 등록해주세요.</p>
+          </div>
         ) : (
           <div>
             {/* 기수 탭 */}
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-3">기수 선택</h2>
-              <div className="flex flex-wrap gap-2 mb-4">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-4">기수별 강사진</h2>
+              <div className="flex flex-wrap gap-2">
                 {terms.map((term, index) => (
-                    <button
-                    key={`term-${term.term}`}
-                    className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
-                      activeTermIndex === index
-                        ? "bg-mainBlue text-white shadow-md"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  <button
+                    key={term.term}
+                    className={`px-4 py-2 rounded-full ${
+                      index === activeTermIndex
+                        ? 'bg-mainBlue text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                     onClick={() => {
                       setActiveTermIndex(index);
-                      setActiveCategoryIndex(0); // 기수 변경 시 카테고리 초기화
+                      setActiveCategoryIndex(0); // 기수 변경 시 첫 번째 카테고리로 초기화
                     }}
                   >
-                    제 {term.term} 기
-                    </button>
+                    {term.term}기
+                  </button>
                 ))}
               </div>
             </div>
 
             {/* 카테고리 탭 */}
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-3">카테고리 선택</h2>
-              <div className="flex mb-6 border-b">
-                {currentTerm?.categories.map((category, index) => (
+            {currentTerm && currentTerm.categories.length > 0 && (
+              <div className="mb-8">
+                <div className="flex flex-wrap gap-2">
+                  {currentTerm.categories.map((category, index) => (
                     <button
-                    key={`category-${category.id}`}
-                    className={`px-4 py-2 font-medium transition-all duration-200 ${
-                      activeCategoryIndex === index
-                        ? "text-mainBlue border-b-2 border-mainBlue"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                    onClick={() => setActiveCategoryIndex(index)}
-                  >
-                    {category.name}
-                    </button>
-                ))}
-                  </div>
-                </div>
-
-            {/* 강사 카드 목록 */}
-            {displayFaculty.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center">
-                {displayFaculty.map((faculty, index) => {
-                  console.log(`렌더링 중: ${index + 1}/${displayFaculty.length}`, faculty.name);
-                  return (
-                    <div
-                      key={`${faculty.id || index}-${faculty.name}`}
-                      className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1 w-72"
+                      key={category.id}
+                      className={`px-4 py-2 rounded-full ${
+                        index === activeCategoryIndex
+                          ? 'bg-mainBlue text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                      onClick={() => setActiveCategoryIndex(index)}
                     >
-                      <div className="p-5">
-                        <div className="flex flex-col items-center mb-5">
-                          <div className="w-52 h-52 rounded-lg bg-gray-200 mb-4 overflow-hidden shadow-md">
-                            {faculty.imageUrl ? (
-                              <img
-                                src={faculty.imageUrl}
-                                alt={faculty.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-blue-100 text-blue-500">
-                                <div className="text-5xl">👤</div>
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-center">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">
-                              {faculty.name || "이름 없음"}
-                            </h3>
-                          </div>
-                        </div>
-                        <div className="prose prose-sm max-w-none text-gray-600 border-t pt-4">
-                          {faculty.biography ? (
-                            <div>
-                              {faculty.biography
-                                .split('\n')
-                                .map((line, i) => (
-                                  <p key={i} className={`${i === 0 ? 'font-medium text-gray-800' : 'text-gray-600'} mb-1`}>
-                                    {line || <br />}
-                                  </p>
-                                ))
-                              }
-                            </div>
-                          ) : (
-                            <p className="text-gray-400 italic">약력 정보가 없습니다.</p>
-                          )}
-                      </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      {category.name}
+                    </button>
+                  ))}
                 </div>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-lg shadow">
-                <p className="text-gray-500 text-lg">등록된 강사가 없습니다.</p>
-                <p className="text-gray-400 mt-2">다른 기수나 카테고리를 선택해보세요.</p>
               </div>
             )}
+
+            {/* 강사진 목록 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayFaculty.map((faculty) => (
+                <div
+                  key={faculty.id}
+                  className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:shadow-lg"
+                >
+                  <div className="p-6">
+                    <div className="flex flex-col items-center mb-4">
+                      {faculty.imageUrl ? (
+                        <div className="w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-gray-100">
+                          <img
+                            src={faculty.imageUrl}
+                            alt={faculty.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // 이미지 로드 실패 시 기본 이미지로 대체
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=No+Image';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center mb-4 border-4 border-gray-100">
+                          <span className="text-gray-400 text-4xl">?</span>
+                        </div>
+                      )}
+                      <h3 className="text-xl font-bold text-mainBlue">{faculty.name}</h3>
+                    </div>
+                    <div className="whitespace-pre-line text-gray-600 text-center">
+                      {faculty.biography}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
-            </div>
+      </div>
       <Footer />
     </div>
   );

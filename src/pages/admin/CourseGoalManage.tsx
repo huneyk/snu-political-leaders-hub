@@ -6,6 +6,11 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { toast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import AdminHomeButton from '@/components/admin/AdminHomeButton';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import AdminNavTabs from '@/components/admin/AdminNavTabs';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface GoalItem {
   title: string;
@@ -19,6 +24,8 @@ const CourseGoalManage = () => {
     { title: '', content: '', imageUrl: '' }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
+  const navigate = useNavigate();
   
   useEffect(() => {
     // 로컬 스토리지에서 기존 데이터 로드
@@ -94,100 +101,124 @@ const CourseGoalManage = () => {
     reader.readAsDataURL(file);
   };
   
-  return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>과정의 목표 관리</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <label htmlFor="title" className="text-sm font-medium">섹션 제목</label>
-          <Input
-            id="title"
-            value={sectionTitle}
-            onChange={(e) => setSectionTitle(e.target.value)}
-            placeholder="과정 목표 섹션의 제목을 입력하세요"
-          />
-        </div>
-        
-        <div className="space-y-6">
-          <label className="text-sm font-medium">목표 항목</label>
-          {goals.map((goal, index) => (
-            <div key={index} className="border p-4 rounded-md space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-medium">목표 #{index + 1}</h3>
-                <Button 
-                  type="button" 
-                  variant="destructive" 
-                  onClick={() => removeGoal(index)}
-                  disabled={goals.length <= 1}
-                  size="sm"
-                >
-                  삭제
-                </Button>
-              </div>
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>로딩 중...</p>
+      </div>
+    );
+  }
 
-              <div className="space-y-2">
-                <Label htmlFor={`goal-image-${index}`} className="text-sm font-medium">목표 아이콘</Label>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    목표 아이콘
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileUpload(index, e)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mainBlue focus:border-mainBlue"
-                  />
-                  <p className="mt-1 text-sm text-gray-500">아이콘으로 사용할 정사각형 이미지를 업로드해주세요.</p>
-                  
-                  {goal.imageUrl && (
-                    <div className="mt-2">
-                      <div className="w-16 h-16 rounded-full overflow-hidden shadow-md bg-mainBlue">
-                        <img 
-                          src={goal.imageUrl} 
-                          alt={goal.title || `목표 ${index + 1}`}
-                          className="w-full h-full object-cover" 
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor={`goal-title-${index}`} className="text-sm font-medium">목표 제목</Label>
-                <Input
-                  id={`goal-title-${index}`}
-                  value={goal.title}
-                  onChange={(e) => handleGoalChange(index, 'title', e.target.value)}
-                  placeholder="목표 제목을 입력하세요"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor={`goal-content-${index}`} className="text-sm font-medium">목표 내용</Label>
-                <Textarea
-                  id={`goal-content-${index}`}
-                  value={goal.content}
-                  onChange={(e) => handleGoalChange(index, 'content', e.target.value)}
-                  placeholder="목표 내용을 입력하세요"
-                  rows={3}
-                />
-              </div>
+  if (!isAuthenticated) {
+    navigate('/admin/login');
+    return null;
+  }
+  
+  return (
+    <>
+      <Header />
+      <div className="container mx-auto py-8 px-4 pt-24">
+        <h1 className="text-3xl font-bold text-mainBlue mb-6">관리자 대시보드</h1>
+        
+        <AdminNavTabs activeTab="content" />
+        <AdminHomeButton />
+        
+        <Card className="w-full mt-6">
+          <CardHeader>
+            <CardTitle>과정의 목표 관리</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <label htmlFor="title" className="text-sm font-medium">섹션 제목</label>
+              <Input
+                id="title"
+                value={sectionTitle}
+                onChange={(e) => setSectionTitle(e.target.value)}
+                placeholder="과정 목표 섹션의 제목을 입력하세요"
+              />
             </div>
-          ))}
-          <Button type="button" variant="outline" onClick={addGoal} className="w-full">
-            목표 추가
-          </Button>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button onClick={handleSave} disabled={isLoading} className="ml-auto">
-          {isLoading ? '저장 중...' : '저장하기'}
-        </Button>
-      </CardFooter>
-    </Card>
+            
+            <div className="space-y-6">
+              <label className="text-sm font-medium">목표 항목</label>
+              {goals.map((goal, index) => (
+                <div key={index} className="border p-4 rounded-md space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium">목표 #{index + 1}</h3>
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      onClick={() => removeGoal(index)}
+                      disabled={goals.length <= 1}
+                      size="sm"
+                    >
+                      삭제
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`goal-image-${index}`} className="text-sm font-medium">목표 아이콘</Label>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        목표 아이콘
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(index, e)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mainBlue focus:border-mainBlue"
+                      />
+                      <p className="mt-1 text-sm text-gray-500">아이콘으로 사용할 정사각형 이미지를 업로드해주세요.</p>
+                      
+                      {goal.imageUrl && (
+                        <div className="mt-2">
+                          <div className="w-16 h-16 rounded-full overflow-hidden shadow-md bg-mainBlue">
+                            <img 
+                              src={goal.imageUrl} 
+                              alt={goal.title || `목표 ${index + 1}`}
+                              className="w-full h-full object-cover" 
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor={`goal-title-${index}`} className="text-sm font-medium">목표 제목</Label>
+                    <Input
+                      id={`goal-title-${index}`}
+                      value={goal.title}
+                      onChange={(e) => handleGoalChange(index, 'title', e.target.value)}
+                      placeholder="목표 제목을 입력하세요"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor={`goal-content-${index}`} className="text-sm font-medium">목표 내용</Label>
+                    <Textarea
+                      id={`goal-content-${index}`}
+                      value={goal.content}
+                      onChange={(e) => handleGoalChange(index, 'content', e.target.value)}
+                      placeholder="목표 내용을 입력하세요"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              ))}
+              <Button type="button" variant="outline" onClick={addGoal} className="w-full">
+                목표 추가
+              </Button>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={handleSave} disabled={isLoading} className="ml-auto">
+              {isLoading ? '저장 중...' : '저장하기'}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+      <Footer />
+    </>
   );
 };
 
