@@ -3,15 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-"scripts": {
-  "start": "node server.js",
-  "server": "nodemon server.js",
-  "client": "cd snu-political-leaders-hub && npm start",
-  "dev": "concurrently \"npm run server\" \"npm run client\"",
-  "vite-build": "vite build",
-  "build": "vite build",
-  "heroku-postbuild": "npm run build"
-},
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "heroku-postbuild": "npm run build"
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
