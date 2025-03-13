@@ -5,8 +5,11 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { MongoClient } from 'mongodb';
-import { ServerApi } from 'mongodb';
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+
+
+
 
 
 
