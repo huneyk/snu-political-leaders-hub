@@ -5,13 +5,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
-
-
-
-
-
+import contentService from './lib/contentService.js';
 
 // ES 모듈에서 __dirname 사용하기
 const __filename = fileURLToPath(import.meta.url);
@@ -29,16 +23,21 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// 콘텐츠 서비스 초기화
+console.log('콘텐츠 서비스 초기화 중...');
+const allContent = contentService.getAllContent();
+console.log(`콘텐츠 서비스 초기화 완료: ${Object.keys(allContent).length}개 타입 로드됨`);
+
 // 동적으로 라우트 파일 임포트
 const importRoutes = async () => {
   try {
     // auth.js 라우트 임포트
-    const authRoutes = await import('../routes/auth.js');
+    const authRoutes = await import('./routes/auth.js');
     app.use('/api/auth', authRoutes.default);
     console.log('인증 라우트 로드 완료');
 
     // content.js 라우트 임포트
-    const contentRoutes = await import('../routes/content.js');
+    const contentRoutes = await import('./routes/content.js');
     app.use('/api/content', contentRoutes.default);
     console.log('콘텐츠 라우트 로드 완료');
   } catch (error) {
@@ -64,7 +63,8 @@ app.get('/api/health', (req, res) => {
     status: 'ok', 
     timestamp: new Date(), 
     mongoConnected: mongoose.connection.readyState === 1,
-    staticDir: staticDir
+    staticDir: staticDir,
+    contentTypes: contentService.getContentTypes()
   });
 });
 
