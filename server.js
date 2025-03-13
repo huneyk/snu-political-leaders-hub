@@ -5,6 +5,10 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { MongoClient } from 'mongodb';
+import { ServerApi } from 'mongodb';
+
+
 
 // ES 모듈에서 __dirname 사용하기
 const __filename = fileURLToPath(import.meta.url);
@@ -26,12 +30,12 @@ app.use(express.urlencoded({ extended: true }));
 const importRoutes = async () => {
   try {
     // auth.js 라우트 임포트
-    const authRoutes = await import('./routes/auth.js');
+    const authRoutes = await import('../routes/auth.js');
     app.use('/api/auth', authRoutes.default);
     console.log('인증 라우트 로드 완료');
 
     // content.js 라우트 임포트
-    const contentRoutes = await import('./routes/content.js');
+    const contentRoutes = await import('../routes/content.js');
     app.use('/api/content', contentRoutes.default);
     console.log('콘텐츠 라우트 로드 완료');
   } catch (error) {
