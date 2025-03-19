@@ -1,6 +1,15 @@
 import mongoose from 'mongoose';
 
 const recommendationSchema = new mongoose.Schema({
+  sectionTitle: {
+    type: String,
+    default: '추천의 글',
+    trim: true
+  },
+  title: {
+    type: String,
+    trim: true
+  },
   name: {
     type: String,
     required: true,

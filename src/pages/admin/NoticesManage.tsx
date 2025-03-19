@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { apiService } from '@/lib/apiService';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
@@ -29,7 +30,7 @@ interface Notice {
   isImportant: boolean;
 }
 
-const NoticesManage = () => {
+const NoticesManage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, token } = useAdminAuth();
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -37,7 +38,7 @@ const NoticesManage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -45,66 +46,30 @@ const NoticesManage = () => {
     isImportant: false,
   });
 
-  // Admin 인증 체크
+  // Admin 인증 체크 - 의존성 배열에서 isAuthenticated와 navigate 제거
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/admin/login');
-    } else {
-      // 공지사항 데이터 로드
-      loadNotices();
-    }
-  }, [isAuthenticated, navigate]);
+    // 컴포넌트 마운트 시 한 번만 실행
+    loadNotices();
+  }, []); // 빈 의존성 배열
 
-  // 공지사항 데이터 로드
+  // 공지사항 로드
   const loadNotices = async () => {
-    if (!token) return;
-    
-    setIsLoading(true);
-    console.log('관리자 페이지 공지사항 로딩 시작');
     try {
-      // MongoDB API를 통해 공지사항 데이터 가져오기
-      console.log('관리자 API 호출 시작:', `${API_BASE_URL}/notices`);
-      const data = await apiService.getNotices();
-      console.log('관리자 API 호출 결과:', data);
+      setIsLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/notices`);
       
-      if (Array.isArray(data) && data.length > 0) {
-        // MongoDB에서 가져온 데이터를 필요한 형식으로 변환
-        console.log('관리자 데이터 변환 시작');
-        const formattedData = data.map(item => ({
-          id: item._id,
-          _id: item._id,
-          title: item.title,
-          content: item.content,
-          author: item.author,
-          createdAt: new Date(item.createdAt).toISOString(),
-          isImportant: item.isImportant
-        }));
-        console.log('관리자 변환된 데이터:', formattedData);
-        
-        // 중요 공지사항을 먼저 표시하고, 그 다음에 날짜 내림차순으로 정렬
-        const sortedNotices = formattedData.sort((a, b) => {
-          if (a.isImportant && !b.isImportant) return -1;
-          if (!a.isImportant && b.isImportant) return 1;
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
-        console.log('관리자 정렬된 데이터:', sortedNotices);
-        
-        setNotices(sortedNotices);
-      } else {
-        console.log('관리자 데이터가 없거나 배열이 아님:', data);
-        setNotices([]);
+      if (response.data) {
+        setNotices(response.data);
       }
     } catch (error) {
-      console.error('관리자 공지사항 로드 중 오류 발생:', error);
+      console.error('공지사항 로드 실패:', error);
       toast({
         title: "공지사항 로드 실패",
         description: "공지사항을 불러오는 중 오류가 발생했습니다.",
         variant: "destructive",
       });
-      setNotices([]);
     } finally {
       setIsLoading(false);
-      console.log('관리자 공지사항 로딩 완료');
     }
   };
 

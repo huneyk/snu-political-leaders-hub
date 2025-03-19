@@ -47,13 +47,15 @@ router.get('/recommendations/all', authenticateToken, async (req, res) => {
  */
 router.post('/recommendations', authenticateToken, async (req, res) => {
   try {
-    const { name, position, content, imageUrl, order, isActive } = req.body;
+    const { sectionTitle, title, name, position, content, imageUrl, order, isActive } = req.body;
     
     if (!name || !position || !content) {
       return res.status(400).json({ message: '이름, 직위, 내용은 필수 항목입니다.' });
     }
     
     const newRecommendation = new Recommendation({
+      sectionTitle: sectionTitle || '추천의 글',
+      title: title || '',
       name,
       position,
       content,
@@ -77,7 +79,7 @@ router.post('/recommendations', authenticateToken, async (req, res) => {
  */
 router.put('/recommendations/:id', authenticateToken, async (req, res) => {
   try {
-    const { name, position, content, imageUrl, order, isActive } = req.body;
+    const { sectionTitle, title, name, position, content, imageUrl, order, isActive } = req.body;
     
     if (!name || !position || !content) {
       return res.status(400).json({ message: '이름, 직위, 내용은 필수 항목입니다.' });
@@ -86,6 +88,8 @@ router.put('/recommendations/:id', authenticateToken, async (req, res) => {
     const updatedRecommendation = await Recommendation.findByIdAndUpdate(
       req.params.id,
       {
+        sectionTitle: sectionTitle || '추천의 글',
+        title: title || '',
         name,
         position, 
         content,

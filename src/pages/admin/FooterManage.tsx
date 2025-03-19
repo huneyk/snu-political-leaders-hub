@@ -4,9 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import axios from 'axios';
+
+// API 기본 URL 설정
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : 'http://localhost:5001/api';
 
 interface FooterConfig {
   wordFile: string;
@@ -16,9 +23,10 @@ interface FooterConfig {
 }
 
 const FooterManage: React.FC = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated, token } = useAdminAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [footerConfig, setFooterConfig] = useState<FooterConfig>({
     wordFile: '',
     hwpFile: '',
@@ -31,210 +39,316 @@ const FooterManage: React.FC = () => {
   const [hwpFileName, setHwpFileName] = useState<string>('');
   const [pdfFileName, setPdfFileName] = useState<string>('');
 
+  // Admin 인증 체크
   useEffect(() => {
-    // Load existing configuration from localStorage
-    const savedConfig = localStorage.getItem('footer-config');
-    if (savedConfig) {
-      try {
-        const parsedConfig = JSON.parse(savedConfig);
-        setFooterConfig(parsedConfig);
+    // 컴포넌트 마운트 시 한 번만 체크
+    const checkAuth = async () => {
+      if (!isAuthenticated) {
+        navigate('/admin/login');
+        return;
+      }
+      
+      // 인증된 경우에만 데이터 로드
+      await loadFooterConfig();
+    };
+    
+    checkAuth();
+  }, [isAuthenticated, navigate]);
+
+  // MongoDB에서 footer 설정 로드
+  const loadFooterConfig = async () => {
+    if (!token) return;
+    
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/footer`);
+      
+      if (response.data) {
+        const data = response.data;
+        setFooterConfig({
+          wordFile: data.wordFile || '',
+          hwpFile: data.hwpFile || '',
+          pdfFile: data.pdfFile || '',
+          email: data.email || ''
+        });
         
         // Set file names for display
-        if (parsedConfig.wordFile) {
-          const wordName = parsedConfig.wordFile.split('/').pop() || '입학지원서.docx';
+        if (data.wordFile) {
+          const wordName = data.wordFile.split('/').pop() || '입학지원서.docx';
           setWordFileName(wordName);
         }
         
-        if (parsedConfig.hwpFile) {
-          const hwpName = parsedConfig.hwpFile.split('/').pop() || '입학지원서.hwp';
+        if (data.hwpFile) {
+          const hwpName = data.hwpFile.split('/').pop() || '입학지원서.hwp';
           setHwpFileName(hwpName);
         }
         
-        if (parsedConfig.pdfFile) {
-          const pdfName = parsedConfig.pdfFile.split('/').pop() || '과정안내서.pdf';
+        if (data.pdfFile) {
+          const pdfName = data.pdfFile.split('/').pop() || '과정안내서.pdf';
           setPdfFileName(pdfName);
         }
-      } catch (error) {
-        console.error('Failed to parse footer config:', error);
       }
+    } catch (error) {
+      console.error('Footer 정보 로드 실패:', error);
+      toast({
+        title: "Footer 정보 로드 실패",
+        description: "설정을 불러오는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+      
+      // 에러가 발생하면 localStorage에서 로드 시도 (fallback)
+      const savedConfig = localStorage.getItem('footer-config');
+      if (savedConfig) {
+        try {
+          const parsedConfig = JSON.parse(savedConfig);
+          setFooterConfig(parsedConfig);
+          
+          // Set file names for display
+          if (parsedConfig.wordFile) {
+            const wordName = parsedConfig.wordFile.split('/').pop() || '입학지원서.docx';
+            setWordFileName(wordName);
+          }
+          
+          if (parsedConfig.hwpFile) {
+            const hwpName = parsedConfig.hwpFile.split('/').pop() || '입학지원서.hwp';
+            setHwpFileName(hwpName);
+          }
+          
+          if (parsedConfig.pdfFile) {
+            const pdfName = parsedConfig.pdfFile.split('/').pop() || '과정안내서.pdf';
+            setPdfFileName(pdfName);
+          }
+        } catch (error) {
+          console.error('Failed to parse footer config from localStorage:', error);
+        }
+      }
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  };
 
   const handleFileUpload = (fileType: 'wordFile' | 'hwpFile' | 'pdfFile', event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0) return;
+    // 실제 파일 업로드 로직 구현 필요
+    // 예시에서는 File URL을 직접 입력받는 방식으로 구현
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
     
-    const file = event.target.files[0];
-    const reader = new FileReader();
+    // 선택된 파일의 첫 번째 파일 사용
+    const file = files[0];
     
-    reader.onloadend = () => {
-      // Store file as data URL
-      const fileDataUrl = reader.result as string;
-      setFooterConfig(prev => ({ ...prev, [fileType]: fileDataUrl }));
-      
-      // Update file name for display
-      switch (fileType) {
-        case 'wordFile':
-          setWordFileName(file.name);
-          break;
-        case 'hwpFile':
-          setHwpFileName(file.name);
-          break;
-        case 'pdfFile':
-          setPdfFileName(file.name);
-          break;
-      }
-      
-      toast({
-        title: "파일 업로드 완료",
-        description: `${file.name} 파일이 업로드되었습니다.`,
-      });
-    };
+    // 파일명 저장
+    switch (fileType) {
+      case 'wordFile':
+        setWordFileName(file.name);
+        break;
+      case 'hwpFile':
+        setHwpFileName(file.name);
+        break;
+      case 'pdfFile':
+        setPdfFileName(file.name);
+        break;
+    }
+
+    // 실제 구현에서는 파일을 서버에 업로드하고 URL을 받아야 함
+    // 지금은 임시로 파일 이름만 표시하고 실제 URL은 설정하지 않음
+    // setFooterConfig(prev => ({ ...prev, [fileType]: fileUrl }));
+  };
+
+  const handleUrlChange = (fileType: 'wordFile' | 'hwpFile' | 'pdfFile', e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setFooterConfig(prev => ({ ...prev, [fileType]: url }));
     
-    reader.readAsDataURL(file);
+    // 파일명 설정
+    const fileName = url.split('/').pop() || '';
+    switch (fileType) {
+      case 'wordFile':
+        setWordFileName(fileName || '입학지원서.docx');
+        break;
+      case 'hwpFile':
+        setHwpFileName(fileName || '입학지원서.hwp');
+        break;
+      case 'pdfFile':
+        setPdfFileName(fileName || '과정안내서.pdf');
+        break;
+    }
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFooterConfig(prev => ({ ...prev, email: e.target.value }));
   };
 
-  const handleSave = () => {
-    setIsLoading(true);
-    
-    try {
-      // Save to localStorage
-      localStorage.setItem('footer-config', JSON.stringify(footerConfig));
-      
+  const handleSave = async () => {
+    if (!token) {
       toast({
-        title: "저장 완료",
-        description: "Footer 설정이 저장되었습니다.",
-      });
-    } catch (error) {
-      console.error('Failed to save footer config:', error);
-      toast({
-        title: "저장 실패",
-        description: "Footer 설정 저장 중 오류가 발생했습니다.",
+        title: "인증 오류",
+        description: "관리자 인증이 필요합니다. 다시 로그인해주세요.",
         variant: "destructive",
       });
+      navigate('/admin/login');
+      return;
+    }
+    
+    setIsSaving(true);
+    
+    try {
+      // API를 통해 Footer 정보 저장
+      const response = await axios.post(`${API_BASE_URL}/footer`, footerConfig, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.data) {
+        // localStorage에도 백업으로 저장
+        localStorage.setItem('footer-config', JSON.stringify(footerConfig));
+        
+        toast({
+          title: "설정 저장 성공",
+          description: "Footer 설정이 성공적으로 저장되었습니다.",
+        });
+      }
+    } catch (error) {
+      console.error('Footer 정보 저장 실패:', error);
+      
+      toast({
+        title: "설정 저장 실패",
+        description: "Footer 설정을 저장하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+      
+      // 실패해도 localStorage에는 저장
+      localStorage.setItem('footer-config', JSON.stringify(footerConfig));
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
   return (
     <AdminLayout>
-      <Card className="w-full">
+      <Card>
         <CardHeader>
-          <CardTitle>Footer 관리</CardTitle>
+          <CardTitle>Footer 설정</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="word-file">입학지원서 (Word) 파일</Label>
-              <div className="flex items-center gap-4 mt-2">
-                <Input
-                  id="word-file"
-                  type="file"
-                  accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  onChange={(e) => handleFileUpload('wordFile', e)}
-                  className="flex-1"
-                />
-                {wordFileName && (
-                  <div className="text-sm text-gray-500">
-                    현재 파일: {wordFileName}
-                  </div>
-                )}
-              </div>
-            </div>
+        
+        <CardContent>
+          <Tabs defaultValue="files">
+            <TabsList className="mb-4">
+              <TabsTrigger value="files">파일 다운로드 링크</TabsTrigger>
+              <TabsTrigger value="contact">연락처</TabsTrigger>
+            </TabsList>
             
-            <div>
-              <Label htmlFor="hwp-file">입학지원서 (HWP) 파일</Label>
-              <div className="flex items-center gap-4 mt-2">
-                <Input
-                  id="hwp-file"
-                  type="file"
-                  accept=".hwp,.hwpx"
-                  onChange={(e) => handleFileUpload('hwpFile', e)}
-                  className="flex-1"
-                />
-                {hwpFileName && (
-                  <div className="text-sm text-gray-500">
-                    현재 파일: {hwpFileName}
+            <TabsContent value="files" className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="wordFile" className="text-base font-medium">입학지원서 (Word) 링크</Label>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <Input
+                      id="wordFile"
+                      value={footerConfig.wordFile}
+                      onChange={(e) => handleUrlChange('wordFile', e)}
+                      className="flex-1"
+                      disabled={isLoading}
+                    />
+                    {/* <div className="relative">
+                      <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById('wordFileUpload')?.click()}>
+                        파일 업로드
+                      </Button>
+                      <input 
+                        type="file" 
+                        id="wordFileUpload" 
+                        className="hidden" 
+                        accept=".docx, .doc"
+                        onChange={(e) => handleFileUpload('wordFile', e)}
+                      />
+                    </div> */}
                   </div>
-                )}
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="pdf-file">과정안내서 (PDF) 파일</Label>
-              <div className="flex items-center gap-4 mt-2">
-                <Input
-                  id="pdf-file"
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  onChange={(e) => handleFileUpload('pdfFile', e)}
-                  className="flex-1"
-                />
-                {pdfFileName && (
-                  <div className="text-sm text-gray-500">
-                    현재 파일: {pdfFileName}
+                  {wordFileName && (
+                    <p className="text-sm text-gray-500 mt-1">현재 파일: {wordFileName}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <Label htmlFor="hwpFile" className="text-base font-medium">입학지원서 (HWP) 링크</Label>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <Input
+                      id="hwpFile"
+                      value={footerConfig.hwpFile}
+                      onChange={(e) => handleUrlChange('hwpFile', e)}
+                      className="flex-1"
+                      disabled={isLoading}
+                    />
+                    {/* <div className="relative">
+                      <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById('hwpFileUpload')?.click()}>
+                        파일 업로드
+                      </Button>
+                      <input 
+                        type="file" 
+                        id="hwpFileUpload" 
+                        className="hidden" 
+                        accept=".hwp"
+                        onChange={(e) => handleFileUpload('hwpFile', e)}
+                      />
+                    </div> */}
                   </div>
-                )}
+                  {hwpFileName && (
+                    <p className="text-sm text-gray-500 mt-1">현재 파일: {hwpFileName}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <Label htmlFor="pdfFile" className="text-base font-medium">과정안내서 (PDF) 링크</Label>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <Input
+                      id="pdfFile"
+                      value={footerConfig.pdfFile}
+                      onChange={(e) => handleUrlChange('pdfFile', e)}
+                      className="flex-1"
+                      disabled={isLoading}
+                    />
+                    {/* <div className="relative">
+                      <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById('pdfFileUpload')?.click()}>
+                        파일 업로드
+                      </Button>
+                      <input 
+                        type="file" 
+                        id="pdfFileUpload" 
+                        className="hidden" 
+                        accept=".pdf"
+                        onChange={(e) => handleFileUpload('pdfFile', e)}
+                      />
+                    </div> */}
+                  </div>
+                  {pdfFileName && (
+                    <p className="text-sm text-gray-500 mt-1">현재 파일: {pdfFileName}</p>
+                  )}
+                </div>
               </div>
-            </div>
+            </TabsContent>
             
-            <div>
-              <Label htmlFor="email">문의 이메일</Label>
-              <Input
-                id="email"
-                type="email"
-                value={footerConfig.email}
-                onChange={handleEmailChange}
-                placeholder="예: plp@snu.ac.kr"
-                className="max-w-md mt-2"
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                이 이메일은 Footer의 '문의하기' 버튼을 클릭했을 때 사용됩니다.
-              </p>
-            </div>
-          </div>
-          
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h3 className="font-medium mb-2">Footer 미리보기</h3>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.wordFile}>
-                입학지원서 (Word) 다운로드
-              </Button>
-              <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.hwpFile}>
-                입학지원서 (HWP) 다운로드
-              </Button>
-              <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.pdfFile}>
-                과정안내서 (PDF) 다운로드
-              </Button>
-              <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.email}>
-                문의하기
-              </Button>
-            </div>
-            {footerConfig.email && (
-              <p className="text-sm text-gray-500 mt-2">
-                이메일 접수 주소: {footerConfig.email}
-              </p>
-            )}
-          </div>
+            <TabsContent value="contact" className="space-y-4">
+              <div>
+                <Label htmlFor="email" className="text-base font-medium">지원서 제출 이메일</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  className="mt-1.5"
+                  value={footerConfig.email}
+                  onChange={handleEmailChange}
+                  disabled={isLoading}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
+        
         <CardFooter className="flex justify-end">
           <Button 
             onClick={handleSave} 
-            disabled={isLoading}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2"
+            className="bg-mainBlue hover:bg-blue-900"
+            disabled={isLoading || isSaving}
           >
-            {isLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                <span>저장 중...</span>
-              </div>
-            ) : (
-              <span>저장하기</span>
-            )}
+            {isSaving ? '저장 중...' : '저장하기'}
           </Button>
         </CardFooter>
       </Card>

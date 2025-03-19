@@ -11,35 +11,143 @@ import AdminNavTabs from '@/components/admin/AdminNavTabs';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
 import AdminHomeButton from '@/components/admin/AdminHomeButton';
+import axios from 'axios';
+import AdminLayout from '@/components/admin/AdminLayout';
+
+// API 기본 URL 설정
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : 'http://localhost:5001/api';
 
 interface Recommendation {
-  title: string;
-  text: string;
-  author: string;
+  _id?: string;
+  sectionTitle?: string; // 섹션 제목 필드 추가
+  title?: string;        // 추천의 글 제목 필드 추가
+  name: string;          // MongoDB 스키마에서는 'name'
+  content: string;       // MongoDB 스키마에서는 'content'
   position: string;
-  photoUrl: string;
+  imageUrl: string;      // MongoDB 스키마에서는 'imageUrl'
+  order?: number;
+  isActive?: boolean;
 }
 
+// 프론트엔드 형식을 MongoDB 형식으로 변환
+const convertToDbFormat = (rec: any, sectionTitle: string): Recommendation => {
+  return {
+    _id: rec._id || undefined,
+    sectionTitle: sectionTitle,
+    title: rec.title || '',
+    name: rec.author || rec.name || '',
+    content: rec.text || rec.content || '',
+    position: rec.position || '',
+    imageUrl: rec.photoUrl || rec.imageUrl || '',
+    order: rec.order || 0,
+    isActive: rec.isActive !== undefined ? rec.isActive : true
+  };
+};
+
+// MongoDB 형식을 프론트엔드 형식으로 변환
+const convertToFrontendFormat = (rec: Recommendation) => {
+  return {
+    _id: rec._id,
+    title: rec.title || '',  // MongoDB에서 title 필드 추가
+    text: rec.content,
+    author: rec.name,
+    position: rec.position,
+    photoUrl: rec.imageUrl,
+    order: rec.order,
+    isActive: rec.isActive
+  };
+};
+
 const RecommendationsManage = () => {
-  const [sectionTitle, setSectionTitle] = useState('');
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([
-    {title: '', text: '', author: '', position: '', photoUrl: ''}
+  const [sectionTitle, setSectionTitle] = useState('추천의 글');
+  const [recommendations, setRecommendations] = useState<any[]>([
+    {_id: '', title: '', text: '', author: '', position: '', photoUrl: ''}
   ]);
-  const [isLoading, setIsLoading] = useState(false);
-  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, token } = useAdminAuth();
   const navigate = useNavigate();
   
+  // 컴포넌트 마운트 시 한 번만 실행
   useEffect(() => {
-    // 로컬 스토리지에서 기존 데이터 로드
+    if (isAuthenticated && token) {
+      loadRecommendations();
+    } else if (!isLoading && !isAuthenticated) {
+      navigate('/admin/login');
+    }
+  }, [isAuthenticated, token]);
+  
+  // MongoDB에서 추천의 글 로드
+  const loadRecommendations = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // 인증 토큰과 함께 API 요청
+      const response = await axios.get(`${API_BASE_URL}/content/recommendations/all`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.data && Array.isArray(response.data)) {
+        // MongoDB 형식을 프론트엔드 형식으로 변환
+        const frontendData = response.data.map(convertToFrontendFormat);
+        
+        // 데이터가 있는 경우 설정
+        if (frontendData.length > 0) {
+          setRecommendations(frontendData);
+          
+          // 첫 번째 항목에서 섹션 제목 가져오기 (모든 항목은 같은 섹션 제목을 공유)
+          if (response.data[0] && response.data[0].sectionTitle) {
+            setSectionTitle(response.data[0].sectionTitle);
+          }
+        } else {
+          // 데이터가 없는 경우 기본 빈 항목 하나 설정
+          setRecommendations([{_id: '', title: '', text: '', author: '', position: '', photoUrl: ''}]);
+        }
+        
+        // 성공 메시지 표시
+        toast({
+          title: "데이터 로드 성공",
+          description: "MongoDB에서 추천의 글 데이터를 성공적으로 불러왔습니다.",
+        });
+      }
+    } catch (error) {
+      console.error('추천의 글 로드 실패:', error);
+      setError('MongoDB에서 데이터를 불러오는 중 오류가 발생했습니다.');
+      
+      toast({
+        title: "추천의 글 로드 실패",
+        description: "MongoDB에서 추천의 글을 불러오는 중 오류가 발생했습니다. 대체 데이터를 로드합니다.",
+        variant: "destructive",
+      });
+      
+      // API 로드 실패 시 localStorage에서 데이터 로드 시도 (fallback)
+      loadFromLocalStorage();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // localStorage에서 데이터 로드 (fallback)
+  const loadFromLocalStorage = () => {
     const savedTitle = localStorage.getItem('recommendations-title');
     const savedRecommendations = localStorage.getItem('recommendations');
     
-    if (savedTitle) setSectionTitle(savedTitle);
+    if (savedTitle) {
+      setSectionTitle(savedTitle);
+    }
+    
     if (savedRecommendations) {
       try {
         const parsedRecommendations = JSON.parse(savedRecommendations);
         // Handle existing data without title or photoUrl
         const updatedRecommendations = parsedRecommendations.map((rec: any) => ({
+          _id: rec._id || '',
           title: rec.title || '',
           text: rec.text || '',
           author: rec.author || '',
@@ -47,24 +155,40 @@ const RecommendationsManage = () => {
           photoUrl: rec.photoUrl || ''
         }));
         setRecommendations(updatedRecommendations);
+        
+        toast({
+          title: "로컬 데이터 로드 성공",
+          description: "localStorage에서 추천의 글 데이터를 불러왔습니다.",
+        });
       } catch (error) {
-        console.error('Failed to parse recommendations:', error);
+        console.error('Failed to parse recommendations from localStorage:', error);
+        toast({
+          title: "데이터 파싱 오류",
+          description: "저장된 추천의 글을 처리하는 중 오류가 발생했습니다.",
+          variant: "destructive",
+        });
       }
+    } else {
+      // localStorage에도 데이터가 없는 경우 기본 빈 항목 하나 설정
+      setRecommendations([{_id: '', title: '', text: '', author: '', position: '', photoUrl: ''}]);
     }
-  }, []);
+  };
   
   const handleRecommendationChange = (
     index: number, 
-    field: keyof Recommendation, 
+    field: string, 
     value: string
   ) => {
     const newRecommendations = [...recommendations];
-    newRecommendations[index][field] = value;
+    newRecommendations[index] = {
+      ...newRecommendations[index],
+      [field]: value
+    };
     setRecommendations(newRecommendations);
   };
   
   const addRecommendation = () => {
-    setRecommendations([...recommendations, {title: '', text: '', author: '', position: '', photoUrl: ''}]);
+    setRecommendations([...recommendations, {_id: '', title: '', text: '', author: '', position: '', photoUrl: ''}]);
   };
   
   const removeRecommendation = (index: number) => {
@@ -73,28 +197,145 @@ const RecommendationsManage = () => {
     setRecommendations(newRecommendations);
   };
   
-  const handleSave = () => {
-    setIsLoading(true);
-    
-    // 실제 구현에서는 API 호출을 통해 서버에 저장해야 합니다.
-    localStorage.setItem('recommendations-title', sectionTitle);
-    localStorage.setItem('recommendations', JSON.stringify(
-      recommendations.filter(rec => rec.title.trim() !== '' || rec.text.trim() !== '' || rec.author.trim() !== '')
-    ));
-    
-    setTimeout(() => {
-      setIsLoading(false);
+  // MongoDB에 추천의 글 저장
+  const handleSave = async () => {
+    if (!token) {
       toast({
-        title: "저장 완료",
-        description: "추천의 글이 성공적으로 저장되었습니다.",
+        title: "인증 오류",
+        description: "관리자 인증이 필요합니다. 다시 로그인해주세요.",
+        variant: "destructive",
       });
-    }, 500);
+      navigate('/admin/login');
+      return;
+    }
+    
+    // 유효성 검사
+    const invalidRecommendations = recommendations.filter(rec => 
+      !rec.author?.trim() || !rec.text?.trim() || !rec.position?.trim()
+    );
+    
+    if (invalidRecommendations.length > 0) {
+      toast({
+        title: "입력 오류",
+        description: "모든 추천의 글에 작성자, 내용, 직위/소속을 입력해야 합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSaving(true);
+    
+    try {
+      // MongoDB에 저장할 추천 목록 필터링 (빈 항목 제외)
+      const validRecommendations = recommendations.filter(rec => 
+        rec.author?.trim() && rec.text?.trim() && rec.position?.trim()
+      );
+      
+      // 1. 기존 데이터를 모두 삭제
+      const deleteResponse = await axios.get(`${API_BASE_URL}/content/recommendations/all`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (deleteResponse.data && Array.isArray(deleteResponse.data)) {
+        for (const rec of deleteResponse.data) {
+          if (rec._id) {
+            await axios.delete(`${API_BASE_URL}/content/recommendations/${rec._id}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+          }
+        }
+      }
+      
+      // 2. 새 데이터 저장
+      const savedItems = [];
+      for (let i = 0; i < validRecommendations.length; i++) {
+        const rec = validRecommendations[i];
+        
+        // 프론트엔드 형식을 MongoDB 형식으로 변환
+        const dbItem = convertToDbFormat({
+          _id: rec._id || undefined,
+          author: rec.author,
+          title: rec.title,
+          text: rec.text,
+          position: rec.position,
+          photoUrl: rec.photoUrl,
+          order: i
+        }, sectionTitle);
+        
+        const response = await axios.post(`${API_BASE_URL}/content/recommendations`, dbItem, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        savedItems.push(response.data);
+      }
+      
+      // localStorage에도 백업으로 저장
+      localStorage.setItem('recommendations-title', sectionTitle);
+      localStorage.setItem('recommendations', JSON.stringify(validRecommendations));
+      
+      toast({
+        title: "MongoDB 저장 완료",
+        description: `${savedItems.length}개의 추천의 글이 성공적으로 저장되었습니다.`,
+      });
+      
+      // 저장 후 새로운 데이터로 업데이트
+      loadRecommendations();
+    } catch (error) {
+      console.error('추천의 글 저장 실패:', error);
+      toast({
+        title: "MongoDB 저장 실패",
+        description: "추천의 글을 MongoDB에 저장하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+      
+      // 실패해도 localStorage에는 저장
+      const validRecommendations = recommendations.filter(rec => 
+        rec.author?.trim() && rec.text?.trim() && rec.position?.trim()
+      );
+      localStorage.setItem('recommendations-title', sectionTitle);
+      localStorage.setItem('recommendations', JSON.stringify(validRecommendations));
+      
+      toast({
+        title: "로컬 저장 완료",
+        description: "추천의 글이 로컬 스토리지에 백업되었습니다.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  // Function to handle file upload
+  // 이미지 파일 업로드 처리
   const handleFileUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // 파일 크기 제한 (2MB)
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (file.size > maxSize) {
+      toast({
+        title: "파일 크기 초과",
+        description: "이미지 크기는 2MB 이하여야 합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 이미지 파일 타입 확인
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "잘못된 파일 형식",
+        description: "이미지 파일만 업로드할 수 있습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Convert the file to Base64 string
     const reader = new FileReader();
@@ -102,159 +343,185 @@ const RecommendationsManage = () => {
       const base64String = reader.result as string;
       // Save the Base64 string as the photo URL
       handleRecommendationChange(index, 'photoUrl', base64String);
+      
+      toast({
+        title: "이미지 업로드 성공",
+        description: "이미지가 성공적으로 업로드되었습니다.",
+      });
+    };
+    reader.onerror = () => {
+      toast({
+        title: "이미지 처리 오류",
+        description: "이미지 처리 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
     };
     reader.readAsDataURL(file);
   };
   
-  if (authLoading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>로딩 중...</p>
-      </div>
+      <AdminLayout>
+        <div className="flex items-center justify-center p-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
+            <p className="text-mainBlue font-medium">데이터를 불러오는 중...</p>
+          </div>
+        </div>
+      </AdminLayout>
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isLoading) {
     navigate('/admin/login');
     return null;
   }
   
   return (
-    <>
-      <Header />
-      <div className="container mx-auto py-8 px-4 pt-24">
-        <h1 className="text-3xl font-bold text-mainBlue mb-6">관리자 대시보드</h1>
-        
-        <AdminNavTabs activeTab="content" />
-        <AdminHomeButton />
-        
-        <Card className="w-full mt-6">
-          <CardHeader>
-            <CardTitle>추천의 글 관리</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <label htmlFor="title" className="text-sm font-medium">섹션 제목</label>
-              <Input
-                id="title"
-                value={sectionTitle}
-                onChange={(e) => setSectionTitle(e.target.value)}
-                placeholder="추천의 글 섹션의 제목을 입력하세요"
-              />
+    <AdminLayout>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>추천의 글 관리</CardTitle>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-md text-sm mt-2">
+              {error}
             </div>
-            
-            {recommendations.map((recommendation, index) => (
-              <div key={index} className="border p-4 rounded-md space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-medium">추천의 글 #{index + 1}</h3>
-                  {recommendations.length > 1 && (
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      onClick={() => removeRecommendation(index)}
-                    >
-                      삭제
-                    </Button>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor={`title-${index}`}>제목</Label>
-                  <Input
-                    id={`title-${index}`}
-                    value={recommendation.title}
-                    onChange={(e) => handleRecommendationChange(index, 'title', e.target.value)}
-                    placeholder="추천의 글 제목 (선택사항)"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor={`text-${index}`}>추천의 글</Label>
-                  <Textarea
-                    id={`text-${index}`}
-                    value={recommendation.text}
-                    onChange={(e) => handleRecommendationChange(index, 'text', e.target.value)}
-                    placeholder="추천의 글 내용을 입력하세요"
-                    rows={5}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor={`author-${index}`}>작성자</Label>
-                  <Input
-                    id={`author-${index}`}
-                    value={recommendation.author}
-                    onChange={(e) => handleRecommendationChange(index, 'author', e.target.value)}
-                    placeholder="추천인 이름을 입력하세요"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor={`position-${index}`}>직위/소속</Label>
-                  <Input
-                    id={`position-${index}`}
-                    value={recommendation.position}
-                    onChange={(e) => handleRecommendationChange(index, 'position', e.target.value)}
-                    placeholder="추천인의 직위나 소속을 입력하세요"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>사진</Label>
-                  <div className="flex items-center gap-4">
-                    {recommendation.photoUrl && (
-                      <div className="relative w-24 h-24 border rounded-md overflow-hidden">
-                        <img 
-                          src={recommendation.photoUrl} 
-                          alt={`${recommendation.author} 사진`} 
-                          className="w-full h-full object-cover"
-                        />
-                        <button 
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                          onClick={() => handleRecommendationChange(index, 'photoUrl', '')}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    )}
-                    
-                    <div>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileUpload(index, e)}
-                        className="max-w-xs"
+          )}
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <label htmlFor="title" className="text-sm font-medium">섹션 제목</label>
+            <Input
+              id="title"
+              value={sectionTitle}
+              onChange={(e) => setSectionTitle(e.target.value)}
+              placeholder="추천의 글 섹션의 제목을 입력하세요"
+            />
+          </div>
+          
+          {recommendations.map((recommendation, index) => (
+            <div key={index} className="border p-4 rounded-md space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium">추천의 글 #{index + 1}</h3>
+                {recommendations.length > 1 && (
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => removeRecommendation(index)}
+                  >
+                    삭제
+                  </Button>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor={`title-${index}`}>제목</Label>
+                <Input
+                  id={`title-${index}`}
+                  value={recommendation.title || ''}
+                  onChange={(e) => handleRecommendationChange(index, 'title', e.target.value)}
+                  placeholder="추천의 글 제목 (선택사항)"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor={`text-${index}`}>추천의 글</Label>
+                <Textarea
+                  id={`text-${index}`}
+                  value={recommendation.text || ''}
+                  onChange={(e) => handleRecommendationChange(index, 'text', e.target.value)}
+                  placeholder="추천의 글 내용을 입력하세요"
+                  rows={5}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor={`author-${index}`}>작성자</Label>
+                <Input
+                  id={`author-${index}`}
+                  value={recommendation.author || ''}
+                  onChange={(e) => handleRecommendationChange(index, 'author', e.target.value)}
+                  placeholder="추천인 이름을 입력하세요"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor={`position-${index}`}>직위/소속</Label>
+                <Input
+                  id={`position-${index}`}
+                  value={recommendation.position || ''}
+                  onChange={(e) => handleRecommendationChange(index, 'position', e.target.value)}
+                  placeholder="추천인의 직위나 소속을 입력하세요"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>사진</Label>
+                <div className="flex items-center gap-4">
+                  {recommendation.photoUrl && (
+                    <div className="relative w-24 h-24 border rounded-md overflow-hidden">
+                      <img 
+                        src={recommendation.photoUrl} 
+                        alt={`${recommendation.author || '추천인'} 사진`} 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('이미지 로드 실패:', recommendation.photoUrl);
+                          // 이미지 로드 실패 시 기본 스타일 적용
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
                       />
-                      <p className="text-xs text-gray-500 mt-1">
-                        권장 크기: 300x300 픽셀, 최대 2MB
-                      </p>
+                      <button 
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                        onClick={() => handleRecommendationChange(index, 'photoUrl', '')}
+                        type="button"
+                      >
+                        ×
+                      </button>
                     </div>
+                  )}
+                  
+                  <div>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(index, e)}
+                      className="max-w-xs"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      권장 크기: 300x300 픽셀, 최대 2MB
+                    </p>
                   </div>
                 </div>
               </div>
-            ))}
-            
-            <Button 
-              variant="outline" 
-              onClick={addRecommendation}
-              className="w-full"
-            >
-              추천의 글 추가
-            </Button>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              onClick={handleSave} 
-              disabled={isLoading}
-              className="ml-auto"
-            >
-              {isLoading ? '저장 중...' : '저장하기'}
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-      <Footer />
-    </>
+            </div>
+          ))}
+          
+          <Button 
+            variant="outline" 
+            onClick={addRecommendation}
+            className="w-full"
+          >
+            추천의 글 추가
+          </Button>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <Button 
+            variant="outline" 
+            onClick={loadRecommendations} 
+            disabled={isLoading || isSaving}
+          >
+            새로고침
+          </Button>
+          <Button 
+            onClick={handleSave} 
+            disabled={isLoading || isSaving}
+            className="bg-mainBlue hover:bg-blue-900"
+          >
+            {isSaving ? '저장 중...' : 'MongoDB에 저장하기'}
+          </Button>
+        </CardFooter>
+      </Card>
+    </AdminLayout>
   );
 };
 
