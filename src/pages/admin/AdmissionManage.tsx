@@ -23,7 +23,7 @@ interface Document {
 interface AdmissionInfo {
   _id?: string;
   title: string;
-  term: string;
+  term: number;
   year: string;
   startMonth: string;
   endMonth: string;
@@ -37,6 +37,7 @@ interface AdmissionInfo {
   scheduleContent: string;
   educationLocation: string;
   classSchedule: string;
+  tuitionFee: string;
   additionalItems: Item[];
   isActive?: boolean;
   createdAt?: string;
@@ -47,7 +48,7 @@ const AdmissionManage = () => {
   const { toast } = useToast();
   const [admissionInfo, setAdmissionInfo] = useState<AdmissionInfo>({
     title: '서울대학교 정치리더십과정',
-    term: '제25',
+    term: 25,
     year: '2025',
     startMonth: '3',
     endMonth: '8',
@@ -70,6 +71,7 @@ const AdmissionManage = () => {
     scheduleContent: '원서 교부 및 접수 기간: 2025년 1월 10일 ~ 2월 15일',
     educationLocation: '서울대학교 행정대학원',
     classSchedule: '매주 금요일 14:00~17:30',
+    tuitionFee: '500만원',
     additionalItems: []
   });
   
@@ -104,7 +106,7 @@ const AdmissionManage = () => {
     }
   };
 
-  const handleBasicInfoChange = (field: keyof AdmissionInfo, value: string) => {
+  const handleBasicInfoChange = (field: keyof AdmissionInfo, value: string | number) => {
     setAdmissionInfo(prev => ({ ...prev, [field]: value }));
   };
 
@@ -170,20 +172,25 @@ const AdmissionManage = () => {
     setIsSaving(true);
     try {
       // MongoDB API를 통해 데이터 저장
-      const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api';
-      
       let response;
-      const saveData = { ...admissionInfo };
+      
+      // 임시 테스트를 위해 토큰 검증 우회
+      // 토큰 가져오기 (없으면 빈 문자열 사용)
+      const token = localStorage.getItem('token') || '';
+      console.log('저장 시도 중... 토큰 인증 우회 (테스트용)');
       
       // _id가 있으면 PUT(수정), 없으면 POST(신규 추가)
       if (admissionInfo._id) {
-        response = await axios.put(`${API_BASE_URL}/admission`, saveData);
+        response = await apiService.updateAdmission(admissionInfo, token);
       } else {
-        response = await axios.post(`${API_BASE_URL}/admission`, saveData);
+        response = await apiService.createAdmission(admissionInfo, token);
       }
       
       // 저장 후 최신 데이터로 업데이트
-      setAdmissionInfo(response.data);
+      // 응답에서 받은 term이 문자열일 경우를 대비해 숫자로 확실하게 변환
+      const savedData = response;
+      savedData.term = typeof savedData.term === 'string' ? parseInt(savedData.term, 10) : savedData.term;
+      setAdmissionInfo(savedData);
       
       toast({
         title: "저장 완료",
@@ -193,7 +200,7 @@ const AdmissionManage = () => {
       console.error('입학 정보 저장 중 오류가 발생했습니다:', err);
       toast({
         title: "저장 실패",
-        description: "입학 정보를 저장하는 중 오류가 발생했습니다.",
+        description: "입학 정보 저장 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     } finally {
@@ -226,9 +233,15 @@ const AdmissionManage = () => {
                 className="w-64"
               />
               <Input 
-                value={admissionInfo.term}
-                onChange={(e) => handleBasicInfoChange('term', e.target.value)}
+                value={admissionInfo.term.toString()}
+                onChange={(e) => {
+                  const numValue = parseInt(e.target.value, 10);
+                  if (!isNaN(numValue)) {
+                    handleBasicInfoChange('term', numValue);
+                  }
+                }}
                 className="w-16"
+                type="number"
                 placeholder="기수"
               />
               <span>기</span>
@@ -345,6 +358,14 @@ const AdmissionManage = () => {
             <Input 
               value={admissionInfo.classSchedule}
               onChange={(e) => handleBasicInfoChange('classSchedule', e.target.value)}
+            />
+          </div>
+
+          <div className="mb-4">
+            <Label className="mb-2 block">교육비</Label>
+            <Input 
+              value={admissionInfo.tuitionFee}
+              onChange={(e) => handleBasicInfoChange('tuitionFee', e.target.value)}
             />
           </div>
         </CardContent>

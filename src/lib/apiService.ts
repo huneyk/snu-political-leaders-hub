@@ -248,9 +248,73 @@ export const apiService = {
   getAdmission: async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/admission`);
+      if (response.data && response.data.term) {
+        // Ensure term is always returned as a number
+        response.data.term = typeof response.data.term === 'string' 
+          ? parseInt(response.data.term.replace(/\D/g, ''), 10) 
+          : response.data.term;
+      }
       return response.data;
     } catch (error) {
       console.error('Error fetching admission data:', error);
+      throw error;
+    }
+  },
+
+  // 입학정보 업데이트 API (관리자용)
+  updateAdmission: async (admissionData: any, token?: string) => {
+    try {
+      // Ensure term is sent as a number
+      if (admissionData.term && typeof admissionData.term === 'string') {
+        admissionData.term = parseInt(admissionData.term.replace(/\D/g, ''), 10);
+      }
+      
+      // 임시로 토큰 인증 제거 (테스트용)
+      console.log('토큰 인증 우회 - updateAdmission (테스트용)');
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 제공된 경우에만 Authorization 헤더 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await axios.put(`${API_BASE_URL}/admission`, admissionData, {
+        headers
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating admission data:', error);
+      throw error;
+    }
+  },
+
+  // 입학정보 생성 API (관리자용)
+  createAdmission: async (admissionData: any, token?: string) => {
+    try {
+      // Ensure term is sent as a number
+      if (admissionData.term && typeof admissionData.term === 'string') {
+        admissionData.term = parseInt(admissionData.term.replace(/\D/g, ''), 10);
+      }
+      
+      // 임시로 토큰 인증 제거 (테스트용)
+      console.log('토큰 인증 우회 - createAdmission (테스트용)');
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 제공된 경우에만 Authorization 헤더 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await axios.post(`${API_BASE_URL}/admission`, admissionData, {
+        headers
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating admission data:', error);
       throw error;
     }
   },

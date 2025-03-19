@@ -19,7 +19,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 // 테스트 입학 정보 데이터
 const testAdmissionData = {
   title: "서울대학교 정치리더십과정",
-  term: "제25",
+  term: 25,
   year: "2024",
   startMonth: "3",
   endMonth: "12",
@@ -55,6 +55,8 @@ const testAdmissionData = {
   educationLocation: "서울대학교 행정대학원 강의실",
   // 수업 일정
   classSchedule: "매주 목요일 19:00 ~ 21:30\n특강 및 워크숍 진행 (월 1회 토요일)",
+  // 교육비
+  tuitionFee: "1,000만원",
   // 기타 추가 항목 (복수 항목)
   additionalItems: [
     { text: "국내연수: 연 1~2회" },

@@ -447,9 +447,30 @@ router.delete('/professors/:id', authenticateToken, async (req, res) => {
 });
 
 // ======================== Schedule Routes ========================
+/**
+ * @route   GET /api/content/schedules
+ * @desc    일정 정보 가져오기
+ * @access  Public
+ */
 router.get('/schedules', async (req, res) => {
   try {
-    const schedules = await Schedule.find({ isActive: true }).sort({ date: -1 });
+    // 카테고리 쿼리 파라미터 확인
+    const { category } = req.query;
+    
+    // 기본 쿼리: 활성화된 일정만 조회
+    let query = { isActive: true };
+    
+    // 카테고리 필터링이 있는 경우 쿼리에 추가
+    if (category) {
+      query.category = category;
+    }
+    
+    console.log('Schedule query:', query);
+    
+    // 쿼리 조건에 맞는 일정 조회
+    const schedules = await Schedule.find(query).sort({ date: -1 });
+    
+    console.log(`Found ${schedules.length} schedules`);
     res.json(schedules);
   } catch (error) {
     console.error('일정 정보 조회 실패:', error);

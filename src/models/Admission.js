@@ -30,14 +30,13 @@ const admissionSchema = new mongoose.Schema({
     default: '서울대학교 정치리더십과정'
   },
   term: {
-    type: String,
+    type: Number,
     required: true,
-    trim: true,
     validate: {
       validator: function(v) {
-        return /\d+/.test(v);
+        return Number.isInteger(v) && v > 0;
       },
-      message: '기수는 숫자를 포함해야 합니다.'
+      message: '기수는 양의 정수여야 합니다.'
     }
   },
   year: {
@@ -154,6 +153,12 @@ const admissionSchema = new mongoose.Schema({
     type: String,
     trim: true,
     default: '매주 금요일 14:00~17:30'
+  },
+  // 교육비
+  tuitionFee: {
+    type: String,
+    trim: true,
+    default: '500만원'
   },
   // 기타 추가 항목 (복수 항목)
   additionalItems: {

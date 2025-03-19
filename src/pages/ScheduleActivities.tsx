@@ -13,7 +13,7 @@ import { ko } from 'date-fns/locale';
 // 일정 인터페이스 정의
 interface Schedule {
   _id: string;
-  term: string;
+  term: number; // 숫자 타입으로 변경
   year?: string;
   category: string;
   title: string;
@@ -31,10 +31,10 @@ interface Schedule {
 }
 
 const ScheduleActivities: React.FC = () => {
-  const [selectedTerm, setSelectedTerm] = useState<string>('');
+  const [selectedTerm, setSelectedTerm] = useState<number | null>(null); // 숫자 타입으로 변경
   const [activeTab, setActiveTab] = useState('all');
   const [specialActivities, setSpecialActivities] = useState<Schedule[]>([]);
-  const [availableTerms, setAvailableTerms] = useState<string[]>([]);
+  const [availableTerms, setAvailableTerms] = useState<number[]>([]); // 숫자 타입으로 변경
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -54,23 +54,20 @@ const ScheduleActivities: React.FC = () => {
             schedule.isActive
           );
           
+          console.log('Filtered activities:', activities);
           setSpecialActivities(activities);
           
           // 사용 가능한 기수 목록 추출
-          const terms = new Set<string>();
+          const terms = new Set<number>();
           activities.forEach(activity => {
             if (activity.term) {
               terms.add(activity.term);
             }
           });
           
-          const sortedTerms = Array.from(terms).sort((a, b) => {
-            // 기수에서 숫자만 추출하여 비교 (예: "제25기" -> 25)
-            const numA = parseInt(a.replace(/\D/g, ''));
-            const numB = parseInt(b.replace(/\D/g, ''));
-            return numB - numA; // 내림차순 정렬
-          });
+          const sortedTerms = Array.from(terms).sort((a, b) => b - a); // 내림차순 정렬
           
+          console.log('Available terms:', sortedTerms);
           setAvailableTerms(sortedTerms);
           
           // 가장 최근 기수를 기본값으로 설정
@@ -91,20 +88,28 @@ const ScheduleActivities: React.FC = () => {
     fetchSchedules();
   }, []);
   
-  // 선택된 학기에 해당하는 특별활동 필터링
-  const termActivities = specialActivities.filter(
-    activity => activity.term === selectedTerm
-  );
+  // 선택된 기수의 활동만 필터링
+  const termActivities = selectedTerm !== null 
+    ? specialActivities.filter(activity => activity.term === selectedTerm)
+    : specialActivities;
   
   // 선택된 탭에 따라 활동 유형별로 필터링
   const filteredActivities = activeTab === 'all'
     ? termActivities
     : termActivities.filter(activity => activity.category === activeTab);
   
+  console.log('Selected term:', selectedTerm);
+  console.log('Filtered activities for display:', filteredActivities);
+  
   // 날짜 포맷팅 함수
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return format(date, 'yyyy년 M월 d일 EEEE', { locale: ko });
+    try {
+      const date = new Date(dateString);
+      return format(date, 'yyyy년 M월 d일 EEEE', { locale: ko });
+    } catch (error) {
+      console.error('날짜 형식 변환 오류:', error);
+      return dateString;
+    }
   };
   
   // 활동 유형에 따른 한글 이름 반환
@@ -113,6 +118,7 @@ const ScheduleActivities: React.FC = () => {
       case 'field': return '현장 탐방';
       case 'overseas': return '해외 연수';
       case 'social': return '친교 활동';
+      case 'special': return '특별 활동';
       default: return '기타 활동';
     }
   };
@@ -162,14 +168,17 @@ const ScheduleActivities: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
               <div className="mb-4 md:mb-0">
                 {availableTerms.length > 0 ? (
-                  <Select value={selectedTerm} onValueChange={setSelectedTerm}>
+                  <Select 
+                    value={selectedTerm?.toString()} 
+                    onValueChange={(value) => setSelectedTerm(parseInt(value, 10))}
+                  >
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="기수 선택" />
                     </SelectTrigger>
                     <SelectContent>
                       {availableTerms.map((term) => (
-                        <SelectItem key={term} value={term}>
-                          {term}
+                        <SelectItem key={term} value={term.toString()}>
+                          {term}기
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -186,6 +195,7 @@ const ScheduleActivities: React.FC = () => {
                 <TabsTrigger value="field">현장 탐방</TabsTrigger>
                 <TabsTrigger value="overseas">해외 연수</TabsTrigger>
                 <TabsTrigger value="social">친교 활동</TabsTrigger>
+                <TabsTrigger value="special">특별 활동</TabsTrigger>
               </TabsList>
               
               <TabsContent value={activeTab}>
@@ -217,7 +227,22 @@ const ScheduleActivities: React.FC = () => {
                             {activity.description && (
                               <div>
                                 <dt className="text-sm font-medium text-gray-500">세부 내용</dt>
-                                <dd className="text-base">{activity.description}</dd>
+                                <dd className="text-base whitespace-pre-line">{activity.description}</dd>
+                              </div>
+                            )}
+                            {activity.sessions && activity.sessions.length > 0 && (
+                              <div>
+                                <dt className="text-sm font-medium text-gray-500">세부 일정</dt>
+                                <dd className="mt-2 space-y-3">
+                                  {activity.sessions.map((session, index) => (
+                                    <div key={index} className="border-l-2 border-mainBlue pl-3">
+                                      <p className="font-medium">{session.title}</p>
+                                      {session.time && <p className="text-sm text-gray-600">시간: {session.time}</p>}
+                                      {session.location && <p className="text-sm text-gray-600">장소: {session.location}</p>}
+                                      {session.description && <p className="text-sm text-gray-600 mt-1">{session.description}</p>}
+                                    </div>
+                                  ))}
+                                </dd>
                               </div>
                             )}
                           </dl>
