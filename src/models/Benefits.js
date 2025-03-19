@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const benefitSchema = new mongoose.Schema({
+  sectionTitle: {
+    type: String,
+    default: '과정 특전',
+    trim: true
+  },
   title: {
     type: String,
     required: true,

@@ -181,16 +181,22 @@ const Recommendations = () => {
     <>
       <Header />
       <main className="pt-24 pb-16">
-        <ScrollReveal>
-          <section className="py-16 bg-mainBlue text-white">
+        {/* 스타일 1: 파란색 배경의 제목 띠 */}
+        <div className="w-full bg-mainBlue text-white">
+          <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
             <div className="main-container">
-              <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal">{sectionTitle}</h1>
-              <p className="text-white/80 max-w-3xl reveal reveal-delay-100">
+              <h1 className="text-3xl md:text-4xl font-bold mb-4">{sectionTitle}</h1>
+              <p className="text-white/80 max-w-3xl">
                 서울대학교 정치지도자과정에 대한 추천의 글입니다.
               </p>
             </div>
-          </section>
-        </ScrollReveal>
+          </div>
+        </div>
+
+        {/* 스타일 2: Benefits 페이지 스타일의 백업 제목 (필요시 주석 해제) */}
+        {/* <div className="main-container">
+          <h1 className="section-title text-center mb-12" style={{ wordBreak: 'keep-all' }}>{sectionTitle}</h1>
+        </div> */}
 
         <div className="main-container py-12">
           {isLoading ? (

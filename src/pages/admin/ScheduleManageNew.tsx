@@ -1,3 +1,13 @@
+/**
+ * ScheduleManageNew.tsx - MongoDB Atlas 연동 버전
+ * 
+ * MongoDB Atlas와 통합된 학사일정 및 특별활동 관리 페이지입니다.
+ * 기존 로컬 스토리지 기반 버전을 MongoDB Atlas(plp_database)와 연동하도록 수정하였습니다.
+ * 
+ * MongoDB Atlas 연결 정보:
+ * - Database: plp_database
+ * - Collection: schedules
+ */
 import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
@@ -22,18 +32,18 @@ import Footer from '@/components/Footer';
 import AdminNavTabs from '@/components/admin/AdminNavTabs';
 import AdminHomeButton from '@/components/admin/AdminHomeButton';
 
-// 일정 인터페이스 정의 (MongoDB 스키마에 맞춤)
+// 일정 인터페이스 정의
 interface Schedule {
-  _id?: string; // MongoDB ID
-  term: number;
-  year: string;
-  category: string;
-  title: string;
-  date: string;
-  time: string;
-  location: string;
-  description: string;
-  isActive: boolean;
+  _id: string;
+  term: number;     // 학기 (숫자 타입)
+  year: string;     // 연도
+  category: string; // 'academic' 또는 'special'
+  title: string;    // 일정 제목
+  date: string;     // 날짜 (YYYY-MM-DD)
+  time: string;     // 시간 (HH:MM)
+  location: string; // 장소
+  description: string; // 설명
+  isActive: boolean;   // 활성화 여부
 }
 
 // 30분 단위 시간 옵션 생성
@@ -51,22 +61,19 @@ const TIME_OPTIONS = generateTimeOptions();
 
 // 줄바꿈을 HTML <br> 태그로 변환하는 함수
 const formatDescription = (text: string) => {
-  return text.split('\n').map((line, index, array) => (
-    <React.Fragment key={index}>
-      {line}
-      {index < array.length - 1 && <br />}
-    </React.Fragment>
-  ));
+  if (!text) return '';
+  return text.replace(/\n/g, '<br>');
 };
 
 const ScheduleManage = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('academic');
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [selectedTerm, setSelectedTerm] = useState<number>(1);
+  const [selectedTerm, setSelectedTerm] = useState<number>(new Date().getMonth() >= 7 ? 2 : 1);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   
   // 새 일정 상태
   const [newSchedule, setNewSchedule] = useState<Schedule>({
@@ -136,8 +143,10 @@ const ScheduleManage = () => {
         const data = await apiService.getSchedulesAll(token);
         
         if (data && Array.isArray(data)) {
-          // 현재 탭에 맞는 일정만 필터링
-          const filteredData = data.filter(schedule => schedule.category === activeTab);
+          // 현재 탭과 학기에 맞는 일정만 필터링
+          const filteredData = data.filter(schedule => 
+            schedule.category === activeTab && schedule.term === selectedTerm
+          );
           
           // MongoDB 데이터 형식을 컴포넌트에서 사용하는 형식으로 변환
           const formattedData = filteredData.map(schedule => {
@@ -160,10 +169,7 @@ const ScheduleManage = () => {
           });
           
           setSchedules(formattedData);
-          toast({
-            title: "데이터 로드 성공",
-            description: "일정 데이터를 성공적으로 불러왔습니다.",
-          });
+          console.log('일정 데이터 로드 완료:', formattedData);
           return;
         }
       } catch (error) {
@@ -183,11 +189,14 @@ const ScheduleManage = () => {
               year: schedule.year || new Date().getFullYear().toString(),
               isActive: schedule.isActive !== undefined ? schedule.isActive : true
             }));
-            setSchedules(convertedSchedules);
-            toast({
-              title: "로컬 데이터 로드 성공",
-              description: "MongoDB에 연결할 수 없어 로컬 데이터를 불러왔습니다.",
-            });
+            
+            // 선택된 학기에 맞는 일정만 필터링
+            const filteredSchedules = convertedSchedules.filter((schedule: Schedule) => 
+              schedule.term === selectedTerm
+            );
+            
+            setSchedules(filteredSchedules);
+            console.log('로컬 스토리지 데이터 로드 완료:', filteredSchedules);
             return;
           } catch (parseError) {
             console.error('로컬 스토리지 데이터 파싱 실패:', parseError);
@@ -197,10 +206,6 @@ const ScheduleManage = () => {
       
       // 모든 시도 실패 시 빈 배열로 초기화
       setSchedules([]);
-      toast({
-        title: "데이터 없음",
-        description: "등록된 일정이 없습니다.",
-      });
     } catch (error) {
       console.error('일정 데이터 로드 실패:', error);
       toast({

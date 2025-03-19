@@ -316,12 +316,12 @@ const RecommendationsManage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // 파일 크기 제한 (2MB)
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    // 파일 크기 제한 (5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
       toast({
         title: "파일 크기 초과",
-        description: "이미지 크기는 2MB 이하여야 합니다.",
+        description: "이미지 크기는 5MB 이하여야 합니다.",
         variant: "destructive",
       });
       return;
@@ -337,25 +337,73 @@ const RecommendationsManage = () => {
       return;
     }
 
-    // Convert the file to Base64 string
+    // 이미지 리사이징 및 Base64 변환
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      // Save the Base64 string as the photo URL
-      handleRecommendationChange(index, 'photoUrl', base64String);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // 리사이징을 위한 캔버스 생성
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // 이미지 크기 조정 (최대 크기: 800x800)
+        const maxWidth = 800;
+        const maxHeight = 800;
+        
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 이미지 그리기
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // 압축 및 Base64 변환 (JPEG 포맷, 품질 0.85)
+          const base64String = canvas.toDataURL('image/jpeg', 0.85);
+          
+          // Base64 이미지 문자열을 photoUrl로 저장
+          handleRecommendationChange(index, 'photoUrl', base64String);
+          
+          toast({
+            title: "이미지 업로드 성공",
+            description: "이미지가 성공적으로 업로드되었습니다.",
+          });
+        }
+      };
       
-      toast({
-        title: "이미지 업로드 성공",
-        description: "이미지가 성공적으로 업로드되었습니다.",
-      });
+      img.onerror = () => {
+        toast({
+          title: "이미지 처리 오류",
+          description: "이미지를 처리할 수 없습니다.",
+          variant: "destructive",
+        });
+      };
+      
+      // 이미지 소스 설정
+      img.src = event.target?.result as string;
     };
+    
     reader.onerror = () => {
       toast({
         title: "이미지 처리 오류",
-        description: "이미지 처리 중 오류가 발생했습니다.",
+        description: "이미지 파일을 읽는 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     };
+    
     reader.readAsDataURL(file);
   };
   
@@ -488,7 +536,7 @@ const RecommendationsManage = () => {
                       className="max-w-xs"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      권장 크기: 300x300 픽셀, 최대 2MB
+                      권장 크기: 800x800 픽셀 이하, 최대 5MB
                     </p>
                   </div>
                 </div>

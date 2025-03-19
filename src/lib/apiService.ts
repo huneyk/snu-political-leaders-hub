@@ -149,6 +149,68 @@ export const apiService = {
     }
   },
 
+  // 관리자용 모든 일정 조회 API
+  getSchedulesAll: async (token: string) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/content/schedules/all`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching all schedules data:', error);
+      throw error;
+    }
+  },
+
+  // 일정 생성 API
+  createSchedule: async (scheduleData: any, token: string) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/content/schedules`, scheduleData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating schedule:', error);
+      throw error;
+    }
+  },
+
+  // 일정 수정 API
+  updateSchedule: async (id: string, scheduleData: any, token: string) => {
+    try {
+      const response = await axios.put(`${API_BASE_URL}/content/schedules/${id}`, scheduleData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating schedule with id ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // 일정 삭제 API
+  deleteSchedule: async (id: string, token: string) => {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/content/schedules/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error deleting schedule with id ${id}:`, error);
+      throw error;
+    }
+  },
+
   // 강사진(Lecturers) 관련 API
   getLecturers: async () => {
     try {

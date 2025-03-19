@@ -169,16 +169,18 @@ router.get('/objectives/all', authenticateToken, async (req, res) => {
  */
 router.post('/objectives', authenticateToken, async (req, res) => {
   try {
-    const { title, description, iconType, order, isActive } = req.body;
+    const { sectionTitle, title, description, iconType, iconImage, order, isActive } = req.body;
     
     if (!title || !description) {
       return res.status(400).json({ message: '제목과 설명은 필수 항목입니다.' });
     }
     
     const newObjective = new Objective({
+      sectionTitle: sectionTitle || '과정의 목표',
       title,
       description,
       iconType: iconType || 'default',
+      iconImage: iconImage || '',
       order: order || 0,
       isActive: isActive !== undefined ? isActive : true
     });
@@ -198,7 +200,7 @@ router.post('/objectives', authenticateToken, async (req, res) => {
  */
 router.put('/objectives/:id', authenticateToken, async (req, res) => {
   try {
-    const { title, description, iconType, order, isActive } = req.body;
+    const { sectionTitle, title, description, iconType, iconImage, order, isActive } = req.body;
     
     if (!title || !description) {
       return res.status(400).json({ message: '제목과 설명은 필수 항목입니다.' });
@@ -207,9 +209,11 @@ router.put('/objectives/:id', authenticateToken, async (req, res) => {
     const updatedObjective = await Objective.findByIdAndUpdate(
       req.params.id,
       {
+        sectionTitle: sectionTitle || '과정의 목표',
         title,
         description,
         iconType: iconType || 'default',
+        iconImage: iconImage || '',
         order: order || 0,
         isActive: isActive !== undefined ? isActive : true
       },
@@ -558,21 +562,18 @@ router.get('/lecturers/all', authenticateToken, async (req, res) => {
 
 router.post('/lecturers', authenticateToken, async (req, res) => {
   try {
-    const { name, title, organization, position, specialization, imageUrl, bio, lectures, order, isActive } = req.body;
+    const { name, biography, imageUrl, term, category, order, isActive } = req.body;
     
-    if (!name || !title || !organization || !position) {
-      return res.status(400).json({ message: '이름, 직함, 소속, 직위는 필수 항목입니다.' });
+    if (!name || !term || !category) {
+      return res.status(400).json({ message: '이름, 기수, 카테고리는 필수 항목입니다.' });
     }
     
     const newLecturer = new Lecturer({
       name,
-      title,
-      organization,
-      position,
-      specialization: specialization || '',
+      biography: biography || '',
       imageUrl: imageUrl || '',
-      bio: bio || '',
-      lectures: lectures || [],
+      term,
+      category,
       order: order || 0,
       isActive: isActive !== undefined ? isActive : true
     });
@@ -587,23 +588,20 @@ router.post('/lecturers', authenticateToken, async (req, res) => {
 
 router.put('/lecturers/:id', authenticateToken, async (req, res) => {
   try {
-    const { name, title, organization, position, specialization, imageUrl, bio, lectures, order, isActive } = req.body;
+    const { name, biography, imageUrl, term, category, order, isActive } = req.body;
     
-    if (!name || !title || !organization || !position) {
-      return res.status(400).json({ message: '이름, 직함, 소속, 직위는 필수 항목입니다.' });
+    if (!name || !term || !category) {
+      return res.status(400).json({ message: '이름, 기수, 카테고리는 필수 항목입니다.' });
     }
     
     const updatedLecturer = await Lecturer.findByIdAndUpdate(
       req.params.id,
       {
         name,
-        title,
-        organization,
-        position,
-        specialization: specialization || '',
+        biography: biography || '',
         imageUrl: imageUrl || '',
-        bio: bio || '',
-        lectures: lectures || [],
+        term,
+        category,
         order: order || 0,
         isActive: isActive !== undefined ? isActive : true
       },

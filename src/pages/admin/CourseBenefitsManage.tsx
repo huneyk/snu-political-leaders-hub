@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,22 +12,87 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
 import AdminHomeButton from '@/components/admin/AdminHomeButton';
 
-interface Benefit {
+// API 기본 URL 설정
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : 'http://localhost:5001/api';
+
+interface BenefitItem {
+  _id?: string;
+  sectionTitle: string;
   title: string;
-  content: string;
+  description: string;
+  order: number;
+  isActive: boolean;
 }
 
 const CourseBenefitsManage = () => {
-  const [sectionTitle, setSectionTitle] = useState('');
-  const [benefits, setBenefits] = useState<Benefit[]>([
-    { title: '', content: '' }
+  const [sectionTitle, setSectionTitle] = useState('과정 특전');
+  const [benefits, setBenefits] = useState<BenefitItem[]>([
+    { 
+      sectionTitle: '과정 특전',
+      title: '', 
+      description: '', 
+      order: 0,
+      isActive: true
+    }
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<{titles: Record<number, boolean>}>({
+    titles: {}
+  });
+  const { isAuthenticated, isLoading: authLoading, token } = useAdminAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
-    // 로컬 스토리지에서 기존 데이터 로드
+    if (isAuthenticated && token) {
+      loadBenefits();
+    }
+  }, [isAuthenticated, token]);
+  
+  const loadBenefits = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/content/benefits/all`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data && response.data.length > 0) {
+        // 첫 번째 항목에서 sectionTitle 가져오기
+        setSectionTitle(response.data[0].sectionTitle || '과정 특전');
+        
+        // Benefits 배열 설정
+        setBenefits(response.data.map((obj: any) => ({
+          _id: obj._id,
+          sectionTitle: obj.sectionTitle || '과정 특전',
+          title: obj.title || '',
+          description: obj.description || '',
+          order: obj.order || 0,
+          isActive: obj.isActive !== undefined ? obj.isActive : true
+        })));
+      } else {
+        // MongoDB에 데이터가 없는 경우 로컬 스토리지에서 초기 데이터 로드 시도
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error('Failed to load benefits:', error);
+      toast({
+        title: "데이터 로딩 실패",
+        description: "특전 데이터를 불러오는데 실패했습니다. 로컬 데이터를 사용합니다.",
+        variant: "destructive"
+      });
+      
+      // API 호출 실패 시 로컬 스토리지에서 데이터 로드
+      loadFromLocalStorage();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const loadFromLocalStorage = () => {
     const savedTitle = localStorage.getItem('course-benefits-title');
     const savedBenefits = localStorage.getItem('course-benefits');
     
@@ -34,57 +100,153 @@ const CourseBenefitsManage = () => {
     if (savedBenefits) {
       try {
         const parsedBenefits = JSON.parse(savedBenefits);
-        // 이전 형식(string[])에서 새 형식(Benefit[])으로 변환
         if (Array.isArray(parsedBenefits)) {
           if (typeof parsedBenefits[0] === 'string') {
-            // 이전 형식: string[]
-            setBenefits(parsedBenefits.map(content => ({ title: '', content })));
+            // Handle old format (array of strings)
+            setBenefits(parsedBenefits.map((description, index) => ({
+              _id: `local-${index}`,
+              sectionTitle: savedTitle || '과정 특전',
+              title: '',
+              description,
+              order: index,
+              isActive: true
+            })));
           } else {
-            // 새 형식: Benefit[]
-            setBenefits(parsedBenefits);
+            // Handle transition format (array of {title, content})
+            setBenefits(parsedBenefits.map((item: any, index: number) => ({
+              _id: item._id || `local-${index}`,
+              sectionTitle: savedTitle || '과정 특전',
+              title: item.title || '',
+              description: item.content || item.description || '',
+              order: item.order || index,
+              isActive: item.isActive !== false
+            })));
           }
         }
       } catch (error) {
-        console.error('Failed to parse benefits:', error);
+        console.error('Failed to parse benefits from localStorage:', error);
       }
     }
-  }, []);
+  };
   
-  const handleBenefitChange = (index: number, field: keyof Benefit, value: string) => {
-    const newBenefits = [...benefits];
-    newBenefits[index] = { ...newBenefits[index], [field]: value };
-    setBenefits(newBenefits);
+  const handleBenefitChange = (index: number, field: keyof BenefitItem, value: string) => {
+    const updatedBenefits = [...benefits];
+    updatedBenefits[index] = {
+      ...updatedBenefits[index],
+      [field]: value
+    };
+    setBenefits(updatedBenefits);
   };
   
   const addBenefit = () => {
-    setBenefits([...benefits, { title: '', content: '' }]);
+    const newOrder = benefits.length > 0 ? Math.max(...benefits.map(obj => obj.order)) + 1 : 0;
+    
+    setBenefits([
+      ...benefits, 
+      { 
+        sectionTitle: sectionTitle,
+        title: '', 
+        description: '', 
+        order: newOrder,
+        isActive: true
+      }
+    ]);
   };
   
   const removeBenefit = (index: number) => {
     if (benefits.length <= 1) return;
     const newBenefits = benefits.filter((_, i) => i !== index);
+    
+    // 순서 재정렬
+    newBenefits.forEach((obj, idx) => {
+      obj.order = idx;
+    });
+    
     setBenefits(newBenefits);
   };
   
-  const handleSave = () => {
-    setIsLoading(true);
+  const handleSave = async () => {
+    // 유효성 검사
+    const newErrors = {
+      titles: {} as Record<number, boolean>
+    };
     
-    // 빈 항목 필터링 - 제목이 있는 항목만 저장
-    const filteredBenefits = benefits.filter(
-      benefit => benefit.title.trim() !== ''
-    );
+    let hasError = false;
     
-    // 로컬 스토리지에 저장
-    localStorage.setItem('course-benefits-title', sectionTitle);
-    localStorage.setItem('course-benefits', JSON.stringify(filteredBenefits));
+    benefits.forEach((benefit, index) => {
+      if (benefit.title.trim() === '') {
+        newErrors.titles[index] = true;
+        hasError = true;
+      }
+    });
     
-    setTimeout(() => {
-      setIsLoading(false);
+    setErrors(newErrors);
+    
+    if (hasError) {
+      toast({
+        title: "저장 실패",
+        description: "모든 필수 항목을 입력해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSaving(true);
+    
+    try {
+      // 모든 Benefit에 동일한 sectionTitle 적용
+      const benefitsToSave = benefits.map(obj => ({
+        ...obj,
+        sectionTitle: sectionTitle
+      }));
+      
+      // 기존 데이터 ID가 있는 경우 업데이트, 없는 경우 새로 생성
+      const savePromises = benefitsToSave.map(async (obj) => {
+        if (obj._id) {
+          // 기존 항목 업데이트
+          return axios.put(`${API_BASE_URL}/content/benefits/${obj._id}`, obj, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+        } else {
+          // 새 항목 생성
+          return axios.post(`${API_BASE_URL}/content/benefits`, obj, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+        }
+      });
+      
+      await Promise.all(savePromises);
+      
+      // 로컬 스토리지에도 백업 저장
+      localStorage.setItem('course-benefits-title', sectionTitle);
+      localStorage.setItem('course-benefits', JSON.stringify(
+        benefits.map(obj => ({
+          title: obj.title,
+          description: obj.description
+        }))
+      ));
+      
       toast({
         title: "저장 완료",
         description: "과정의 특전이 성공적으로 저장되었습니다.",
       });
-    }, 500);
+      
+      // 데이터 다시 로드
+      loadBenefits();
+    } catch (error) {
+      console.error('Failed to save benefits:', error);
+      toast({
+        title: "저장 실패",
+        description: "서버에 데이터를 저장하는데 실패했습니다. 로컬에만 저장되었습니다.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
   
   if (authLoading) {
@@ -114,80 +276,99 @@ const CourseBenefitsManage = () => {
             <CardTitle className="text-2xl font-bold text-mainBlue">과정의 특전 관리</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="title" className="text-sm font-medium">섹션 제목</label>
-              <Input
-                id="title"
-                value={sectionTitle}
-                onChange={(e) => setSectionTitle(e.target.value)}
-                placeholder="과정 특전 섹션의 제목을 입력하세요"
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">특전 항목</label>
-                <p className="text-xs text-gray-500">각 항목은 '특전 제목 - 특전 내용'이 한 세트로 구성됩니다</p>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-40">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mainBlue"></div>
               </div>
-              
-              {benefits.map((benefit, index) => (
-                <div key={index} className="p-4 border border-gray-200 rounded-md bg-gray-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium">특전 {index + 1}</h3>
-                    <Button 
-                      type="button" 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => removeBenefit(index)}
-                      disabled={benefits.length <= 1}
-                    >
-                      삭제
-                    </Button>
-                  </div>
-                  
-                  <div className="mb-3">
-                    <label className="text-sm font-medium mb-1 block">특전 제목 <span className="text-red-500">*</span></label>
-                    <Input
-                      value={benefit.title}
-                      onChange={(e) => handleBenefitChange(index, 'title', e.target.value)}
-                      placeholder={`특전 ${index + 1} 제목`}
-                      className="mb-2"
-                      required
-                    />
-                    {benefit.title.trim() === '' && (
-                      <p className="text-xs text-red-500 mt-1">특전 제목은 필수 입력 항목입니다.</p>
-                    )}
-                  </div>
-                  
-                  <div className="mb-2">
-                    <label className="text-sm font-medium mb-1 block">특전 내용</label>
-                    <Textarea
-                      value={benefit.content}
-                      onChange={(e) => handleBenefitChange(index, 'content', e.target.value)}
-                      placeholder={`특전 ${index + 1} 내용`}
-                      className="min-h-[100px]"
-                    />
-                  </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <label htmlFor="title" className="text-sm font-medium">섹션 제목</label>
+                  <Input
+                    id="title"
+                    value={sectionTitle}
+                    onChange={(e) => setSectionTitle(e.target.value)}
+                    placeholder="과정 특전 섹션의 제목을 입력하세요"
+                  />
                 </div>
-              ))}
-              
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={addBenefit} 
-                className="w-full flex items-center justify-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                새 특전 추가
-              </Button>
-            </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">특전 항목</label>
+                    <p className="text-xs text-gray-500">각 항목은 '특전 제목 - 특전 내용'이 한 세트로 구성됩니다</p>
+                  </div>
+                  
+                  {benefits.map((benefit, index) => (
+                    <div key={index} className="p-4 border border-gray-200 rounded-md bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-medium">특전 {index + 1}</h3>
+                        <Button 
+                          type="button" 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => removeBenefit(index)}
+                          disabled={benefits.length <= 1}
+                        >
+                          삭제
+                        </Button>
+                      </div>
+                      
+                      <div className="mb-6">
+                        <label htmlFor={`benefit-title-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                          특전 제목
+                        </label>
+                        <Input
+                          id={`benefit-title-${index}`}
+                          value={benefit.title}
+                          onChange={(e) => handleBenefitChange(index, 'title', e.target.value)}
+                          placeholder="특전의 제목을 입력하세요"
+                          className={`w-full ${errors.titles[index] ? 'border-red-500' : ''}`}
+                          required
+                        />
+                        {errors.titles[index] && (
+                          <p className="mt-1 text-sm text-red-500">특전 제목은 필수입니다</p>
+                        )}
+                      </div>
+                      
+                      <div className="mb-4">
+                        <label htmlFor={`benefit-description-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                          특전 내용
+                        </label>
+                        <Textarea
+                          id={`benefit-description-${index}`}
+                          value={benefit.description}
+                          onChange={(e) => handleBenefitChange(index, 'description', e.target.value)}
+                          placeholder="특전의 내용을 입력하세요"
+                          className="w-full"
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={addBenefit} 
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    새 특전 추가
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
           <CardFooter>
-            <Button onClick={handleSave} disabled={isLoading} className="ml-auto">
-              {isLoading ? '저장 중...' : '저장하기'}
+            <Button 
+              onClick={handleSave} 
+              disabled={isLoading || isSaving} 
+              className="ml-auto"
+            >
+              {isSaving ? '저장 중...' : '저장하기'}
             </Button>
           </CardFooter>
         </Card>

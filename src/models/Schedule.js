@@ -5,17 +5,17 @@ import mongoose from 'mongoose';
  * 
  * 학사일정, 현장탐방, 해외연수, 친교활동 등의 일정 정보를 저장합니다.
  * 기수별로 구분되어 관리됩니다.
- * 관리자 입력 형식에 맞게 설계되었습니다.
  */
 const scheduleSchema = new mongoose.Schema({
   // 기수 (ex: '25', '26'...)
   term: {
-    type: String,
+    type: Number,
     required: true,
-    trim: true
+    trim: true,
+    index: true // 기수별 검색을 위한 인덱스
   },
   
-  // 년도 (ex: '2024')
+  // 년도 (ex: '2025')
   year: {
     type: String,
     required: true,
@@ -28,7 +28,8 @@ const scheduleSchema = new mongoose.Schema({
     type: String,
     required: true,
     enum: ['academic', 'field', 'overseas', 'social', 'other'],
-    default: 'academic'
+    default: 'academic',
+    index: true // 카테고리별 검색을 위한 인덱스
   },
   
   // 일정 제목
@@ -38,13 +39,14 @@ const scheduleSchema = new mongoose.Schema({
     trim: true
   },
   
-  // 일정 날짜 (관리자 페이지에서 'mm/dd/yyyy' 형식으로 입력됨)
+  // 일정 날짜 (YYYY-MM-DD 형식)
   date: {
     type: Date,
-    required: true
+    required: true,
+    index: true // 날짜별 검색 및 정렬을 위한 인덱스
   },
   
-  // 일정 시간 (30분 단위 드롭다운 메뉴로 입력됨)
+  // 일정 시간 (HH:MM 형식)
   time: {
     type: String
   },
@@ -59,6 +61,23 @@ const scheduleSchema = new mongoose.Schema({
     type: String
   },
   
+  // 세션 정보 (서브 일정들)
+  sessions: [{
+    time: {
+      type: String
+    },
+    title: {
+      type: String,
+      required: true
+    },
+    location: {
+      type: String
+    },
+    description: {
+      type: String
+    }
+  }],
+  
   // 활성 상태 (비활성 일정은 웹사이트에 표시되지 않음)
   isActive: {
     type: Boolean,
@@ -68,7 +87,8 @@ const scheduleSchema = new mongoose.Schema({
   timestamps: true // createdAt, updatedAt 자동 생성
 });
 
-// 날짜별 정렬을 위한 인덱스
-scheduleSchema.index({ date: 1 });
+// 인덱스 생성
+scheduleSchema.index({ term: 1, category: 1 }); // 기수와 카테고리로 복합 검색
+scheduleSchema.index({ date: 1 }); // 날짜별 정렬
 
 export default mongoose.model('Schedule', scheduleSchema); 

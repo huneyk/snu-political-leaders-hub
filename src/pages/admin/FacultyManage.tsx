@@ -9,9 +9,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
+import axios from 'axios';
+
+// API 기본 URL 설정
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : 'http://localhost:5001/api';
 
 interface Faculty {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
   imageUrl: string;
   biography: string;
@@ -29,7 +36,7 @@ interface TermFaculty {
 }
 
 const FacultyManage = () => {
-  const { isAuthenticated, isLoading } = useAdminAuth();
+  const { isAuthenticated, isLoading: authLoading, token } = useAdminAuth();
   const navigate = useNavigate();
   const fileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
   
@@ -54,16 +61,164 @@ const FacultyManage = () => {
   const [activeTermIndex, setActiveTermIndex] = useState(0);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<FacultyCategory | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   
   useEffect(() => {
-    // 로컬 스토리지에서 기존 데이터 로드
+    if (isAuthenticated && token) {
+      loadLecturers();
+    }
+  }, [isAuthenticated, token]);
+  
+  // MongoDB에서 강사 데이터 불러오기
+  const loadLecturers = async () => {
+    try {
+      setIsLoading(true);
+      
+      // API 호출하여 모든 강사 데이터 가져오기
+      const response = await axios.get(`${API_BASE_URL}/content/lecturers/all`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('서버에서 불러온 강사 데이터:', response.data);
+      
+      // 데이터가 있는 경우 처리
+      if (response.data && Array.isArray(response.data)) {
+        // 기수별, 카테고리별로 데이터 구성
+        const processedData = processLecturerData(response.data);
+        
+        // 유효한 데이터가 있는 경우 설정
+        if (processedData.length > 0) {
+          setTerms(processedData);
+          console.log('변환된 데이터 설정:', processedData);
+          
+          // 초기 카테고리 선택
+          if (processedData[0].categories && processedData[0].categories.length > 0) {
+            setSelectedCategory(processedData[0].categories[0]);
+          }
+        }
+        
+        toast({
+          title: "데이터 로드 성공",
+          description: "강사 데이터를 성공적으로 불러왔습니다.",
+        });
+      } else {
+        console.log('불러온 데이터가 없거나 형식이 맞지 않습니다. 로컬 스토리지에서 시도합니다.');
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error('강사 데이터 로드 실패:', error);
+      toast({
+        title: "데이터 로드 실패",
+        description: "강사 데이터를 불러오는데 실패했습니다. 로컬 데이터를 사용합니다.",
+        variant: "destructive"
+      });
+      
+      // API 실패 시 localStorage에서 가져오기
+      loadFromLocalStorage();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // 서버에서 받은 강사 데이터를 앱 형식으로 변환
+  const processLecturerData = (lecturers) => {
+    const groupedByTerm = {};
+    
+    // 기수별로 데이터 그룹화
+    lecturers.forEach(lecturer => {
+      if (!groupedByTerm[lecturer.term]) {
+        groupedByTerm[lecturer.term] = {
+          '특별강사진': [],
+          '서울대 정치외교학부 교수진': []
+        };
+      }
+      
+      // 카테고리에 따라 분류
+      if (lecturer.category && groupedByTerm[lecturer.term][lecturer.category] !== undefined) {
+        groupedByTerm[lecturer.term][lecturer.category].push({
+          id: lecturer._id,
+          _id: lecturer._id,
+          name: lecturer.name,
+          imageUrl: lecturer.imageUrl || '',
+          biography: lecturer.biography || ''
+        });
+      }
+    });
+    
+    // 앱 형식으로 변환
+    const result = [];
+    Object.keys(groupedByTerm).forEach((term, termIndex) => {
+      const categories = [];
+      
+      // 특별강사진 카테고리 추가
+      if (groupedByTerm[term]['특별강사진'].length > 0) {
+        categories.push({
+          id: '1',
+          name: '특별강사진',
+          faculty: groupedByTerm[term]['특별강사진']
+        });
+      } else {
+        categories.push({
+          id: '1',
+          name: '특별강사진',
+          faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+        });
+      }
+      
+      // 서울대 정치외교학부 교수진 카테고리 추가
+      if (groupedByTerm[term]['서울대 정치외교학부 교수진'].length > 0) {
+        categories.push({
+          id: '2',
+          name: '서울대 정치외교학부 교수진',
+          faculty: groupedByTerm[term]['서울대 정치외교학부 교수진']
+        });
+      } else {
+        categories.push({
+          id: '2',
+          name: '서울대 정치외교학부 교수진',
+          faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+        });
+      }
+      
+      result.push({
+        term,
+        categories
+      });
+    });
+    
+    // 데이터가 없는 경우 기본 구조 반환
+    if (result.length === 0) {
+      return [{
+        term: '1',
+        categories: [
+          {
+            id: '1',
+            name: '특별강사진',
+            faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+          },
+          {
+            id: '2',
+            name: '서울대 정치외교학부 교수진',
+            faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+          }
+        ]
+      }];
+    }
+    
+    return result;
+  };
+  
+  // 로컬 스토리지에서 기존 데이터 로드
+  const loadFromLocalStorage = () => {
     const savedFaculty = localStorage.getItem('faculty-data');
     
     if (savedFaculty) {
       try {
         const parsedFaculty = JSON.parse(savedFaculty);
-        console.log('로드된 데이터:', parsedFaculty);
+        console.log('로컬 스토리지에서 로드된 데이터:', parsedFaculty);
         
         // 데이터 구조 확인
         if (Array.isArray(parsedFaculty) && parsedFaculty.length > 0) {
@@ -158,8 +313,24 @@ const FacultyManage = () => {
           ]
         }]);
       }
+    } else {
+      setTerms([{
+        term: '1',
+        categories: [
+          {
+            id: '1',
+            name: '특별강사진',
+            faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+          },
+          {
+            id: '2',
+            name: '서울대 정치외교학부 교수진',
+            faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+          }
+        ]
+      }]);
     }
-  }, []);
+  };
   
   // 현재 선택된 카테고리 업데이트
   useEffect(() => {
@@ -319,23 +490,105 @@ const FacultyManage = () => {
     
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      const reader = new FileReader();
       
-      reader.onloadend = () => {
-        const newTerms = [...terms];
-        newTerms[termIndex].categories[categoryIndex].faculty[facultyIndex].imageUrl = reader.result as string;
-        setTerms(newTerms);
-        
-        // selectedCategory 업데이트
-        const updatedFaculty = [...selectedCategory.faculty];
-        updatedFaculty[facultyIndex] = {
-          ...updatedFaculty[facultyIndex],
-          imageUrl: reader.result as string
+      // 파일 크기 제한 (5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast({
+          title: "파일 크기 초과",
+          description: "이미지 크기는 5MB 이하여야 합니다.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // 이미지 타입 확인
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "잘못된 파일 형식",
+          description: "이미지 파일만 업로드할 수 있습니다.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // 이미지 리사이징 및 Base64 변환
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          // 리사이징을 위한 캔버스 생성
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // 이미지 크기 조정 (최대 크기: 800x800)
+          const maxWidth = 800;
+          const maxHeight = 800;
+          
+          if (width > height) {
+            if (width > maxWidth) {
+              height *= maxWidth / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width *= maxHeight / height;
+              height = maxHeight;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // 이미지 그리기
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // 압축 및 Base64 변환 (JPEG 포맷, 품질 0.85)
+            const base64String = canvas.toDataURL('image/jpeg', 0.85);
+            
+            // 이미지 URL 설정
+            const newTerms = [...terms];
+            newTerms[termIndex].categories[categoryIndex].faculty[facultyIndex].imageUrl = base64String;
+            setTerms(newTerms);
+            
+            // selectedCategory 업데이트
+            const updatedFaculty = [...selectedCategory.faculty];
+            updatedFaculty[facultyIndex] = {
+              ...updatedFaculty[facultyIndex],
+              imageUrl: base64String
+            };
+            
+            setSelectedCategory({
+              ...selectedCategory,
+              faculty: updatedFaculty
+            });
+            
+            toast({
+              title: "이미지 업로드 성공",
+              description: "이미지가 성공적으로 처리되었습니다.",
+            });
+          }
         };
         
-        setSelectedCategory({
-          ...selectedCategory,
-          faculty: updatedFaculty
+        img.onerror = () => {
+          toast({
+            title: "이미지 처리 오류",
+            description: "이미지를 처리할 수 없습니다.",
+            variant: "destructive",
+          });
+        };
+        
+        img.src = event.target?.result as string;
+      };
+      
+      reader.onerror = () => {
+        toast({
+          title: "파일 읽기 오류",
+          description: "파일을 읽는 중 오류가 발생했습니다.",
+          variant: "destructive",
         });
       };
       
@@ -370,85 +623,110 @@ const FacultyManage = () => {
   };
   
   // 저장
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!token) {
+      toast({
+        title: "인증 오류",
+        description: "관리자 인증이 필요합니다. 다시 로그인해주세요.",
+        variant: "destructive",
+      });
+      navigate('/admin/login');
+      return;
+    }
+    
     setIsSaving(true);
     
-    // 빈 항목 필터링하되 카테고리는 유지
-    const filteredTerms = terms.map(term => {
-      // 각 카테고리의 강사 중 이름이 있는 강사만 필터링
-      const updatedCategories = term.categories.map(category => {
-        // 이름이 있는 강사만 필터링
-        const validFaculty = category.faculty.filter(f => f.name && f.name.trim() !== '');
-        console.log(`${category.name} 유효한 강사 수:`, validFaculty.length);
-        
-        // 유효한 강사 목록 출력
-        validFaculty.forEach((f, i) => {
-          console.log(`- 강사 ${i+1}: ${f.name}`);
-        });
-        
-        return {
-          ...category,
-          faculty: validFaculty.length > 0 ? validFaculty : [{ id: '1', name: '', imageUrl: '', biography: '' }]
-        };
+    try {
+      // 기존 데이터 삭제를 위해 모든 강사 불러오기
+      const existingLecturers = await axios.get(`${API_BASE_URL}/content/lecturers/all`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
-      return {
-        ...term,
-        categories: updatedCategories
-      };
-    });
-    
-    console.log('저장할 데이터:', JSON.stringify(filteredTerms, null, 2));
-    
-    // 로컬 스토리지에 저장
-    localStorage.setItem('faculty-data', JSON.stringify(filteredTerms));
-    
-    // 저장 후 데이터 확인
-    setTimeout(() => {
-      try {
-        const savedData = localStorage.getItem('faculty-data');
-        if (savedData) {
-          const parsedData = JSON.parse(savedData);
-          console.log('저장된 데이터 확인:', parsedData);
-          
-          // 각 카테고리별 강사 수 확인
-          if (Array.isArray(parsedData) && parsedData.length > 0) {
-            parsedData.forEach((term, termIndex) => {
-              if (term.categories && Array.isArray(term.categories)) {
-                term.categories.forEach(category => {
-                  if (category.faculty && Array.isArray(category.faculty)) {
-                    console.log(`기수 ${termIndex+1} ${category.name} 강사 수:`, category.faculty.length);
-                    category.faculty.forEach((f, i) => {
-                      console.log(`- 강사 ${i+1}: ${f.name}`);
-                    });
-                  }
-                });
-              }
-            });
-          }
+      // 기존 데이터 삭제
+      if (existingLecturers.data && Array.isArray(existingLecturers.data)) {
+        for (const lecturer of existingLecturers.data) {
+          await axios.delete(`${API_BASE_URL}/content/lecturers/${lecturer._id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
         }
-      } catch (error) {
-        console.error('저장된 데이터 확인 중 오류:', error);
       }
       
-      setIsSaving(false);
+      // 새 데이터 저장
+      const savedItems = [];
+      let order = 0;
+      
+      for (const term of terms) {
+        for (const category of term.categories) {
+          // 이름이 있는 강사만 필터링
+          const validFaculty = category.faculty.filter(faculty => faculty.name && faculty.name.trim() !== '');
+          
+          // 각 강사 정보 저장
+          for (const faculty of validFaculty) {
+            const lecturerData = {
+              name: faculty.name,
+              biography: faculty.biography || '',
+              imageUrl: faculty.imageUrl || '',
+              term: term.term,
+              category: category.name,
+              order: order++,
+              isActive: true
+            };
+            
+            const response = await axios.post(`${API_BASE_URL}/content/lecturers`, lecturerData, {
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            
+            savedItems.push(response.data);
+          }
+        }
+      }
+      
+      // 로컬 스토리지에도 백업으로 저장
+      localStorage.setItem('faculty-data', JSON.stringify(terms));
+      
       toast({
         title: "저장 완료",
-        description: "강사진 정보가 성공적으로 저장되었습니다. 강사진 페이지에서 확인하실 수 있습니다.",
-        duration: 5000,
+        description: `${savedItems.length}개의 강사 정보가 성공적으로 저장되었습니다.`,
       });
-    }, 500);
+      
+      // 저장 후 데이터 다시 로드
+      await loadLecturers();
+    } catch (error) {
+      console.error('강사 정보 저장 실패:', error);
+      toast({
+        title: "저장 실패",
+        description: "서버에 데이터를 저장하는 중 오류가 발생했습니다. 로컬에만 저장됩니다.",
+        variant: "destructive"
+      });
+      
+      // 실패해도 로컬 스토리지에는 저장
+      localStorage.setItem('faculty-data', JSON.stringify(terms));
+    } finally {
+      setIsSaving(false);
+    }
   };
   
-  if (isLoading) {
+  if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>로딩 중...</p>
-      </div>
+      <AdminLayout>
+        <div className="flex items-center justify-center p-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
+            <p className="text-mainBlue font-medium">데이터를 불러오는 중...</p>
+          </div>
+        </div>
+      </AdminLayout>
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !authLoading) {
     navigate('/admin/login');
     return null;
   }
@@ -571,7 +849,7 @@ const FacultyManage = () => {
                         <div className="flex items-center justify-between">
                           <h3 className="font-medium">{selectedCategory.name} 목록</h3>
                           <Button 
-                            onClick={() => addFaculty(termIndex, activeCategoryIndex)} 
+                            onClick={() => addFaculty(activeTermIndex, activeCategoryIndex)} 
                             variant="outline" 
                             size="sm"
                             className="flex items-center gap-1"
@@ -589,7 +867,7 @@ const FacultyManage = () => {
                             <div className="flex justify-between items-center">
                               <h3 className="font-medium">강사 #{facultyIndex + 1}</h3>
                               <Button 
-                                onClick={() => removeFaculty(termIndex, activeCategoryIndex, facultyIndex)} 
+                                onClick={() => removeFaculty(activeTermIndex, activeCategoryIndex, facultyIndex)} 
                                 variant="destructive" 
                                 size="sm"
                                 disabled={selectedCategory.faculty.length <= 1}
@@ -603,7 +881,7 @@ const FacultyManage = () => {
                                 <label className="text-sm font-medium">성명 <span className="text-red-500">*</span></label>
                                 <Input
                                   value={faculty.name}
-                                  onChange={(e) => handleFacultyChange(termIndex, activeCategoryIndex, facultyIndex, 'name', e.target.value)}
+                                  onChange={(e) => handleFacultyChange(activeTermIndex, activeCategoryIndex, facultyIndex, 'name', e.target.value)}
                                   placeholder="강사 성명"
                                   required
                                 />
@@ -618,14 +896,14 @@ const FacultyManage = () => {
                                     type="file"
                                     accept="image/*"
                                     className="hidden"
-                                    onChange={(e) => handleImageChange(termIndex, activeCategoryIndex, facultyIndex, e)}
-                                    ref={(el) => fileInputRefs.current[`${termIndex}-${activeCategoryIndex}-${facultyIndex}`] = el}
+                                    onChange={(e) => handleImageChange(activeTermIndex, activeCategoryIndex, facultyIndex, e)}
+                                    ref={(el) => fileInputRefs.current[`${activeTermIndex}-${activeCategoryIndex}-${facultyIndex}`] = el}
                                   />
                                   <div className="flex space-x-2">
                                     <Button 
                                       type="button" 
                                       variant="outline" 
-                                      onClick={() => handleImageButtonClick(termIndex, activeCategoryIndex, facultyIndex)}
+                                      onClick={() => handleImageButtonClick(activeTermIndex, activeCategoryIndex, facultyIndex)}
                                       className="flex-1"
                                     >
                                       {faculty.imageUrl ? '이미지 변경' : '이미지 선택'}
@@ -634,7 +912,7 @@ const FacultyManage = () => {
                                       <Button 
                                         type="button" 
                                         variant="destructive" 
-                                        onClick={() => handleRemoveImage(termIndex, activeCategoryIndex, facultyIndex)}
+                                        onClick={() => handleRemoveImage(activeTermIndex, activeCategoryIndex, facultyIndex)}
                                         size="sm"
                                       >
                                         삭제
@@ -658,7 +936,7 @@ const FacultyManage = () => {
                               <label className="text-sm font-medium">약력</label>
                               <Textarea
                                 value={faculty.biography}
-                                onChange={(e) => handleFacultyChange(termIndex, activeCategoryIndex, facultyIndex, 'biography', e.target.value)}
+                                onChange={(e) => handleFacultyChange(activeTermIndex, activeCategoryIndex, facultyIndex, 'biography', e.target.value)}
                                 placeholder="강사 약력 정보 (여러 줄로 입력 가능)"
                                 rows={5}
                               />
