@@ -6,11 +6,9 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
-import AdminHomeButton from '@/components/admin/AdminHomeButton';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 interface Faculty {
   id: string;
@@ -456,258 +454,250 @@ const FacultyManage = () => {
   }
   
   return (
-    <>
-      <Header />
-      <main className="container mx-auto p-6 pt-24">
-        <h1 className="text-3xl font-bold mb-6">강사진 관리</h1>
-        
-        <AdminHomeButton />
-        
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">강사진 관리</CardTitle>
-            <p className="text-gray-500 mt-2">
-              기수별로 강사진 정보를 관리합니다. 특별강사진과 서울대 정치외교학부 교수진을 추가할 수 있습니다.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={terms[activeTermIndex]?.term || '1'} className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">기수 선택</h3>
-                <Button 
-                  onClick={addTerm} 
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center gap-1"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  기수 추가
-                </Button>
-              </div>
-              
-              <TabsList className="w-full overflow-x-auto flex-wrap">
-                {terms.map((term, index) => (
-                  <div key={index} className="flex items-center">
-                    <TabsTrigger 
-                      value={term.term} 
-                      onClick={() => setActiveTermIndex(index)}
-                      className="flex-shrink-0"
+    <AdminLayout>
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold">강사진 관리</CardTitle>
+          <p className="text-gray-500 mt-2">
+            기수별로 강사진 정보를 관리합니다. 특별강사진과 서울대 정치외교학부 교수진을 추가할 수 있습니다.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={terms[activeTermIndex]?.term || '1'} className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium">기수 선택</h3>
+              <Button 
+                onClick={addTerm} 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                기수 추가
+              </Button>
+            </div>
+            
+            <TabsList className="w-full overflow-x-auto flex-wrap">
+              {terms.map((term, index) => (
+                <div key={index} className="flex items-center">
+                  <TabsTrigger 
+                    value={term.term} 
+                    onClick={() => setActiveTermIndex(index)}
+                    className="flex-shrink-0"
+                  >
+                    {index + 1}기
+                  </TabsTrigger>
+                  {terms.length > 1 && (
+                    <Button 
+                      onClick={() => removeTerm(index)} 
+                      variant="ghost" 
+                      size="sm"
+                      className="h-6 w-6 p-0 ml-1 text-gray-400 hover:text-red-500"
                     >
-                      {index + 1}기
-                    </TabsTrigger>
-                    {terms.length > 1 && (
-                      <Button 
-                        onClick={() => removeTerm(index)} 
-                        variant="ghost" 
-                        size="sm"
-                        className="h-6 w-6 p-0 ml-1 text-gray-400 hover:text-red-500"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                      </Button>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </TabsList>
+            
+            {terms.map((term, termIndex) => (
+              <TabsContent key={termIndex} value={term.term} className="space-y-6">
+                {/* 카테고리 선택 */}
+                <div className="space-y-4">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold mb-2">카테고리 선택</h3>
+                    <p className="text-sm text-gray-500 mb-2">
+                      아래 버튼을 클릭하여 입력할 강사진 카테고리를 선택하세요.
+                    </p>
+                    <p className="text-xs text-blue-500 mb-2">
+                      현재 선택된 카테고리: {selectedCategory?.name || '없음'} (인덱스: {activeCategoryIndex})
+                    </p>
+                    <p className="text-xs text-red-500 mb-2">
+                      카테고리 수: {term.categories?.length || 0}
+                    </p>
+                    {term.categories?.map((cat, idx) => (
+                      <p key={idx} className="text-xs text-gray-500">
+                        카테고리 {idx+1}: {cat.name} (ID: {cat.id})
+                      </p>
+                    ))}
+                  </div>
+                  
+                  {/* 카테고리 버튼 */}
+                  <div className="grid grid-cols-1 gap-4 mb-8">
+                    {term.categories && term.categories.length > 0 ? (
+                      term.categories.map((category, categoryIndex) => (
+                        <button
+                          key={categoryIndex}
+                          type="button"
+                          className={`py-5 px-6 rounded-lg text-center transition-all text-lg border-2 ${
+                            activeCategoryIndex === categoryIndex 
+                              ? 'bg-mainBlue text-white font-bold shadow-lg border-mainBlue' 
+                              : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-200'
+                          }`}
+                          onClick={() => {
+                            console.log('카테고리 버튼 클릭:', categoryIndex, category.name);
+                            setActiveCategoryIndex(categoryIndex);
+                            setSelectedCategory(category);
+                            
+                            // 상태 업데이트 확인을 위한 알림
+                            toast({
+                              title: `${category.name} 선택됨`,
+                              description: "이제 이 카테고리의 강사진을 관리할 수 있습니다.",
+                              duration: 2000,
+                            });
+                          }}
+                        >
+                          {category.name}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="col-span-2 text-center py-4 bg-gray-100 rounded-lg">
+                        <p className="text-gray-500">카테고리가 없습니다.</p>
+                      </div>
                     )}
                   </div>
-                ))}
-              </TabsList>
-              
-              {terms.map((term, termIndex) => (
-                <TabsContent key={termIndex} value={term.term} className="space-y-6">
-                  {/* 카테고리 선택 */}
-                  <div className="space-y-4">
-                    <div className="mb-4">
-                      <h3 className="text-lg font-semibold mb-2">카테고리 선택</h3>
-                      <p className="text-sm text-gray-500 mb-2">
-                        아래 버튼을 클릭하여 입력할 강사진 카테고리를 선택하세요.
-                      </p>
-                      <p className="text-xs text-blue-500 mb-2">
-                        현재 선택된 카테고리: {selectedCategory?.name || '없음'} (인덱스: {activeCategoryIndex})
-                      </p>
-                      <p className="text-xs text-red-500 mb-2">
-                        카테고리 수: {term.categories?.length || 0}
-                      </p>
-                      {term.categories?.map((cat, idx) => (
-                        <p key={idx} className="text-xs text-gray-500">
-                          카테고리 {idx+1}: {cat.name} (ID: {cat.id})
-                        </p>
-                      ))}
-                    </div>
-                    
-                    {/* 카테고리 버튼 */}
-                    <div className="grid grid-cols-1 gap-4 mb-8">
-                      {term.categories && term.categories.length > 0 ? (
-                        term.categories.map((category, categoryIndex) => (
-                          <button
-                            key={categoryIndex}
-                            type="button"
-                            className={`py-5 px-6 rounded-lg text-center transition-all text-lg border-2 ${
-                              activeCategoryIndex === categoryIndex 
-                                ? 'bg-mainBlue text-white font-bold shadow-lg border-mainBlue' 
-                                : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-200'
-                            }`}
-                            onClick={() => {
-                              console.log('카테고리 버튼 클릭:', categoryIndex, category.name);
-                              setActiveCategoryIndex(categoryIndex);
-                              setSelectedCategory(category);
-                              
-                              // 상태 업데이트 확인을 위한 알림
-                              toast({
-                                title: `${category.name} 선택됨`,
-                                description: "이제 이 카테고리의 강사진을 관리할 수 있습니다.",
-                                duration: 2000,
-                              });
-                            }}
+                  
+                  {/* 선택된 카테고리 내용 */}
+                  <div className="space-y-6 mt-4">
+                    {selectedCategory && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium">{selectedCategory.name} 목록</h3>
+                          <Button 
+                            onClick={() => addFaculty(termIndex, activeCategoryIndex)} 
+                            variant="outline" 
+                            size="sm"
+                            className="flex items-center gap-1"
                           >
-                            {category.name}
-                          </button>
-                        ))
-                      ) : (
-                        <div className="col-span-2 text-center py-4 bg-gray-100 rounded-lg">
-                          <p className="text-gray-500">카테고리가 없습니다.</p>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="12" y1="5" x2="12" y2="19"></line>
+                              <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            강사 추가
+                          </Button>
                         </div>
-                      )}
-                    </div>
-                    
-                    {/* 선택된 카테고리 내용 */}
-                    <div className="space-y-6 mt-4">
-                      {selectedCategory && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-medium">{selectedCategory.name} 목록</h3>
-                            <Button 
-                              onClick={() => addFaculty(termIndex, activeCategoryIndex)} 
-                              variant="outline" 
-                              size="sm"
-                              className="flex items-center gap-1"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                              </svg>
-                              강사 추가
-                            </Button>
-                          </div>
-                          
-                          {selectedCategory.faculty.map((faculty, facultyIndex) => (
-                            <div key={facultyIndex} className="border p-4 rounded-md space-y-4 bg-gray-50">
-                              <div className="flex justify-between items-center">
-                                <h3 className="font-medium">강사 #{facultyIndex + 1}</h3>
-                                <Button 
-                                  onClick={() => removeFaculty(termIndex, activeCategoryIndex, facultyIndex)} 
-                                  variant="destructive" 
-                                  size="sm"
-                                  disabled={selectedCategory.faculty.length <= 1}
-                                >
-                                  삭제
-                                </Button>
+                        
+                        {selectedCategory.faculty.map((faculty, facultyIndex) => (
+                          <div key={facultyIndex} className="border p-4 rounded-md space-y-4 bg-gray-50">
+                            <div className="flex justify-between items-center">
+                              <h3 className="font-medium">강사 #{facultyIndex + 1}</h3>
+                              <Button 
+                                onClick={() => removeFaculty(termIndex, activeCategoryIndex, facultyIndex)} 
+                                variant="destructive" 
+                                size="sm"
+                                disabled={selectedCategory.faculty.length <= 1}
+                              >
+                                삭제
+                              </Button>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">성명 <span className="text-red-500">*</span></label>
+                                <Input
+                                  value={faculty.name}
+                                  onChange={(e) => handleFacultyChange(termIndex, activeCategoryIndex, facultyIndex, 'name', e.target.value)}
+                                  placeholder="강사 성명"
+                                  required
+                                />
+                                {faculty.name.trim() === '' && (
+                                  <p className="text-xs text-red-500">성명은 필수 입력 항목입니다.</p>
+                                )}
                               </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <label className="text-sm font-medium">성명 <span className="text-red-500">*</span></label>
-                                  <Input
-                                    value={faculty.name}
-                                    onChange={(e) => handleFacultyChange(termIndex, activeCategoryIndex, facultyIndex, 'name', e.target.value)}
-                                    placeholder="강사 성명"
-                                    required
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">프로필 이미지</label>
+                                <div className="flex flex-col space-y-2">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => handleImageChange(termIndex, activeCategoryIndex, facultyIndex, e)}
+                                    ref={(el) => fileInputRefs.current[`${termIndex}-${activeCategoryIndex}-${facultyIndex}`] = el}
                                   />
-                                  {faculty.name.trim() === '' && (
-                                    <p className="text-xs text-red-500">성명은 필수 입력 항목입니다.</p>
-                                  )}
-                                </div>
-                                <div className="space-y-2">
-                                  <label className="text-sm font-medium">프로필 이미지</label>
-                                  <div className="flex flex-col space-y-2">
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      onChange={(e) => handleImageChange(termIndex, activeCategoryIndex, facultyIndex, e)}
-                                      ref={(el) => fileInputRefs.current[`${termIndex}-${activeCategoryIndex}-${facultyIndex}`] = el}
-                                    />
-                                    <div className="flex space-x-2">
+                                  <div className="flex space-x-2">
+                                    <Button 
+                                      type="button" 
+                                      variant="outline" 
+                                      onClick={() => handleImageButtonClick(termIndex, activeCategoryIndex, facultyIndex)}
+                                      className="flex-1"
+                                    >
+                                      {faculty.imageUrl ? '이미지 변경' : '이미지 선택'}
+                                    </Button>
+                                    {faculty.imageUrl && (
                                       <Button 
                                         type="button" 
-                                        variant="outline" 
-                                        onClick={() => handleImageButtonClick(termIndex, activeCategoryIndex, facultyIndex)}
-                                        className="flex-1"
+                                        variant="destructive" 
+                                        onClick={() => handleRemoveImage(termIndex, activeCategoryIndex, facultyIndex)}
+                                        size="sm"
                                       >
-                                        {faculty.imageUrl ? '이미지 변경' : '이미지 선택'}
+                                        삭제
                                       </Button>
-                                      {faculty.imageUrl && (
-                                        <Button 
-                                          type="button" 
-                                          variant="destructive" 
-                                          onClick={() => handleRemoveImage(termIndex, activeCategoryIndex, facultyIndex)}
-                                          size="sm"
-                                        >
-                                          삭제
-                                        </Button>
-                                      )}
-                                    </div>
-                                    {faculty.imageUrl && (
-                                      <div className="mt-2 relative w-full h-40 bg-gray-100 rounded-md overflow-hidden">
-                                        <img 
-                                          src={faculty.imageUrl} 
-                                          alt={faculty.name || '강사 이미지'} 
-                                          className="w-full h-full object-cover"
-                                        />
-                                      </div>
                                     )}
                                   </div>
+                                  {faculty.imageUrl && (
+                                    <div className="mt-2 relative w-full h-40 bg-gray-100 rounded-md overflow-hidden">
+                                      <img 
+                                        src={faculty.imageUrl} 
+                                        alt={faculty.name || '강사 이미지'} 
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                              
-                              <div className="space-y-2">
-                                <label className="text-sm font-medium">약력</label>
-                                <Textarea
-                                  value={faculty.biography}
-                                  onChange={(e) => handleFacultyChange(termIndex, activeCategoryIndex, facultyIndex, 'biography', e.target.value)}
-                                  placeholder="강사 약력 정보 (여러 줄로 입력 가능)"
-                                  rows={5}
-                                />
-                              </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                            
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">약력</label>
+                              <Textarea
+                                value={faculty.biography}
+                                onChange={(e) => handleFacultyChange(termIndex, activeCategoryIndex, facultyIndex, 'biography', e.target.value)}
+                                placeholder="강사 약력 정보 (여러 줄로 입력 가능)"
+                                rows={5}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </TabsContent>
-              ))}
-            </Tabs>
-          </CardContent>
-          <CardFooter className="flex justify-end">
-            <Button 
-              onClick={handleSave} 
-              disabled={isSaving}
-              className="bg-mainBlue hover:bg-blue-700 text-white font-medium px-6 py-2"
-            >
-              {isSaving ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                  <span>저장 중...</span>
                 </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                    <polyline points="7 3 7 8 15 8"></polyline>
-                  </svg>
-                  <span>저장하기</span>
-                </div>
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
-      </main>
-      <Footer />
-    </>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </CardContent>
+        <CardFooter className="flex justify-end">
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving}
+            className="bg-mainBlue hover:bg-blue-700 text-white font-medium px-6 py-2"
+          >
+            {isSaving ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                <span>저장 중...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <span>저장하기</span>
+              </div>
+            )}
+          </Button>
+        </CardFooter>
+      </Card>
+    </AdminLayout>
   );
 };
 

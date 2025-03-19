@@ -7,8 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2 } from 'lucide-react';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 interface Target {
   text: string;
@@ -180,154 +179,148 @@ const AdmissionManage = () => {
   };
 
   return (
-    <>
-      <Header />
-      <div className="container mx-auto py-20 px-4">
-        <h1 className="text-3xl font-bold mb-6">입학 지원 관리</h1>
-        
-        <Card className="mb-8">
+    <AdminLayout>
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold">입학 지원 관리</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <Input 
+                value={admissionInfo.title}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                className="w-16"
+              />
+              <Input 
+                value={admissionInfo.term}
+                onChange={(e) => handleTermChange(e.target.value)}
+                className="w-16"
+                placeholder="기수"
+              />
+              <span>기</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>(</span>
+              <Input 
+                value={admissionInfo.year}
+                onChange={(e) => handleYearChange(e.target.value)}
+                className="w-20"
+              />
+              <span>년</span>
+              <Input 
+                value={admissionInfo.startMonth}
+                onChange={(e) => handleStartMonthChange(e.target.value)}
+                className="w-16"
+              />
+              <span>~</span>
+              <Input 
+                value={admissionInfo.endMonth}
+                onChange={(e) => handleEndMonthChange(e.target.value)}
+                className="w-16"
+              />
+              <span>월)</span>
+            </div>
+            <span className="ml-2">지원 안내</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {admissionInfo.sections.map((section, sectionIndex) => (
+        <Card key={sectionIndex} className="mb-8">
           <CardHeader>
-            <CardTitle>기본 정보</CardTitle>
+            <CardTitle>{section.title}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <Input 
-                  value={admissionInfo.title}
-                  onChange={(e) => handleTitleChange(e.target.value)}
-                  className="w-16"
-                />
-                <Input 
-                  value={admissionInfo.term}
-                  onChange={(e) => handleTermChange(e.target.value)}
-                  className="w-16"
-                  placeholder="기수"
-                />
-                <span>기</span>
+            {section.title === '모집 인원' && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2">
+                  <Input 
+                    value={admissionInfo.capacity}
+                    onChange={(e) => handleCapacityChange(e.target.value)}
+                    className="w-20"
+                  />
+                  <span>명 내외</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span>(</span>
-                <Input 
-                  value={admissionInfo.year}
-                  onChange={(e) => handleYearChange(e.target.value)}
-                  className="w-20"
+            )}
+
+            {section.title !== '모집 인원' && (
+              <div className="mb-4">
+                <Label className="mb-2 block">내용</Label>
+                <Textarea 
+                  value={section.content}
+                  onChange={(e) => handleSectionContentChange(sectionIndex, e.target.value)}
+                  className="min-h-20"
                 />
-                <span>년</span>
-                <Input 
-                  value={admissionInfo.startMonth}
-                  onChange={(e) => handleStartMonthChange(e.target.value)}
-                  className="w-16"
-                />
-                <span>~</span>
-                <Input 
-                  value={admissionInfo.endMonth}
-                  onChange={(e) => handleEndMonthChange(e.target.value)}
-                  className="w-16"
-                />
-                <span>월)</span>
               </div>
-              <span className="ml-2">지원 안내</span>
-            </div>
+            )}
+
+            {section.targets && (
+              <div className="mb-4">
+                <Label className="mb-2 block">모집 대상</Label>
+                {section.targets.map((target, targetIndex) => (
+                  <div key={targetIndex} className="flex items-center gap-2 mb-2">
+                    <span>{targetIndex + 1}.</span>
+                    <Input 
+                      value={target.text}
+                      onChange={(e) => handleTargetChange(sectionIndex, targetIndex, e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeTarget(sectionIndex, targetIndex)}
+                      disabled={section.targets!.length <= 1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => addTarget(sectionIndex)}
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  항목 추가
+                </Button>
+              </div>
+            )}
+
+            {section.subsections.length > 0 && (
+              <div className="space-y-6 mt-6">
+                {section.subsections.map((subsection, subsectionIndex) => (
+                  <div key={subsectionIndex}>
+                    <div className="mb-4">
+                      <Label className="mb-2 block">소제목</Label>
+                      <Input 
+                        value={subsection.title}
+                        onChange={(e) => handleSubsectionTitleChange(sectionIndex, subsectionIndex, e.target.value)}
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <Label className="mb-2 block">내용</Label>
+                      <Textarea 
+                        value={subsection.content}
+                        onChange={(e) => handleSubsectionContentChange(sectionIndex, subsectionIndex, e.target.value)}
+                        className="min-h-20"
+                      />
+                    </div>
+                    {subsectionIndex < section.subsections.length - 1 && <Separator className="my-4" />}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
+      ))}
 
-        {admissionInfo.sections.map((section, sectionIndex) => (
-          <Card key={sectionIndex} className="mb-8">
-            <CardHeader>
-              <CardTitle>{section.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {section.title === '모집 인원' && (
-                <div className="mb-4">
-                  <div className="flex items-center gap-2">
-                    <Input 
-                      value={admissionInfo.capacity}
-                      onChange={(e) => handleCapacityChange(e.target.value)}
-                      className="w-20"
-                    />
-                    <span>명 내외</span>
-                  </div>
-                </div>
-              )}
-
-              {section.title !== '모집 인원' && (
-                <div className="mb-4">
-                  <Label className="mb-2 block">내용</Label>
-                  <Textarea 
-                    value={section.content}
-                    onChange={(e) => handleSectionContentChange(sectionIndex, e.target.value)}
-                    className="min-h-20"
-                  />
-                </div>
-              )}
-
-              {section.targets && (
-                <div className="mb-4">
-                  <Label className="mb-2 block">모집 대상</Label>
-                  {section.targets.map((target, targetIndex) => (
-                    <div key={targetIndex} className="flex items-center gap-2 mb-2">
-                      <span>{targetIndex + 1}.</span>
-                      <Input 
-                        value={target.text}
-                        onChange={(e) => handleTargetChange(sectionIndex, targetIndex, e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeTarget(sectionIndex, targetIndex)}
-                        disabled={section.targets!.length <= 1}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => addTarget(sectionIndex)}
-                  >
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    항목 추가
-                  </Button>
-                </div>
-              )}
-
-              {section.subsections.length > 0 && (
-                <div className="space-y-6 mt-6">
-                  {section.subsections.map((subsection, subsectionIndex) => (
-                    <div key={subsectionIndex}>
-                      <div className="mb-4">
-                        <Label className="mb-2 block">소제목</Label>
-                        <Input 
-                          value={subsection.title}
-                          onChange={(e) => handleSubsectionTitleChange(sectionIndex, subsectionIndex, e.target.value)}
-                        />
-                      </div>
-                      <div className="mb-4">
-                        <Label className="mb-2 block">내용</Label>
-                        <Textarea 
-                          value={subsection.content}
-                          onChange={(e) => handleSubsectionContentChange(sectionIndex, subsectionIndex, e.target.value)}
-                          className="min-h-20"
-                        />
-                      </div>
-                      {subsectionIndex < section.subsections.length - 1 && <Separator className="my-4" />}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-
-        <div className="flex justify-end">
-          <Button onClick={handleSave}>저장</Button>
-        </div>
+      <div className="flex justify-end">
+        <Button onClick={handleSave}>저장</Button>
       </div>
-      <Footer />
-    </>
+    </AdminLayout>
   );
 };
 

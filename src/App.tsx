@@ -53,10 +53,6 @@ const ProfessorsManageWithButton = withAdminHomeButton(ProfessorsManage);
 const FacultyManageWithButton = withAdminHomeButton(FacultyManage);
 const UsersManageWithButton = withAdminHomeButton(UsersManage);
 const ScheduleManageWithButton = withAdminHomeButton(ScheduleManage);
-const GalleryManageWithButton = withAdminHomeButton(GalleryManage);
-const NoticesManageWithButton = withAdminHomeButton(NoticesManage);
-const AdmissionManageWithButton = withAdminHomeButton(AdmissionManage);
-const FooterManageWithButton = withAdminHomeButton(FooterManage);
 
 const queryClient = new QueryClient();
 
@@ -93,10 +89,10 @@ const App = () => (
             <Route path="/admin/faculty" element={<FacultyManageWithButton />} />
             <Route path="/admin/users" element={<UsersManageWithButton />} />
             <Route path="/admin/schedule" element={<ScheduleManageWithButton />} />
-            <Route path="/admin/gallery" element={<GalleryManageWithButton />} />
-            <Route path="/admin/notices" element={<NoticesManageWithButton />} />
-            <Route path="/admin/admission" element={<AdmissionManageWithButton />} />
-            <Route path="/admin/footer" element={<FooterManageWithButton />} />
+            <Route path="/admin/gallery" element={<GalleryManage />} />
+            <Route path="/admin/notices" element={<NoticesManage />} />
+            <Route path="/admin/admission" element={<AdmissionManage />} />
+            <Route path="/admin/footer" element={<FooterManage />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

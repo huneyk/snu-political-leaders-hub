@@ -5,9 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 interface FooterConfig {
   wordFile: string;
@@ -122,130 +121,124 @@ const FooterManage: React.FC = () => {
   };
 
   return (
-    <>
-      <Header />
-      <main className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">Footer 관리</h1>
-        
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Footer 다운로드 버튼 및 이메일 관리</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="word-file">입학지원서 (Word) 파일</Label>
-                <div className="flex items-center gap-4 mt-2">
-                  <Input
-                    id="word-file"
-                    type="file"
-                    accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    onChange={(e) => handleFileUpload('wordFile', e)}
-                    className="flex-1"
-                  />
-                  {wordFileName && (
-                    <div className="text-sm text-gray-500">
-                      현재 파일: {wordFileName}
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="hwp-file">입학지원서 (HWP) 파일</Label>
-                <div className="flex items-center gap-4 mt-2">
-                  <Input
-                    id="hwp-file"
-                    type="file"
-                    accept=".hwp,.hwpx"
-                    onChange={(e) => handleFileUpload('hwpFile', e)}
-                    className="flex-1"
-                  />
-                  {hwpFileName && (
-                    <div className="text-sm text-gray-500">
-                      현재 파일: {hwpFileName}
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="pdf-file">과정안내서 (PDF) 파일</Label>
-                <div className="flex items-center gap-4 mt-2">
-                  <Input
-                    id="pdf-file"
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    onChange={(e) => handleFileUpload('pdfFile', e)}
-                    className="flex-1"
-                  />
-                  {pdfFileName && (
-                    <div className="text-sm text-gray-500">
-                      현재 파일: {pdfFileName}
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="email">문의 이메일</Label>
+    <AdminLayout>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Footer 관리</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="word-file">입학지원서 (Word) 파일</Label>
+              <div className="flex items-center gap-4 mt-2">
                 <Input
-                  id="email"
-                  type="email"
-                  value={footerConfig.email}
-                  onChange={handleEmailChange}
-                  placeholder="예: plp@snu.ac.kr"
-                  className="max-w-md mt-2"
+                  id="word-file"
+                  type="file"
+                  accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={(e) => handleFileUpload('wordFile', e)}
+                  className="flex-1"
                 />
-                <p className="text-sm text-gray-500 mt-1">
-                  이 이메일은 Footer의 '문의하기' 버튼을 클릭했을 때 사용됩니다.
-                </p>
+                {wordFileName && (
+                  <div className="text-sm text-gray-500">
+                    현재 파일: {wordFileName}
+                  </div>
+                )}
               </div>
             </div>
             
-            <div className="bg-gray-50 p-4 rounded-md">
-              <h3 className="font-medium mb-2">Footer 미리보기</h3>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.wordFile}>
-                  입학지원서 (Word) 다운로드
-                </Button>
-                <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.hwpFile}>
-                  입학지원서 (HWP) 다운로드
-                </Button>
-                <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.pdfFile}>
-                  과정안내서 (PDF) 다운로드
-                </Button>
-                <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.email}>
-                  문의하기
-                </Button>
+            <div>
+              <Label htmlFor="hwp-file">입학지원서 (HWP) 파일</Label>
+              <div className="flex items-center gap-4 mt-2">
+                <Input
+                  id="hwp-file"
+                  type="file"
+                  accept=".hwp,.hwpx"
+                  onChange={(e) => handleFileUpload('hwpFile', e)}
+                  className="flex-1"
+                />
+                {hwpFileName && (
+                  <div className="text-sm text-gray-500">
+                    현재 파일: {hwpFileName}
+                  </div>
+                )}
               </div>
-              {footerConfig.email && (
-                <p className="text-sm text-gray-500 mt-2">
-                  이메일 접수 주소: {footerConfig.email}
-                </p>
-              )}
             </div>
-          </CardContent>
-          <CardFooter className="flex justify-end">
-            <Button 
-              onClick={handleSave} 
-              disabled={isLoading}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2"
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                  <span>저장 중...</span>
-                </div>
-              ) : (
-                <span>저장하기</span>
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
-      </main>
-      <Footer />
-    </>
+            
+            <div>
+              <Label htmlFor="pdf-file">과정안내서 (PDF) 파일</Label>
+              <div className="flex items-center gap-4 mt-2">
+                <Input
+                  id="pdf-file"
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={(e) => handleFileUpload('pdfFile', e)}
+                  className="flex-1"
+                />
+                {pdfFileName && (
+                  <div className="text-sm text-gray-500">
+                    현재 파일: {pdfFileName}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="email">문의 이메일</Label>
+              <Input
+                id="email"
+                type="email"
+                value={footerConfig.email}
+                onChange={handleEmailChange}
+                placeholder="예: plp@snu.ac.kr"
+                className="max-w-md mt-2"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                이 이메일은 Footer의 '문의하기' 버튼을 클릭했을 때 사용됩니다.
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 p-4 rounded-md">
+            <h3 className="font-medium mb-2">Footer 미리보기</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.wordFile}>
+                입학지원서 (Word) 다운로드
+              </Button>
+              <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.hwpFile}>
+                입학지원서 (HWP) 다운로드
+              </Button>
+              <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.pdfFile}>
+                과정안내서 (PDF) 다운로드
+              </Button>
+              <Button variant="default" size="sm" className="bg-subYellow hover:bg-subYellow/90 text-mainBlue" disabled={!footerConfig.email}>
+                문의하기
+              </Button>
+            </div>
+            {footerConfig.email && (
+              <p className="text-sm text-gray-500 mt-2">
+                이메일 접수 주소: {footerConfig.email}
+              </p>
+            )}
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-end">
+          <Button 
+            onClick={handleSave} 
+            disabled={isLoading}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2"
+          >
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                <span>저장 중...</span>
+              </div>
+            ) : (
+              <span>저장하기</span>
+            )}
+          </Button>
+        </CardFooter>
+      </Card>
+    </AdminLayout>
   );
 };
 

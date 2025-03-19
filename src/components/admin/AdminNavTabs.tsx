@@ -1,5 +1,4 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FileDown } from 'lucide-react';
 
 interface AdminNavTabsProps {
   activeTab?: string;
@@ -36,9 +35,9 @@ const AdminNavTabs = ({ activeTab }: AdminNavTabsProps) => {
       <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full overflow-x-auto flex-nowrap">
         <button 
           onClick={() => handleNavigation('/admin')}
-          className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${effectiveActiveTab === 'content' ? 'bg-background text-foreground shadow-sm' : ''}`}
+          className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${effectiveActiveTab === 'content' ? 'bg-background text-foreground shadow-sm' : ''}`}
         >
-          콘텐츠 관리
+          종합 관리 패널
         </button>
         <button 
           onClick={() => handleNavigation('/admin/admission')}
@@ -66,16 +65,9 @@ const AdminNavTabs = ({ activeTab }: AdminNavTabsProps) => {
         </button>
         <button
           onClick={() => handleNavigation('/admin/footer')}
-          className={`px-6 py-3 rounded-md text-lg font-medium transition-colors ${
-            effectiveActiveTab === 'footer'
-              ? 'bg-indigo-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${effectiveActiveTab === 'footer' ? 'bg-background text-foreground shadow-sm' : ''}`}
         >
-          <div className="flex items-center gap-2">
-            <FileDown className="h-5 w-5" />
-            <span>Footer 관리</span>
-          </div>
+          Footer 관리
         </button>
       </div>
     </div>

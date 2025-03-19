@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 interface GalleryItem {
   id: string;
@@ -468,369 +467,362 @@ const GalleryManage = () => {
   };
 
   return (
-    <>
-      <Header />
-      <div className="container mx-auto py-20 px-4">
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-2xl font-bold text-mainBlue">갤러리 관리</CardTitle>
-              <div className="flex gap-4">
-                <Button onClick={handleAddClick}>새 항목 추가</Button>
-                <Button onClick={() => navigate('/admin')}>관리자 홈으로</Button>
-              </div>
+    <AdminLayout>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold">갤러리 관리</CardTitle>
+          <div className="flex justify-end gap-2">
+            <Button onClick={handleAddClick}>새 항목 추가</Button>
+          </div>
+          {debugMode && (
+            <div className="mt-4 flex gap-2">
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={resetGalleryData}
+              >
+                데이터 초기화
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={checkGalleryData}
+              >
+                데이터 확인
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={createSampleData}
+              >
+                샘플 데이터 생성
+              </Button>
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => {
+                  setGalleryItems(DEFAULT_GALLERY_ITEMS);
+                  toast({
+                    title: "강제 로드",
+                    description: "샘플 데이터가 강제로 로드되었습니다.",
+                  });
+                }}
+              >
+                강제 샘플 데이터
+              </Button>
             </div>
-            {debugMode && (
-              <div className="mt-4 flex gap-2">
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={resetGalleryData}
-                >
-                  데이터 초기화
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={checkGalleryData}
-                >
-                  데이터 확인
-                </Button>
-                <Button 
-                  variant="default" 
-                  size="sm"
-                  onClick={createSampleData}
-                >
-                  샘플 데이터 생성
-                </Button>
-                <Button 
-                  variant="secondary" 
-                  size="sm"
-                  onClick={() => {
-                    setGalleryItems(DEFAULT_GALLERY_ITEMS);
-                    toast({
-                      title: "강제 로드",
-                      description: "샘플 데이터가 강제로 로드되었습니다.",
-                    });
-                  }}
-                >
-                  강제 샘플 데이터
-                </Button>
-              </div>
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="mb-6 flex flex-col md:flex-row gap-4 items-start md:items-center">
-              <div className="w-full md:w-auto flex-1">
-                <Input
-                  type="text"
-                  placeholder="제목 또는 설명으로 검색"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
-                />
-              </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          <div className="mb-6 flex flex-col md:flex-row gap-4 items-start md:items-center">
+            <div className="w-full md:w-auto flex-1">
+              <Input
+                type="text"
+                placeholder="제목 또는 설명으로 검색"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-              {filteredItems.length > 0 ? (
-                filteredItems.map((item) => (
-                  <div key={item.id} className="border rounded-md overflow-hidden shadow-sm">
-                    <div className="aspect-w-16 aspect-h-9 w-full">
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        className="object-cover w-full h-40"
-                      />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            {filteredItems.length > 0 ? (
+              filteredItems.map((item) => (
+                <div key={item.id} className="border rounded-md overflow-hidden shadow-sm">
+                  <div className="aspect-w-16 aspect-h-9 w-full">
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      className="object-cover w-full h-40"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-medium text-lg">{item.title}</h3>
                     </div>
-                    <div className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium text-lg">{item.title}</h3>
-                      </div>
-                      <p className="text-sm text-gray-500 mb-2">{formatDate(item.date)}</p>
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">{item.description}</p>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEditClick(item)}>
-                          수정
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleDeleteItem(item.id)}>
-                          삭제
-                        </Button>
-                      </div>
+                    <p className="text-sm text-gray-500 mb-2">{formatDate(item.date)}</p>
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{item.description}</p>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleEditClick(item)}>
+                        수정
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteItem(item.id)}>
+                        삭제
+                      </Button>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="col-span-3 text-center py-10">
-                  <p className="text-gray-500">검색 결과가 없습니다.</p>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-10">
+                <p className="text-gray-500">검색 결과가 없습니다.</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 갤러리 항목 추가 다이얼로그 */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>새 갤러리 항목 추가</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="title">제목</Label>
+              <Input
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                placeholder="갤러리 항목 제목"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="description">설명</Label>
+              <Input
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                placeholder="갤러리 항목 설명"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="date">날짜</Label>
+              <Input
+                id="date"
+                name="date"
+                type="date"
+                value={formData.date}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="term">기수</Label>
+              <Input
+                id="term"
+                name="term"
+                type="number"
+                min="1"
+                value={selectedTerm}
+                onChange={(e) => {
+                  // 숫자만 입력 가능하도록 처리
+                  const value = e.target.value;
+                  if (value === '' || /^[0-9]+$/.test(value)) {
+                    // 빈 값이거나 숫자만 있는 경우
+                    setSelectedTerm(value === '' ? '1' : value);
+                  }
+                }}
+                placeholder="기수 입력 (숫자만)"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="image">이미지</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? '업로드 중...' : '이미지 선택'}
+                </Button>
+                <Input
+                  id="image"
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  disabled={isUploading}
+                />
+                <span className="text-sm text-gray-500">
+                  {isUploading ? '이미지 처리 중...' : '1080px 너비로 자동 리사이징됩니다'}
+                </span>
+              </div>
+              {previewImage && (
+                <div className="mt-2 relative">
+                  <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-md overflow-hidden">
+                    <img
+                      src={previewImage}
+                      alt="미리보기"
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <div className="absolute top-2 right-2">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        setPreviewImage(null);
+                        setFormData({
+                          ...formData,
+                          imageUrl: '',
+                        });
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }}
+                      className="h-8 w-8 p-0 rounded-full"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                      </svg>
+                      <span className="sr-only">이미지 제거</span>
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">취소</Button>
+            </DialogClose>
+            <Button onClick={handleAddItem} disabled={isUploading}>
+              추가
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* 갤러리 항목 추가 다이얼로그 */}
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>새 갤러리 항목 추가</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="title">제목</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  placeholder="갤러리 항목 제목"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="description">설명</Label>
-                <Input
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="갤러리 항목 설명"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="date">날짜</Label>
-                <Input
-                  id="date"
-                  name="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="term">기수</Label>
-                <Input
-                  id="term"
-                  name="term"
-                  type="number"
-                  min="1"
-                  value={selectedTerm}
-                  onChange={(e) => {
-                    // 숫자만 입력 가능하도록 처리
-                    const value = e.target.value;
-                    if (value === '' || /^[0-9]+$/.test(value)) {
-                      // 빈 값이거나 숫자만 있는 경우
-                      setSelectedTerm(value === '' ? '1' : value);
-                    }
-                  }}
-                  placeholder="기수 입력 (숫자만)"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="image">이미지</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                  >
-                    {isUploading ? '업로드 중...' : '이미지 선택'}
-                  </Button>
-                  <Input
-                    id="image"
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    disabled={isUploading}
-                  />
-                  <span className="text-sm text-gray-500">
-                    {isUploading ? '이미지 처리 중...' : '1080px 너비로 자동 리사이징됩니다'}
-                  </span>
-                </div>
-                {previewImage && (
-                  <div className="mt-2 relative">
-                    <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-md overflow-hidden">
-                      <img
-                        src={previewImage}
-                        alt="미리보기"
-                        className="object-cover w-full h-full"
-                      />
-                    </div>
-                    <div className="absolute top-2 right-2">
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          setPreviewImage(null);
-                          setFormData({
-                            ...formData,
-                            imageUrl: '',
-                          });
-                          if (fileInputRef.current) {
-                            fileInputRef.current.value = '';
-                          }
-                        }}
-                        className="h-8 w-8 p-0 rounded-full"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 6L6 18M6 6l12 12"/>
-                        </svg>
-                        <span className="sr-only">이미지 제거</span>
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
+      {/* 갤러리 항목 수정 다이얼로그 */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>갤러리 항목 수정</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-title">제목</Label>
+              <Input
+                id="edit-title"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                placeholder="갤러리 항목 제목"
+                required
+              />
             </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">취소</Button>
-              </DialogClose>
-              <Button onClick={handleAddItem} disabled={isUploading}>
-                추가
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* 갤러리 항목 수정 다이얼로그 */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>갤러리 항목 수정</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit-title">제목</Label>
-                <Input
-                  id="edit-title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  placeholder="갤러리 항목 제목"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-description">설명</Label>
-                <Input
-                  id="edit-description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="갤러리 항목 설명"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-date">날짜</Label>
-                <Input
-                  id="edit-date"
-                  name="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-term">기수</Label>
-                <Input
-                  id="edit-term"
-                  name="term"
-                  type="number"
-                  min="1"
-                  value={selectedTerm}
-                  onChange={(e) => {
-                    // 숫자만 입력 가능하도록 처리
-                    const value = e.target.value;
-                    if (value === '' || /^[0-9]+$/.test(value)) {
-                      // 빈 값이거나 숫자만 있는 경우
-                      setSelectedTerm(value === '' ? '1' : value);
-                    }
-                  }}
-                  placeholder="기수 입력 (숫자만)"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-image">이미지</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => editFileInputRef.current?.click()}
-                    disabled={isUploading}
-                  >
-                    {isUploading ? '업로드 중...' : '이미지 선택'}
-                  </Button>
-                  <Input
-                    id="edit-image"
-                    type="file"
-                    ref={editFileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleEditFileSelect}
-                    disabled={isUploading}
-                  />
-                  <span className="text-sm text-gray-500">
-                    {isUploading ? '이미지 처리 중...' : '1080px 너비로 자동 리사이징됩니다'}
-                  </span>
-                </div>
-                {editPreviewImage && (
-                  <div className="mt-2 relative">
-                    <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-md overflow-hidden">
-                      <img
-                        src={editPreviewImage}
-                        alt="미리보기"
-                        className="object-cover w-full h-full"
-                      />
-                    </div>
-                    <div className="absolute top-2 right-2">
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          setEditPreviewImage(null);
-                          setFormData({
-                            ...formData,
-                            imageUrl: '',
-                          });
-                          if (editFileInputRef.current) {
-                            editFileInputRef.current.value = '';
-                          }
-                        }}
-                        className="h-8 w-8 p-0 rounded-full"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 6L6 18M6 6l12 12"/>
-                        </svg>
-                        <span className="sr-only">이미지 제거</span>
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-description">설명</Label>
+              <Input
+                id="edit-description"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                placeholder="갤러리 항목 설명"
+              />
             </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">취소</Button>
-              </DialogClose>
-              <Button onClick={handleSaveChanges} disabled={isUploading}>
-                저장
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-      <Footer />
-    </>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-date">날짜</Label>
+              <Input
+                id="edit-date"
+                name="date"
+                type="date"
+                value={formData.date}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-term">기수</Label>
+              <Input
+                id="edit-term"
+                name="term"
+                type="number"
+                min="1"
+                value={selectedTerm}
+                onChange={(e) => {
+                  // 숫자만 입력 가능하도록 처리
+                  const value = e.target.value;
+                  if (value === '' || /^[0-9]+$/.test(value)) {
+                    // 빈 값이거나 숫자만 있는 경우
+                    setSelectedTerm(value === '' ? '1' : value);
+                  }
+                }}
+                placeholder="기수 입력 (숫자만)"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-image">이미지</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => editFileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? '업로드 중...' : '이미지 선택'}
+                </Button>
+                <Input
+                  id="edit-image"
+                  type="file"
+                  ref={editFileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleEditFileSelect}
+                  disabled={isUploading}
+                />
+                <span className="text-sm text-gray-500">
+                  {isUploading ? '이미지 처리 중...' : '1080px 너비로 자동 리사이징됩니다'}
+                </span>
+              </div>
+              {editPreviewImage && (
+                <div className="mt-2 relative">
+                  <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-md overflow-hidden">
+                    <img
+                      src={editPreviewImage}
+                      alt="미리보기"
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <div className="absolute top-2 right-2">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        setEditPreviewImage(null);
+                        setFormData({
+                          ...formData,
+                          imageUrl: '',
+                        });
+                        if (editFileInputRef.current) {
+                          editFileInputRef.current.value = '';
+                        }
+                      }}
+                      className="h-8 w-8 p-0 rounded-full"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                      </svg>
+                      <span className="sr-only">이미지 제거</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">취소</Button>
+            </DialogClose>
+            <Button onClick={handleSaveChanges} disabled={isUploading}>
+              저장
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </AdminLayout>
   );
 };
 

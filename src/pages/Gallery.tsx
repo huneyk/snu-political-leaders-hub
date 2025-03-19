@@ -267,7 +267,7 @@ const Gallery = () => {
       <Header />
       
       {/* 상단 배너/띠 - 다른 페이지와 일관된 스타일 */}
-      <section className="pt-24 pb-16 bg-mainBlue text-white">
+      <section className="pt-28 pb-16 bg-mainBlue text-white">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">갤러리</h1>
           <p className="text-white/80 max-w-3xl">

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,11 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 interface Notice {
   id: string;
@@ -133,6 +131,15 @@ const NoticesManage = () => {
   };
 
   const handleAddNotice = () => {
+    if (!formData.title || !formData.content) {
+      toast({
+        title: "입력 오류",
+        description: "제목과 내용은 필수 입력 항목입니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const newNotice = {
       id: Date.now().toString(),
       ...formData,
@@ -152,6 +159,15 @@ const NoticesManage = () => {
 
   const handleSaveChanges = () => {
     if (!selectedNotice) return;
+    
+    if (!formData.title || !formData.content) {
+      toast({
+        title: "입력 오류",
+        description: "제목과 내용은 필수 입력 항목입니다.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     const updatedNotices = notices.map((notice) =>
       notice.id === selectedNotice.id
@@ -193,205 +209,200 @@ const NoticesManage = () => {
   };
 
   return (
-    <>
-      <Header />
-      <div className="container mx-auto py-20 px-4">
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-2xl font-bold text-mainBlue">공지사항 관리</CardTitle>
-              <div className="flex gap-4">
-                <Button onClick={handleAddClick}>새 공지사항 추가</Button>
-                <Button onClick={() => navigate('/admin')}>관리자 홈으로</Button>
-              </div>
+    <AdminLayout>
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-xl font-semibold">공지사항 관리</CardTitle>
+            <div className="flex gap-4">
+              <Button onClick={handleAddClick}>새 공지사항 추가</Button>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-6">
-              <Input
-                type="text"
-                placeholder="제목, 내용 또는 작성자로 검색"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm"
-              />
-            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-6">
+            <Input
+              type="text"
+              placeholder="제목, 내용 또는 작성자로 검색"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
 
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">중요</TableHead>
-                    <TableHead>제목</TableHead>
-                    <TableHead>작성자</TableHead>
-                    <TableHead>작성일</TableHead>
-                    <TableHead>관리</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredNotices.length > 0 ? (
-                    filteredNotices.map((notice) => (
-                      <TableRow key={notice.id}>
-                        <TableCell>
-                          {notice.isImportant ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              중요
-                            </span>
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="font-medium">{notice.title}</TableCell>
-                        <TableCell>{notice.author}</TableCell>
-                        <TableCell>{formatDate(notice.createdAt)}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditClick(notice)}
-                            >
-                              수정
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeleteNotice(notice.id)}
-                            >
-                              삭제
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-4">
-                        공지사항이 없거나 검색 결과가 없습니다.
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">중요</TableHead>
+                  <TableHead>제목</TableHead>
+                  <TableHead>작성자</TableHead>
+                  <TableHead>작성일</TableHead>
+                  <TableHead>관리</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredNotices.length > 0 ? (
+                  filteredNotices.map((notice) => (
+                    <TableRow key={notice.id}>
+                      <TableCell>
+                        {notice.isImportant ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            중요
+                          </span>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="font-medium">{notice.title}</TableCell>
+                      <TableCell>{notice.author}</TableCell>
+                      <TableCell>{formatDate(notice.createdAt)}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditClick(notice)}
+                          >
+                            수정
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteNotice(notice.id)}
+                          >
+                            삭제
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-4">
+                      공지사항이 없거나 검색 결과가 없습니다.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* 공지사항 추가 다이얼로그 */}
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>새 공지사항 추가</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">제목</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  placeholder="공지사항 제목을 입력하세요"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="content">내용</Label>
-                <Textarea
-                  id="content"
-                  name="content"
-                  value={formData.content}
-                  onChange={handleInputChange}
-                  placeholder="공지사항 내용을 입력하세요"
-                  rows={5}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="author">작성자</Label>
-                <Input
-                  id="author"
-                  name="author"
-                  value={formData.author}
-                  onChange={handleInputChange}
-                  placeholder="작성자를 입력하세요"
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="isImportant"
-                  name="isImportant"
-                  checked={formData.isImportant}
-                  onChange={handleCheckboxChange}
-                  className="rounded border-gray-300 text-mainBlue focus:ring-mainBlue h-4 w-4"
-                />
-                <Label htmlFor="isImportant" className="text-sm cursor-pointer">중요 공지사항으로 표시</Label>
-              </div>
+      {/* 공지사항 추가 다이얼로그 */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>새 공지사항 추가</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">제목</Label>
+              <Input
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                placeholder="공지사항 제목을 입력하세요"
+              />
             </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">취소</Button>
-              </DialogClose>
-              <Button onClick={handleAddNotice}>추가</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <div className="space-y-2">
+              <Label htmlFor="content">내용</Label>
+              <Textarea
+                id="content"
+                name="content"
+                value={formData.content}
+                onChange={handleInputChange}
+                placeholder="공지사항 내용을 입력하세요"
+                rows={5}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="author">작성자</Label>
+              <Input
+                id="author"
+                name="author"
+                value={formData.author}
+                onChange={handleInputChange}
+                placeholder="작성자를 입력하세요"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isImportant"
+                name="isImportant"
+                checked={formData.isImportant}
+                onChange={handleCheckboxChange}
+                className="rounded border-gray-300 text-mainBlue focus:ring-mainBlue h-4 w-4"
+              />
+              <Label htmlFor="isImportant" className="text-sm cursor-pointer">중요 공지사항으로 표시</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">취소</Button>
+            </DialogClose>
+            <Button onClick={handleAddNotice}>추가</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* 공지사항 수정 다이얼로그 */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>공지사항 수정</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-title">제목</Label>
-                <Input
-                  id="edit-title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-content">내용</Label>
-                <Textarea
-                  id="edit-content"
-                  name="content"
-                  value={formData.content}
-                  onChange={handleInputChange}
-                  rows={5}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-author">작성자</Label>
-                <Input
-                  id="edit-author"
-                  name="author"
-                  value={formData.author}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="edit-isImportant"
-                  name="isImportant"
-                  checked={formData.isImportant}
-                  onChange={handleCheckboxChange}
-                  className="rounded border-gray-300 text-mainBlue focus:ring-mainBlue h-4 w-4"
-                />
-                <Label htmlFor="edit-isImportant" className="text-sm cursor-pointer">중요 공지사항으로 표시</Label>
-              </div>
+      {/* 공지사항 수정 다이얼로그 */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>공지사항 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">제목</Label>
+              <Input
+                id="edit-title"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+              />
             </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">취소</Button>
-              </DialogClose>
-              <Button onClick={handleSaveChanges}>저장</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-      <Footer />
-    </>
+            <div className="space-y-2">
+              <Label htmlFor="edit-content">내용</Label>
+              <Textarea
+                id="edit-content"
+                name="content"
+                value={formData.content}
+                onChange={handleInputChange}
+                rows={5}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-author">작성자</Label>
+              <Input
+                id="edit-author"
+                name="author"
+                value={formData.author}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="edit-isImportant"
+                name="isImportant"
+                checked={formData.isImportant}
+                onChange={handleCheckboxChange}
+                className="rounded border-gray-300 text-mainBlue focus:ring-mainBlue h-4 w-4"
+              />
+              <Label htmlFor="edit-isImportant" className="text-sm cursor-pointer">중요 공지사항으로 표시</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">취소</Button>
+            </DialogClose>
+            <Button onClick={handleSaveChanges}>저장</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </AdminLayout>
   );
 };
 
