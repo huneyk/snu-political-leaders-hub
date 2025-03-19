@@ -1,0 +1,29 @@
+[
+  {
+    "title": "1학기 일정",
+    "date": "2024-03-01T00:00:00.000Z",
+    "term": "제25기",
+    "year": 2024,
+    "sessions": [
+      {
+        "title": "오리엔테이션",
+        "description": "과정 소개 및 참가자 소개",
+        "lecturerName": "관리자",
+        "lecturerPosition": "과정 책임자",
+        "startTime": "10:00",
+        "endTime": "12:00",
+        "location": "서울대학교 행정대학원 57-1동 세미나실"
+      },
+      {
+        "title": "정치 리더십의 이해",
+        "description": "정치 리더십의 기본 개념과 원리",
+        "lecturerName": "강대한",
+        "lecturerPosition": "정치외교학부 교수",
+        "startTime": "13:00",
+        "endTime": "15:00",
+        "location": "서울대학교 행정대학원 57-1동 세미나실"
+      }
+    ],
+    "isActive": true
+  }
+]

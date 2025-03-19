@@ -9,210 +9,81 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useNavigate } from 'react-router-dom';
 import ScrollReveal from '@/components/ScrollReveal';
+import { apiService } from '@/lib/apiService';
 
 // 일정 인터페이스 정의
 interface Schedule {
-  id: string;
+  _id: string;
   term: string;
+  year: string;
   category: string;
   title: string;
   date: string;
   time: string;
   location: string;
   description: string;
+  isActive: boolean;
 }
 
-// 기본 학사 일정 데이터 (localStorage에 데이터가 없을 경우 사용)
-const DEFAULT_ACADEMIC_SCHEDULES: Schedule[] = [];
-
-// 기본 특별활동 데이터 (localStorage에 데이터가 없을 경우 사용)
-const DEFAULT_SPECIAL_ACTIVITIES: Schedule[] = [];
-
 const ScheduleCalendar: React.FC = () => {
-  const [selectedTerm, setSelectedTerm] = useState<string>('1');
+  const [selectedTerm, setSelectedTerm] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [academicSchedules, setAcademicSchedules] = useState<Schedule[]>(DEFAULT_ACADEMIC_SCHEDULES);
-  const [specialActivities, setSpecialActivities] = useState<Schedule[]>(DEFAULT_SPECIAL_ACTIVITIES);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [activeTab, setActiveTab] = useState('calendar');
-  const [availableTerms, setAvailableTerms] = useState<string[]>(['1']);
+  const [availableTerms, setAvailableTerms] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   
-  // 컴포넌트 마운트 시 localStorage에서 학사 일정과 특별활동 일정 로드
+  // MongoDB에서 학사 일정 데이터 로드
   useEffect(() => {
-    // 기본 데이터 삭제
-    removeDefaultData();
+    const fetchSchedules = async () => {
+      setIsLoading(true);
+      try {
+        // academic 카테고리의 일정만 가져오기
+        const data = await apiService.getSchedules('academic');
+        setSchedules(data);
+        
+        // 사용 가능한 기수 목록 추출
+        loadAvailableTerms(data);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('일정 데이터 로드 중 오류 발생:', err);
+        setError('일정 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        setIsLoading(false);
+      }
+    };
     
-    // 2025-1 기수 데이터 삭제
-    removeTermData('2025-1');
-    
-    loadAcademicSchedules();
-    loadSpecialActivities();
-    
-    // 사용 가능한 기수 목록 로드
-    loadAvailableTerms();
+    fetchSchedules();
   }, []);
   
-  // 특정 기수의 모든 데이터 삭제 함수
-  const removeTermData = (termToRemove: string) => {
-    try {
-      // 학사 일정에서 해당 기수 데이터 삭제
-      const savedAcademicSchedules = localStorage.getItem('academicSchedules');
-      if (savedAcademicSchedules) {
-        const parsedSchedules = JSON.parse(savedAcademicSchedules);
-        const filteredSchedules = parsedSchedules.filter(
-          (schedule: Schedule) => schedule.term !== termToRemove
-        );
-        
-        // 변경된 일정 저장
-        localStorage.setItem('academicSchedules', JSON.stringify(filteredSchedules));
-        console.log(`${termToRemove} 기수의 학사 일정이 삭제되었습니다.`);
-      }
-      
-      // 특별활동에서 해당 기수 데이터 삭제
-      const savedSpecialActivities = localStorage.getItem('specialActivities');
-      if (savedSpecialActivities) {
-        const parsedActivities = JSON.parse(savedSpecialActivities);
-        const filteredActivities = parsedActivities.filter(
-          (activity: Schedule) => activity.term !== termToRemove
-        );
-        
-        // 변경된 일정 저장
-        localStorage.setItem('specialActivities', JSON.stringify(filteredActivities));
-        console.log(`${termToRemove} 기수의 특별활동 일정이 삭제되었습니다.`);
-      }
-    } catch (error) {
-      console.error(`${termToRemove} 기수 데이터 삭제 중 오류 발생:`, error);
-    }
-  };
-  
-  // 기본 데이터 삭제 함수
-  const removeDefaultData = () => {
-    try {
-      // 기본 학사 일정 데이터 삭제
-      const defaultAcademicTitles = [
-        '입학식', '오리엔테이션', '1학기 중간고사', '1학기 기말고사', 
-        '2학기 개강', '2학기 중간고사', '2학기 기말고사', '수료식'
-      ];
-      
-      const savedAcademicSchedules = localStorage.getItem('academicSchedules');
-      if (savedAcademicSchedules) {
-        const parsedSchedules = JSON.parse(savedAcademicSchedules);
-        const filteredSchedules = parsedSchedules.filter(
-          (schedule: Schedule) => !defaultAcademicTitles.includes(schedule.title)
-        );
-        
-        // 변경된 일정 저장
-        if (parsedSchedules.length !== filteredSchedules.length) {
-          localStorage.setItem('academicSchedules', JSON.stringify(filteredSchedules));
-          console.log('기본 학사 일정이 삭제되었습니다.');
-        }
-      }
-      
-      // 기본 특별활동 데이터 삭제
-      const defaultSpecialTitles = [
-        '국회 방문', '청와대 방문', '미국 의회 방문', '유럽 의회 방문', '동문 네트워킹 행사'
-      ];
-      
-      const savedSpecialActivities = localStorage.getItem('specialActivities');
-      if (savedSpecialActivities) {
-        const parsedActivities = JSON.parse(savedSpecialActivities);
-        const filteredActivities = parsedActivities.filter(
-          (activity: Schedule) => !defaultSpecialTitles.includes(activity.title)
-        );
-        
-        // 변경된 일정 저장
-        if (parsedActivities.length !== filteredActivities.length) {
-          localStorage.setItem('specialActivities', JSON.stringify(filteredActivities));
-          console.log('기본 특별활동 일정이 삭제되었습니다.');
-        }
-      }
-    } catch (error) {
-      console.error('기본 데이터 삭제 중 오류 발생:', error);
-    }
-  };
-  
-  // 학사 일정 로드 함수
-  const loadAcademicSchedules = () => {
-    try {
-      const savedSchedules = localStorage.getItem('academicSchedules');
-      
-      if (savedSchedules) {
-        const parsedSchedules = JSON.parse(savedSchedules);
-        setAcademicSchedules(parsedSchedules);
-        console.log('학사 일정 로드됨:', parsedSchedules);
-      } else {
-        // 저장된 일정이 없는 경우 기본 데이터 사용
-        setAcademicSchedules(DEFAULT_ACADEMIC_SCHEDULES);
-        console.log('저장된 학사 일정이 없습니다. 기본 데이터를 사용합니다.');
-        
-        // 기본 데이터를 localStorage에 저장
-        localStorage.setItem('academicSchedules', JSON.stringify(DEFAULT_ACADEMIC_SCHEDULES));
-      }
-    } catch (error) {
-      console.error('학사 일정 로드 중 오류 발생:', error);
-      setAcademicSchedules(DEFAULT_ACADEMIC_SCHEDULES);
-    }
-  };
-  
-  // 특별활동 일정 로드 함수
-  const loadSpecialActivities = () => {
-    try {
-      const savedActivities = localStorage.getItem('specialActivities');
-      
-      if (savedActivities) {
-        const parsedActivities = JSON.parse(savedActivities);
-        setSpecialActivities(parsedActivities);
-        console.log('특별활동 일정 로드됨:', parsedActivities);
-      } else {
-        // 저장된 일정이 없는 경우 기본 데이터 사용
-        setSpecialActivities(DEFAULT_SPECIAL_ACTIVITIES);
-        console.log('저장된 특별활동 일정이 없습니다. 기본 데이터를 사용합니다.');
-        
-        // 기본 데이터를 localStorage에 저장
-        localStorage.setItem('specialActivities', JSON.stringify(DEFAULT_SPECIAL_ACTIVITIES));
-      }
-    } catch (error) {
-      console.error('특별활동 일정 로드 중 오류 발생:', error);
-      setSpecialActivities(DEFAULT_SPECIAL_ACTIVITIES);
-    }
-  };
-  
   // 사용 가능한 기수 목록 로드
-  const loadAvailableTerms = () => {
+  const loadAvailableTerms = (scheduleData: Schedule[]) => {
     try {
       const terms = new Set<string>();
       
       // 학사 일정에서 기수 추출
-      const savedAcademicSchedules = localStorage.getItem('academicSchedules');
-      if (savedAcademicSchedules) {
-        const parsedSchedules = JSON.parse(savedAcademicSchedules);
-        parsedSchedules.forEach((schedule: Schedule) => {
-          if (schedule.term) {
-            terms.add(schedule.term);
-          }
-        });
-      }
-      
-      // 특별활동에서 기수 추출
-      const savedSpecialActivities = localStorage.getItem('specialActivities');
-      if (savedSpecialActivities) {
-        const parsedActivities = JSON.parse(savedSpecialActivities);
-        parsedActivities.forEach((activity: Schedule) => {
-          if (activity.term) {
-            terms.add(activity.term);
-          }
-        });
-      }
+      scheduleData.forEach((schedule) => {
+        if (schedule.term) {
+          terms.add(schedule.term);
+        }
+      });
       
       // 기수가 없으면 기본값 사용
       if (terms.size === 0) {
-        setAvailableTerms(['1']);
-        setSelectedTerm('1');
+        setAvailableTerms(['25']);
+        setSelectedTerm('25');
         return;
       }
       
-      // 기수를 숫자로 변환하여 정렬
-      const sortedTerms = Array.from(terms).sort((a, b) => parseInt(b) - parseInt(a));
+      // 기수를 숫자로 변환하여 정렬 (내림차순)
+      const sortedTerms = Array.from(terms).sort((a, b) => {
+        // 기수에서 '제'와 '기' 같은 문자 제거하고 숫자만 추출
+        const numA = parseInt(a.replace(/\D/g, ''));
+        const numB = parseInt(b.replace(/\D/g, ''));
+        return numB - numA; // 내림차순 정렬
+      });
+      
       setAvailableTerms(sortedTerms);
       
       // 가장 최근 기수(가장 큰 숫자)를 기본값으로 설정
@@ -221,42 +92,60 @@ const ScheduleCalendar: React.FC = () => {
       console.log('사용 가능한 기수:', sortedTerms);
     } catch (error) {
       console.error('기수 목록 로드 중 오류 발생:', error);
-      setAvailableTerms(['1']);
-      setSelectedTerm('1');
+      setAvailableTerms(['25']);
+      setSelectedTerm('25');
     }
   };
   
-  // 선택된 학기에 해당하는 모든 일정 (학사 + 특별활동) 필터링
-  const allSchedules = [...academicSchedules, ...specialActivities].filter(
+  // 선택된 학기에 해당하는 일정 필터링
+  const termSchedules = schedules.filter(
     schedule => schedule.term === selectedTerm
   );
   
   // 선택된 날짜에 해당하는 일정 필터링
   const selectedDateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
-  const daySchedules = allSchedules.filter(
-    schedule => schedule.date === selectedDateStr
-  );
-  
-  // 캘린더에 표시할 일정이 있는 날짜 배열
-  const scheduleDates = allSchedules.map(schedule => new Date(schedule.date));
+  const daySchedules = termSchedules.filter(schedule => {
+    try {
+      const scheduleDate = new Date(schedule.date);
+      return format(scheduleDate, 'yyyy-MM-dd') === selectedDateStr;
+    } catch (error) {
+      return false;
+    }
+  });
   
   // 오늘 날짜 이후의 일정만 필터링하고 날짜순으로 정렬
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const upcomingSchedules = allSchedules
-    .filter(schedule => isAfter(parseISO(schedule.date), today) || schedule.date === format(today, 'yyyy-MM-dd'))
-    .sort((a, b) => compareAsc(parseISO(a.date), parseISO(b.date)));
+  const upcomingSchedules = termSchedules
+    .filter(schedule => {
+      try {
+        return isAfter(new Date(schedule.date), today) || format(new Date(schedule.date), 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+      } catch (error) {
+        return false;
+      }
+    })
+    .sort((a, b) => {
+      try {
+        return compareAsc(new Date(a.date), new Date(b.date));
+      } catch (error) {
+        return 0;
+      }
+    });
   
   // 날짜 포맷팅 함수
   const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric', 
-      weekday: 'long' 
-    };
-    return new Date(dateString).toLocaleDateString('ko-KR', options);
+    try {
+      const options: Intl.DateTimeFormatOptions = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric', 
+        weekday: 'long' 
+      };
+      return new Date(dateString).toLocaleDateString('ko-KR', options);
+    } catch (error) {
+      return dateString;
+    }
   };
   
   // 활동 유형에 따른 한글 이름 반환
@@ -274,6 +163,34 @@ const ScheduleCalendar: React.FC = () => {
     if (value === 'activities') {
       navigate('/schedule/activities');
     }
+  };
+
+  // 달력에 날짜를 렌더링하는 함수 - 일정이 있는 날짜에 표시를 추가
+  const renderCalendarDay = (day: Date) => {
+    const dateString = format(day, 'yyyy-MM-dd');
+    const hasSchedule = termSchedules.some(schedule => {
+      try {
+        const scheduleDate = new Date(schedule.date);
+        return format(scheduleDate, 'yyyy-MM-dd') === dateString;
+      } catch (error) {
+        return false;
+      }
+    });
+
+    const isSelected = selectedDate && format(selectedDate, 'yyyy-MM-dd') === dateString;
+
+    return (
+      <div 
+        className={`relative p-2 flex items-center justify-center rounded-md text-sm
+          ${isSelected ? 'bg-blue-600 text-white' : ''}`}
+        onClick={() => setSelectedDate(day)}
+      >
+        {day.getDate()}
+        {hasSchedule && (
+          <div className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-blue-600'}`} />
+        )}
+      </div>
+    );
   };
 
   return (
@@ -299,143 +216,150 @@ const ScheduleCalendar: React.FC = () => {
             </TabsList>
           </Tabs>
           
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <div className="mb-4 md:mb-0">
-              <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="기수 선택" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTerms.map((term) => (
-                    <SelectItem key={term} value={term}>
-                      제 {term} 기
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-24">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>일정 달력</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    locale={ko}
-                    className="rounded-md border"
-                    modifiers={{
-                      hasSchedule: scheduleDates
-                    }}
-                    modifiersStyles={{
-                      hasSchedule: {
-                        fontWeight: 'bold',
-                        backgroundColor: '#e6f7ff',
-                        color: '#0066cc',
-                        borderRadius: '50%'
-                      }
-                    }}
-                  />
-                </CardContent>
-              </Card>
+          ) : error ? (
+            <div className="text-center py-12 text-red-500">
+              <p>{error}</p>
             </div>
-            
-            <div className="md:col-span-2">
-              <Card className="h-full">
-                <CardHeader>
-                  <CardTitle>
-                    {selectedDate ? format(selectedDate, 'yyyy년 MM월 dd일 (EEEE)', { locale: ko }) : '날짜를 선택하세요'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {daySchedules.length > 0 ? (
-                    <div className="space-y-4">
-                      {daySchedules.map(schedule => (
-                        <div key={schedule.id} className="p-4 border rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-medium">{schedule.title}</h3>
-                            <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">
-                              {getCategoryName(schedule.category)}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                            {schedule.time && (
-                              <div>
-                                <p className="font-medium">시간</p>
-                                <p>{schedule.time}</p>
-                              </div>
-                            )}
-                            {schedule.location && (
-                              <div>
-                                <p className="font-medium">장소</p>
-                                <p>{schedule.location}</p>
-                              </div>
-                            )}
-                            <div className="md:col-span-2">
-                              <p className="whitespace-pre-line">{schedule.description}</p>
-                            </div>
-                          </div>
-                        </div>
+          ) : (
+            <>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                <div className="mb-4 md:mb-0">
+                  <Select value={selectedTerm} onValueChange={setSelectedTerm}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="기수 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTerms.map((term) => (
+                        <SelectItem key={term} value={term}>
+                          {term}
+                        </SelectItem>
                       ))}
-                    </div>
-                  ) : (
-                    <p className="text-center py-8 text-gray-500">선택한 날짜에 일정이 없습니다.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-          
-          <div className="mt-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>다가오는 일정</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {upcomingSchedules.length > 0 ? (
-                  <div className="space-y-4">
-                    {upcomingSchedules.map(schedule => (
-                      <div key={schedule.id} className="p-4 border rounded-lg">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2">
-                          <div className="flex items-center space-x-2">
-                            <h3 className="text-lg font-medium">{schedule.title}</h3>
-                            <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">
-                              {getCategoryName(schedule.category)}
-                            </span>
-                          </div>
-                          <p className="font-medium text-gray-600">{formatDate(schedule.date)}</p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                          {schedule.time && (
-                            <div>
-                              <p className="font-medium">시간</p>
-                              <p>{schedule.time}</p>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-1">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>일정 달력</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => {
+                          console.log('선택된 날짜 변경:', date ? format(date, 'yyyy-MM-dd') : '없음');
+                          setSelectedDate(date);
+                        }}
+                        locale={ko}
+                        className="rounded-md border"
+                        components={{
+                          Day: (props) => renderCalendarDay(props.date)
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="md:col-span-2">
+                  <Card className="h-full">
+                    <CardHeader>
+                      <CardTitle>
+                        {selectedDate ? format(selectedDate, 'yyyy년 MM월 dd일 (EEEE)', { locale: ko }) : '날짜를 선택하세요'}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {daySchedules.length > 0 ? (
+                        <div className="space-y-4">
+                          {daySchedules.map(schedule => (
+                            <div key={schedule._id} className="p-4 border rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-lg font-medium">{schedule.title}</h3>
+                                <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">
+                                  {getCategoryName(schedule.category)}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                {schedule.time && (
+                                  <div>
+                                    <p className="font-medium">시간</p>
+                                    <p>{schedule.time}</p>
+                                  </div>
+                                )}
+                                {schedule.location && (
+                                  <div>
+                                    <p className="font-medium">장소</p>
+                                    <p>{schedule.location}</p>
+                                  </div>
+                                )}
+                                <div className="md:col-span-2">
+                                  <p className="whitespace-pre-line">{schedule.description}</p>
+                                </div>
+                              </div>
                             </div>
-                          )}
-                          {schedule.location && (
-                            <div>
-                              <p className="font-medium">장소</p>
-                              <p>{schedule.location}</p>
-                            </div>
-                          )}
-                          <div className="md:col-span-1">
-                            <p className="whitespace-pre-line">{schedule.description}</p>
-                          </div>
+                          ))}
                         </div>
+                      ) : (
+                        <p className="text-center py-8 text-gray-500">선택한 날짜에 일정이 없습니다.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+              
+              <div className="mt-8">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>다가오는 일정</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {upcomingSchedules.length > 0 ? (
+                      <div className="space-y-4">
+                        {upcomingSchedules.map(schedule => (
+                          <div key={schedule._id} className="p-4 border rounded-lg">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2">
+                              <div className="flex items-center space-x-2">
+                                <h3 className="text-lg font-medium">{schedule.title}</h3>
+                                <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">
+                                  {getCategoryName(schedule.category)}
+                                </span>
+                              </div>
+                              <p className="font-medium text-gray-600">{formatDate(schedule.date)}</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                              {schedule.time && (
+                                <div>
+                                  <p className="font-medium">시간</p>
+                                  <p>{schedule.time}</p>
+                                </div>
+                              )}
+                              {schedule.location && (
+                                <div>
+                                  <p className="font-medium">장소</p>
+                                  <p>{schedule.location}</p>
+                                </div>
+                              )}
+                              <div className="md:col-span-1">
+                                <p className="whitespace-pre-line">{schedule.description}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center py-8 text-gray-500">다가오는 일정이 없습니다.</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                    ) : (
+                      <p className="text-center py-8 text-gray-500">다가오는 일정이 없습니다.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </div>
       </main>
       <Footer />

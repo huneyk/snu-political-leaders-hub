@@ -1,0 +1,24 @@
+[
+  {
+    "name": "강대한",
+    "title": "교수",
+    "department": "정치외교학부",
+    "specialization": "정치 이론",
+    "imageUrl": "/images/professor1.jpg",
+    "bio": "정치 이론 분야의 권위자로, 다수의 저서와 논문을 발표했습니다.",
+    "email": "professor1@snu.ac.kr",
+    "order": 1,
+    "isActive": true
+  },
+  {
+    "name": "박민주",
+    "title": "교수",
+    "department": "행정대학원",
+    "specialization": "공공 정책",
+    "imageUrl": "/images/professor2.jpg",
+    "bio": "공공 정책 분야에서 다년간의 연구 경험을 가지고 있습니다.",
+    "email": "professor2@snu.ac.kr",
+    "order": 2,
+    "isActive": true
+  }
+]

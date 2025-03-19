@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>실제 LocalStorage 데이터 추출</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1, h2 {
+      color: #1e3a8a;
+    }
+    .container {
+      background-color: #f9fafb;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    button {
+      background-color: #1e3a8a;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1e40af;
+    }
+    .storage-items {
+      margin-top: 20px;
+    }
+    .storage-item {
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #e5e7eb;
+      border-radius: 4px;
+    }
+    .item-key {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .item-value {
+      overflow: auto;
+      max-height: 300px;
+      background-color: #f3f4f6;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+    .export-btn {
+      display: block;
+      margin: 10px 0;
+    }
+    .status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+    .info {
+      background-color: #dbeafe;
+      color: #1e40af;
+    }
+    .error {
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>실제 LocalStorage 데이터 추출</h1>
+    <p>현재 브라우저에 저장된 LocalStorage 데이터를 추출하여 MongoDB로 마이그레이션하기 위한 도구입니다.</p>
+    
+    <div>
+      <button id="load-data">LocalStorage 데이터 불러오기</button>
+      <button id="export-all">모든 데이터 내보내기</button>
+    </div>
+    
+    <div id="status" class="status info">LocalStorage에서 데이터를 불러오려면 '데이터 불러오기' 버튼을 클릭하세요.</div>
+    
+    <div id="storage-items" class="storage-items"></div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const loadDataBtn = document.getElementById('load-data');
+      const exportAllBtn = document.getElementById('export-all');
+      const statusDiv = document.getElementById('status');
+      const storageItemsDiv = document.getElementById('storage-items');
+      
+      // LocalStorage 데이터 키 목록
+      const targetKeys = [
+        'greeting',
+        'recommendations',
+        'objectives',
+        'benefits', 
+        'professors',
+        'schedules',
+        'lecturers',
+        'galleryItems',
+        'notices',
+        'admission-info',
+        'footer-config'
+      ];
+      
+      // LocalStorage 데이터를 불러오는 함수
+      loadDataBtn.addEventListener('click', () => {
+        storageItemsDiv.innerHTML = '';
+        statusDiv.className = 'status info';
+        statusDiv.textContent = '데이터를 불러오는 중...';
+        
+        try {
+          let foundItems = 0;
+          
+          targetKeys.forEach(key => {
+            const data = localStorage.getItem(key);
+            
+            if (data) {
+              foundItems++;
+              displayStorageItem(key, data);
+            }
+          });
+          
+          if (foundItems === 0) {
+            statusDiv.className = 'status error';
+            statusDiv.textContent = 'LocalStorage에서 관련 데이터를 찾을 수 없습니다.';
+          } else {
+            statusDiv.className = 'status success';
+            statusDiv.textContent = `${foundItems}개의 데이터를 찾았습니다.`;
+          }
+        } catch (error) {
+          statusDiv.className = 'status error';
+          statusDiv.textContent = `오류 발생: ${error.message}`;
+          console.error('데이터 불러오기 오류:', error);
+        }
+      });
+      
+      // 모든 데이터 내보내기
+      exportAllBtn.addEventListener('click', () => {
+        try {
+          const allData = {};
+          let foundItems = 0;
+          
+          targetKeys.forEach(key => {
+            const data = localStorage.getItem(key);
+            if (data) {
+              foundItems++;
+              allData[key] = data;
+              exportSingleItem(key, data);
+            }
+          });
+          
+          if (foundItems === 0) {
+            statusDiv.className = 'status error';
+            statusDiv.textContent = '내보낼 데이터가 없습니다. 먼저 데이터를 불러오세요.';
+          } else {
+            statusDiv.className = 'status success';
+            statusDiv.textContent = `${foundItems}개의 데이터 파일을 내보냈습니다. 이 파일들을 'localStorageExport' 디렉토리에 저장하세요.`;
+          }
+        } catch (error) {
+          statusDiv.className = 'status error';
+          statusDiv.textContent = `내보내기 오류: ${error.message}`;
+          console.error('내보내기 오류:', error);
+        }
+      });
+      
+      // LocalStorage 항목을 화면에 표시
+      function displayStorageItem(key, data) {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'storage-item';
+        
+        const keyDiv = document.createElement('div');
+        keyDiv.className = 'item-key';
+        keyDiv.textContent = key;
+        
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'item-value';
+        
+        try {
+          // JSON 형식이면 예쁘게 표시
+          const jsonData = JSON.parse(data);
+          valueDiv.textContent = JSON.stringify(jsonData, null, 2);
+        } catch (e) {
+          // 일반 텍스트로 표시
+          valueDiv.textContent = data;
+        }
+        
+        const exportBtn = document.createElement('button');
+        exportBtn.className = 'export-btn';
+        exportBtn.textContent = `${key} 내보내기`;
+        exportBtn.addEventListener('click', () => {
+          exportSingleItem(key, data);
+        });
+        
+        itemDiv.appendChild(keyDiv);
+        itemDiv.appendChild(valueDiv);
+        itemDiv.appendChild(exportBtn);
+        
+        storageItemsDiv.appendChild(itemDiv);
+      }
+      
+      // 단일 항목 내보내기
+      function exportSingleItem(key, data) {
+        try {
+          const blob = new Blob([data], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${key}.json`;
+          a.click();
+          
+          URL.revokeObjectURL(url);
+          
+          console.log(`${key} 데이터 내보내기 완료`);
+        } catch (error) {
+          console.error(`${key} 내보내기 오류:`, error);
+        }
+      }
+    });
+  </script>
+</body>
+</html> 

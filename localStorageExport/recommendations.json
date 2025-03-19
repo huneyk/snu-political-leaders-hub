@@ -1,0 +1,18 @@
+[
+  {
+    "name": "김철수",
+    "position": "전 국회의원",
+    "content": "이 과정은 정치 리더십을 배우는 데 큰 도움이 되었습니다.",
+    "imageUrl": "/images/recommender1.jpg",
+    "order": 1,
+    "isActive": true
+  },
+  {
+    "name": "이영희",
+    "position": "지방자치단체장",
+    "content": "정치 활동에 필요한 이론과 실무를 배울 수 있었습니다.",
+    "imageUrl": "/images/recommender2.jpg",
+    "order": 2,
+    "isActive": true
+  }
+]

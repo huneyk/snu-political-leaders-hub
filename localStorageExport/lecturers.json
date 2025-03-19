@@ -1,0 +1,40 @@
+[
+  {
+    "name": "이정치",
+    "title": "대표",
+    "organization": "정치연구소",
+    "position": "소장",
+    "specialization": "선거 전략",
+    "imageUrl": "/images/lecturer1.jpg",
+    "bio": "다수의 선거를 성공적으로 이끈 선거 전략 전문가입니다.",
+    "lectures": [
+      {
+        "title": "효과적인 선거 전략",
+        "description": "효과적인 선거 전략 수립 및 실행 방법",
+        "term": "제25기",
+        "year": 2024
+      }
+    ],
+    "order": 1,
+    "isActive": true
+  },
+  {
+    "name": "김행정",
+    "title": "전 장관",
+    "organization": "행정안전부",
+    "position": "정책 고문",
+    "specialization": "행정 개혁",
+    "imageUrl": "/images/lecturer2.jpg",
+    "bio": "다년간의 공직 경험을 바탕으로 행정 개혁을 연구하고 있습니다.",
+    "lectures": [
+      {
+        "title": "행정 개혁과 정치 리더십",
+        "description": "행정 개혁을 위한 정치 리더십의 역할",
+        "term": "제25기",
+        "year": 2024
+      }
+    ],
+    "order": 2,
+    "isActive": true
+  }
+]

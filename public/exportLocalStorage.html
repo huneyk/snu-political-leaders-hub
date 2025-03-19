@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local Storage Export Tool</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #1e3a8a;
+    }
+    .container {
+      background-color: #f9fafb;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    button {
+      background-color: #1e3a8a;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1e40af;
+    }
+    .storage-key {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #e5e7eb;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .storage-key:hover {
+      background-color: #d1d5db;
+    }
+    .result {
+      margin-top: 20px;
+    }
+    .status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+    .error {
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Local Storage Export Tool</h1>
+    <p>이 도구는 현재 브라우저의 Local Storage 데이터를 JSON 파일로 내보내기 위한 것입니다.</p>
+    
+    <h2>Local Storage 키 목록</h2>
+    <div id="storage-keys"></div>
+    
+    <h2>모든 데이터 내보내기</h2>
+    <button id="export-all">모든 데이터 내보내기</button>
+    
+    <div class="result">
+      <h2>내보내기 결과</h2>
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const storageKeysContainer = document.getElementById('storage-keys');
+      const exportAllButton = document.getElementById('export-all');
+      const statusContainer = document.getElementById('status');
+      
+      // Local Storage 키 목록 표시
+      function displayStorageKeys() {
+        storageKeysContainer.innerHTML = '';
+        
+        if (localStorage.length === 0) {
+          storageKeysContainer.innerHTML = '<p>Local Storage에 저장된 데이터가 없습니다.</p>';
+          return;
+        }
+        
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          const item = document.createElement('div');
+          item.className = 'storage-key';
+          item.textContent = key;
+          
+          item.addEventListener('click', () => {
+            exportSingleKey(key);
+          });
+          
+          storageKeysContainer.appendChild(item);
+        }
+      }
+      
+      // 단일 키 내보내기
+      function exportSingleKey(key) {
+        try {
+          const data = localStorage.getItem(key);
+          if (!data) {
+            showStatus(`키 "${key}"에 대한 데이터가 없습니다.`, false);
+            return;
+          }
+          
+          const blob = new Blob([data], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${key}.json`;
+          a.click();
+          
+          URL.revokeObjectURL(url);
+          showStatus(`"${key}" 데이터가 성공적으로 내보내졌습니다.`, true);
+        } catch (error) {
+          showStatus(`"${key}" 데이터 내보내기 실패: ${error.message}`, false);
+        }
+      }
+      
+      // 모든 키 내보내기
+      function exportAllKeys() {
+        if (localStorage.length === 0) {
+          showStatus('Local Storage에 저장된 데이터가 없습니다.', false);
+          return;
+        }
+        
+        const dir = 'localStorageExport';
+        
+        try {
+          // 각 키별로 파일 만들기
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const data = localStorage.getItem(key);
+            
+            if (data) {
+              const blob = new Blob([data], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${key}.json`;
+              a.click();
+              
+              URL.revokeObjectURL(url);
+            }
+          }
+          
+          showStatus('모든 데이터가 성공적으로 내보내졌습니다.', true);
+        } catch (error) {
+          showStatus(`데이터 내보내기 실패: ${error.message}`, false);
+        }
+      }
+      
+      // 상태 메시지 표시
+      function showStatus(message, isSuccess) {
+        statusContainer.innerHTML = '';
+        statusContainer.className = `status ${isSuccess ? 'success' : 'error'}`;
+        statusContainer.textContent = message;
+      }
+      
+      // 이벤트 리스너
+      exportAllButton.addEventListener('click', exportAllKeys);
+      
+      // 초기화
+      displayStorageKeys();
+    });
+  </script>
+</body>
+</html> 

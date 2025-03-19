@@ -2,56 +2,47 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
+import { apiService } from '@/lib/apiService';
 
 interface Professor {
+  _id: string;
   name: string;
-  position: string;
-  organization: string;
-  profile: string;
-}
-
-interface ProfessorSection {
   title: string;
-  professors: Professor[];
+  department: string;
+  specialization: string;
+  imageUrl: string;
+  bio: string;
+  email: string;
+  order: number;
+  isActive: boolean;
 }
 
 const Professors = () => {
-  const [sections, setSections] = useState<ProfessorSection[]>([]);
+  const [professors, setProfessors] = useState<Professor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 로컬 스토리지에서 데이터 로드
-    const savedSections = localStorage.getItem('professor-sections');
+    window.scrollTo(0, 0);
     
-    if (savedSections) {
+    // MongoDB에서 교수진 데이터 가져오기
+    const fetchProfessors = async () => {
       try {
-        const parsedSections = JSON.parse(savedSections);
-        setSections(parsedSections);
-      } catch (error) {
-        console.error('Failed to parse professor sections:', error);
-      }
-    } else {
-      // 이전 형식의 데이터가 있는지 확인
-      const savedTitle = localStorage.getItem('professors-title');
-      const savedProfessors = localStorage.getItem('professors');
-      
-      if (savedTitle && savedProfessors) {
-        try {
-          const parsedProfessors = JSON.parse(savedProfessors);
-          setSections([{
-            title: savedTitle,
-            professors: parsedProfessors
-          }]);
-        } catch (error) {
-          console.error('Failed to parse professors:', error);
+        setIsLoading(true);
+        const data = await apiService.getProfessors();
+        if (data && Array.isArray(data)) {
+          setProfessors(data);
         }
-      } else {
-        // 빈 배열로 초기화
-        setSections([]);
+        setError(null);
+      } catch (err) {
+        console.error('교수진 정보를 불러오는 중 오류가 발생했습니다:', err);
+        setError('데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      } finally {
+        setIsLoading(false);
       }
-    }
-    
-    setIsLoading(false);
+    };
+
+    fetchProfessors();
   }, []);
 
   // 애니메이션 변수
@@ -92,44 +83,77 @@ const Professors = () => {
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
             </div>
+          ) : error ? (
+            <div className="text-center text-red-500 py-12">
+              <p>{error}</p>
+            </div>
+          ) : professors.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-xl text-gray-500">등록된 교수진 정보가 없습니다.</p>
+            </div>
           ) : (
-            <>
-              {sections.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-xl text-gray-500">등록된 교수진 정보가 없습니다.</p>
-                </div>
-              ) : (
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid gap-8 md:grid-cols-2"
+            >
+              {professors.map((professor) => (
+                <motion.div 
+                  key={professor._id}
+                  variants={itemVariants}
+                  className="bg-white rounded-lg shadow-md overflow-hidden"
                 >
-                  {sections.map((section, sectionIndex) => (
-                    <div key={sectionIndex} className="mb-16">
-                      <h2 className="text-3xl font-bold text-mainBlue mb-4 pb-2 border-b border-gray-200">
-                        {section.title}
-                      </h2>
+                  <div className="p-6">
+                    <div className="flex flex-col md:flex-row gap-6">
+                      {professor.imageUrl && (
+                        <div className="flex-shrink-0">
+                          <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-gray-100 shadow-sm mx-auto md:mx-0">
+                            <img 
+                              src={professor.imageUrl} 
+                              alt={`${professor.name} 사진`} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback if image fails to load
+                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=No+Image';
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
                       
-                      <div className="space-y-2">
-                        {section.professors.map((professor, index) => (
-                          <motion.div
-                            key={`${sectionIndex}-${index}`}
-                            variants={itemVariants}
-                            className="p-2 border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
-                              <h3 className="text-lg font-bold text-mainBlue min-w-28">{professor.name}</h3>
-                              <p className="text-gray-700 min-w-40">{professor.organization}</p>
-                              <p className="text-gray-600">{professor.position}</p>
-                            </div>
-                          </motion.div>
-                        ))}
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-mainBlue mb-1">{professor.name}</h3>
+                        <p className="text-gray-700 mb-1">{professor.title}</p>
+                        <p className="text-gray-600 mb-3">{professor.department}</p>
+                        
+                        {professor.specialization && (
+                          <p className="text-gray-700 text-sm">
+                            <span className="font-semibold">전문 분야: </span>
+                            {professor.specialization}
+                          </p>
+                        )}
+                        
+                        {professor.email && (
+                          <p className="text-gray-700 text-sm">
+                            <span className="font-semibold">이메일: </span>
+                            <a href={`mailto:${professor.email}`} className="text-blue-600 hover:underline">
+                              {professor.email}
+                            </a>
+                          </p>
+                        )}
                       </div>
                     </div>
-                  ))}
+                    
+                    {professor.bio && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <p className="text-gray-700 text-sm whitespace-pre-line">{professor.bio}</p>
+                      </div>
+                    )}
+                  </div>
                 </motion.div>
-              )}
-            </>
+              ))}
+            </motion.div>
           )}
         </div>
       </main>
