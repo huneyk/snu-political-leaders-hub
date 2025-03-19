@@ -58,6 +58,72 @@ router.post('/login', async (req, res) => {
 });
 
 /**
+ * @route   POST /api/auth/admin/login
+ * @desc    관리자 로그인 및 토큰 발급
+ * @access  Public
+ */
+router.post('/admin/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    console.log('관리자 로그인 요청:', { username });
+    
+    // 필수 필드 유효성 검사
+    if (!username || !password) {
+      console.log('필수 필드 누락');
+      return res.status(400).json({ message: '사용자명과 비밀번호를 입력하세요.' });
+    }
+    
+    // 관리자 사용자 찾기 (이메일 또는 사용자명으로)
+    const admin = await User.findOne({
+      $or: [
+        { email: username },
+        { name: username }
+      ],
+      role: 'admin'  // 반드시 관리자 역할이어야 함
+    });
+    
+    if (!admin) {
+      console.log('관리자 계정 없음');
+      return res.status(401).json({ message: '관리자 계정을 찾을 수 없습니다.' });
+    }
+    
+    console.log('관리자 찾음:', { email: admin.email, name: admin.name });
+    
+    // 비밀번호 검증
+    const isMatch = await admin.comparePassword(password);
+    console.log('비밀번호 검증:', isMatch);
+    
+    if (!isMatch) {
+      return res.status(401).json({ message: '비밀번호가 일치하지 않습니다.' });
+    }
+    
+    // JWT 토큰 생성 - 관리자용 토큰
+    const token = jwt.sign(
+      { userId: admin._id, email: admin.email, role: admin.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+    
+    console.log('토큰 생성 완료');
+    
+    res.json({
+      message: '관리자 로그인 성공',
+      token,
+      user: {
+        _id: admin._id,
+        email: admin.email,
+        name: admin.name,
+        role: admin.role
+      }
+    });
+  } catch (error) {
+    console.error('관리자 로그인 실패:', error);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+/**
  * @route   GET /api/auth/me
  * @desc    현재 로그인된 사용자 정보 조회
  * @access  Private

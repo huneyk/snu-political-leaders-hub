@@ -3,7 +3,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import Recommendation from '../models/Recommendations.js';
 import Objective from '../models/Objectives.js';
 import Benefit from '../models/Benefits.js';
-import Professor from '../models/Professors.js';
+import ProfessorSection from '../models/Professors.js';
 import Schedule from '../models/Schedule.js';
 import Lecturer from '../models/Lecturers.js';
 
@@ -338,8 +338,8 @@ router.delete('/benefits/:id', authenticateToken, async (req, res) => {
 // ======================== Professors Routes ========================
 router.get('/professors', async (req, res) => {
   try {
-    const professors = await Professor.find({ isActive: true }).sort({ order: 1 });
-    res.json(professors);
+    const professorSections = await ProfessorSection.find({ isActive: true }).sort({ order: 1 });
+    res.json(professorSections);
   } catch (error) {
     console.error('교수진 정보 조회 실패:', error);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
@@ -348,8 +348,8 @@ router.get('/professors', async (req, res) => {
 
 router.get('/professors/all', authenticateToken, async (req, res) => {
   try {
-    const professors = await Professor.find().sort({ order: 1 });
-    res.json(professors);
+    const professorSections = await ProfessorSection.find().sort({ order: 1 });
+    res.json(professorSections);
   } catch (error) {
     console.error('교수진 정보 조회 실패:', error);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
@@ -358,26 +358,28 @@ router.get('/professors/all', authenticateToken, async (req, res) => {
 
 router.post('/professors', authenticateToken, async (req, res) => {
   try {
-    const { name, title, department, specialization, imageUrl, bio, email, order, isActive } = req.body;
+    const { sectionTitle, professors, order, isActive } = req.body;
     
-    if (!name || !title || !department) {
-      return res.status(400).json({ message: '이름, 직위, 학과는 필수 항목입니다.' });
+    if (!sectionTitle || !professors || !Array.isArray(professors) || professors.length === 0) {
+      return res.status(400).json({ message: '섹션 제목과 최소 1명 이상의 교수 정보가 필요합니다.' });
     }
     
-    const newProfessor = new Professor({
-      name,
-      title,
-      department,
-      specialization: specialization || '',
-      imageUrl: imageUrl || '',
-      bio: bio || '',
-      email: email || '',
+    // 교수 정보 유효성 검사
+    for (const professor of professors) {
+      if (!professor.name || !professor.position || !professor.organization) {
+        return res.status(400).json({ message: '모든 교수 정보에는 이름, 직위, 소속이 필요합니다.' });
+      }
+    }
+    
+    const newProfessorSection = new ProfessorSection({
+      sectionTitle,
+      professors,
       order: order || 0,
       isActive: isActive !== undefined ? isActive : true
     });
     
-    const savedProfessor = await newProfessor.save();
-    res.status(201).json(savedProfessor);
+    const savedProfessorSection = await newProfessorSection.save();
+    res.status(201).json(savedProfessorSection);
   } catch (error) {
     console.error('교수진 정보 생성 실패:', error);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
@@ -386,33 +388,35 @@ router.post('/professors', authenticateToken, async (req, res) => {
 
 router.put('/professors/:id', authenticateToken, async (req, res) => {
   try {
-    const { name, title, department, specialization, imageUrl, bio, email, order, isActive } = req.body;
+    const { sectionTitle, professors, order, isActive } = req.body;
     
-    if (!name || !title || !department) {
-      return res.status(400).json({ message: '이름, 직위, 학과는 필수 항목입니다.' });
+    if (!sectionTitle || !professors || !Array.isArray(professors) || professors.length === 0) {
+      return res.status(400).json({ message: '섹션 제목과 최소 1명 이상의 교수 정보가 필요합니다.' });
     }
     
-    const updatedProfessor = await Professor.findByIdAndUpdate(
+    // 교수 정보 유효성 검사
+    for (const professor of professors) {
+      if (!professor.name || !professor.position || !professor.organization) {
+        return res.status(400).json({ message: '모든 교수 정보에는 이름, 직위, 소속이 필요합니다.' });
+      }
+    }
+    
+    const updatedProfessorSection = await ProfessorSection.findByIdAndUpdate(
       req.params.id,
       {
-        name,
-        title,
-        department,
-        specialization: specialization || '',
-        imageUrl: imageUrl || '',
-        bio: bio || '',
-        email: email || '',
+        sectionTitle,
+        professors,
         order: order || 0,
         isActive: isActive !== undefined ? isActive : true
       },
       { new: true }
     );
     
-    if (!updatedProfessor) {
-      return res.status(404).json({ message: '교수진 정보를 찾을 수 없습니다.' });
+    if (!updatedProfessorSection) {
+      return res.status(404).json({ message: '교수진 섹션을 찾을 수 없습니다.' });
     }
     
-    res.json(updatedProfessor);
+    res.json(updatedProfessorSection);
   } catch (error) {
     console.error('교수진 정보 수정 실패:', error);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
@@ -421,13 +425,13 @@ router.put('/professors/:id', authenticateToken, async (req, res) => {
 
 router.delete('/professors/:id', authenticateToken, async (req, res) => {
   try {
-    const deletedProfessor = await Professor.findByIdAndDelete(req.params.id);
+    const deletedProfessorSection = await ProfessorSection.findByIdAndDelete(req.params.id);
     
-    if (!deletedProfessor) {
-      return res.status(404).json({ message: '교수진 정보를 찾을 수 없습니다.' });
+    if (!deletedProfessorSection) {
+      return res.status(404).json({ message: '교수진 섹션을 찾을 수 없습니다.' });
     }
     
-    res.json({ message: '교수진 정보가 삭제되었습니다.' });
+    res.json({ message: '교수진 섹션이 삭제되었습니다.' });
   } catch (error) {
     console.error('교수진 정보 삭제 실패:', error);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
@@ -437,18 +441,7 @@ router.delete('/professors/:id', authenticateToken, async (req, res) => {
 // ======================== Schedule Routes ========================
 router.get('/schedules', async (req, res) => {
   try {
-    // 쿼리 매개변수에서 카테고리 가져오기
-    const { category } = req.query;
-    
-    // 기본 쿼리: 활성화된 일정만 가져오기
-    const query = { isActive: true };
-    
-    // 카테고리가 지정된 경우 쿼리에 추가
-    if (category) {
-      query.category = category;
-    }
-    
-    const schedules = await Schedule.find(query).sort({ date: -1 });
+    const schedules = await Schedule.find({ isActive: true }).sort({ date: -1 });
     res.json(schedules);
   } catch (error) {
     console.error('일정 정보 조회 실패:', error);

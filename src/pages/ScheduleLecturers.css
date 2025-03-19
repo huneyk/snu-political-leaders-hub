@@ -1,4 +1,42 @@
 .lecturers-page header {
   background-color: white !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.biography-container {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
+}
+
+.biography-expanded {
+  white-space: normal;
+  word-break: keep-all;
+  overflow: visible;
+  line-height: 1.5;
+}
+
+/* 새로 추가된 biography-multiline 클래스 */
+.biography-multiline {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.5;
+  max-width: 100%;
+}
+
+/* 모바일 기기에서 biography가 2줄로 표시되도록 설정 */
+@media (max-width: 768px) {
+  .biography-container {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+  }
 } 

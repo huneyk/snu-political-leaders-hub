@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { FileDown, Mail } from 'lucide-react';
 import logo from '/logo.png'; // Using the logo.png file from the public directory
+import { apiService } from '@/lib/apiService';
 
 interface FooterConfig {
   wordFile: string;
@@ -18,18 +19,42 @@ const Footer = () => {
     pdfFile: '',
     email: ''
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load footer configuration from localStorage
-    const savedConfig = localStorage.getItem('footer-config');
-    if (savedConfig) {
+    // MongoDB에서 footer 설정 로드
+    const loadFooterConfig = async () => {
       try {
-        const parsedConfig = JSON.parse(savedConfig);
-        setFooterConfig(parsedConfig);
+        setIsLoading(true);
+        const data = await apiService.getFooter();
+        
+        if (data) {
+          setFooterConfig({
+            wordFile: data.wordFile || '',
+            hwpFile: data.hwpFile || '',
+            pdfFile: data.pdfFile || '',
+            email: data.email || ''
+          });
+        }
       } catch (error) {
-        console.error('Failed to parse footer config:', error);
+        console.error('Failed to load footer config:', error);
+        
+        // 에러가 발생하면 localStorage에서 로드 시도 (fallback)
+        const savedConfig = localStorage.getItem('footer-config');
+        if (savedConfig) {
+          try {
+            const parsedConfig = JSON.parse(savedConfig);
+            setFooterConfig(parsedConfig);
+          } catch (error) {
+            console.error('Failed to parse footer config from localStorage:', error);
+          }
+        }
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+    
+    loadFooterConfig();
   }, []);
 
   const handleDownload = (fileType: 'wordFile' | 'hwpFile' | 'pdfFile') => {
@@ -86,7 +111,7 @@ const Footer = () => {
               variant="default" 
               size="sm"
               onClick={() => handleDownload('wordFile')}
-              disabled={!footerConfig.wordFile}
+              disabled={!footerConfig.wordFile || isLoading}
               className="flex items-center gap-1 bg-[#666666] hover:bg-[#555555] text-white"
             >
               <FileDown size={16} />
@@ -97,7 +122,7 @@ const Footer = () => {
               variant="default" 
               size="sm"
               onClick={() => handleDownload('hwpFile')}
-              disabled={!footerConfig.hwpFile}
+              disabled={!footerConfig.hwpFile || isLoading}
               className="flex items-center gap-1 bg-[#666666] hover:bg-[#555555] text-white"
             >
               <FileDown size={16} />
@@ -108,7 +133,7 @@ const Footer = () => {
               variant="default" 
               size="sm"
               onClick={() => handleDownload('pdfFile')}
-              disabled={!footerConfig.pdfFile}
+              disabled={!footerConfig.pdfFile || isLoading}
               className="flex items-center gap-1 bg-[#666666] hover:bg-[#555555] text-white"
             >
               <FileDown size={16} />
@@ -119,7 +144,7 @@ const Footer = () => {
               variant="default" 
               size="sm"
               onClick={handleEmailClick}
-              disabled={!footerConfig.email}
+              disabled={!footerConfig.email || isLoading}
               className="flex items-center gap-1 bg-[#666666] hover:bg-[#555555] text-white"
             >
               <Mail size={16} />
@@ -132,7 +157,7 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-gray-500 text-sm mb-4 md:mb-0">
               <p style={{ wordBreak: 'keep-all' }}>서울특별시 관악구 관악로 1 서울대학교 아시아연구소 517호 정치지도자과정</p>
-              <p style={{ wordBreak: 'keep-all' }}>Tel: 02-880-4107  Email : plp@snu.ac.kr</p>
+              <p style={{ wordBreak: 'keep-all' }}>Tel: 02-880-4107  Email : {footerConfig.email || 'plp@snu.ac.kr'}</p>
             </div>
             <div className="text-gray-500 text-sm">
               <span style={{ wordBreak: 'keep-all' }}>{new Date().getFullYear()} © 2025 서울대학교 정치외교학부 정치지도자과정 

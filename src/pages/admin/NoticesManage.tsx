@@ -7,11 +7,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { apiService } from '@/lib/apiService';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import axios from 'axios';
+
+// API 기본 URL 설정
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : 'http://localhost:5001/api';
 
 interface Notice {
-  id: string;
+  _id?: string;
+  id?: string;
   title: string;
   content: string;
   author: string;
@@ -21,11 +31,13 @@ interface Notice {
 
 const NoticesManage = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, token } = useAdminAuth();
   const [notices, setNotices] = useState<Notice[]>([]);
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -35,57 +47,66 @@ const NoticesManage = () => {
 
   // Admin 인증 체크
   useEffect(() => {
-    const checkAuth = () => {
-      const auth = localStorage.getItem('adminAuth');
-      if (auth !== 'true') {
-        navigate('/admin/login');
-      }
-    };
-    
-    checkAuth();
-  }, [navigate]);
+    if (!isAuthenticated) {
+      navigate('/admin/login');
+    } else {
+      // 공지사항 데이터 로드
+      loadNotices();
+    }
+  }, [isAuthenticated, navigate]);
 
   // 공지사항 데이터 로드
-  useEffect(() => {
-    const loadNotices = () => {
-      const storedNotices = localStorage.getItem('notices');
-      if (storedNotices) {
-        setNotices(JSON.parse(storedNotices));
-      } else {
-        // 샘플 데이터
-        const sampleNotices = [
-          {
-            id: '1',
-            title: '2023년 과정 입학 안내',
-            content: '2023년 정치지도자 과정 입학 신청이 시작되었습니다. 신청 마감일은 2023년 2월 28일입니다.',
-            author: '관리자',
-            createdAt: new Date(2023, 0, 15).toISOString(),
-            isImportant: true,
-          },
-          {
-            id: '2',
-            title: '시설 이용 안내',
-            content: '강의실 및 세미나실 이용 시간은 오전 9시부터 오후 6시까지입니다.',
-            author: '시설 관리자',
-            createdAt: new Date(2023, 1, 10).toISOString(),
-            isImportant: false,
-          },
-          {
-            id: '3',
-            title: '특별 강연 안내',
-            content: '3월 15일 오후 2시부터 국제 정치 관련 특별 강연이 진행됩니다. 많은 참여 바랍니다.',
-            author: '교육 담당자',
-            createdAt: new Date(2023, 2, 5).toISOString(),
-            isImportant: true,
-          },
-        ];
-        localStorage.setItem('notices', JSON.stringify(sampleNotices));
-        setNotices(sampleNotices);
-      }
-    };
+  const loadNotices = async () => {
+    if (!token) return;
     
-    loadNotices();
-  }, []);
+    setIsLoading(true);
+    console.log('관리자 페이지 공지사항 로딩 시작');
+    try {
+      // MongoDB API를 통해 공지사항 데이터 가져오기
+      console.log('관리자 API 호출 시작:', `${API_BASE_URL}/notices`);
+      const data = await apiService.getNotices();
+      console.log('관리자 API 호출 결과:', data);
+      
+      if (Array.isArray(data) && data.length > 0) {
+        // MongoDB에서 가져온 데이터를 필요한 형식으로 변환
+        console.log('관리자 데이터 변환 시작');
+        const formattedData = data.map(item => ({
+          id: item._id,
+          _id: item._id,
+          title: item.title,
+          content: item.content,
+          author: item.author,
+          createdAt: new Date(item.createdAt).toISOString(),
+          isImportant: item.isImportant
+        }));
+        console.log('관리자 변환된 데이터:', formattedData);
+        
+        // 중요 공지사항을 먼저 표시하고, 그 다음에 날짜 내림차순으로 정렬
+        const sortedNotices = formattedData.sort((a, b) => {
+          if (a.isImportant && !b.isImportant) return -1;
+          if (!a.isImportant && b.isImportant) return 1;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        console.log('관리자 정렬된 데이터:', sortedNotices);
+        
+        setNotices(sortedNotices);
+      } else {
+        console.log('관리자 데이터가 없거나 배열이 아님:', data);
+        setNotices([]);
+      }
+    } catch (error) {
+      console.error('관리자 공지사항 로드 중 오류 발생:', error);
+      toast({
+        title: "공지사항 로드 실패",
+        description: "공지사항을 불러오는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+      setNotices([]);
+    } finally {
+      setIsLoading(false);
+      console.log('관리자 공지사항 로딩 완료');
+    }
+  };
 
   const filteredNotices = notices.filter(
     (notice) =>
@@ -98,7 +119,7 @@ const NoticesManage = () => {
     setFormData({
       title: '',
       content: '',
-      author: '관리자',
+      author: '',
       isImportant: false,
     });
     setIsAddDialogOpen(true);
@@ -124,78 +145,133 @@ const NoticesManage = () => {
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
     setFormData({
       ...formData,
-      isImportant: e.target.checked,
+      [name]: checked,
     });
   };
 
-  const handleAddNotice = () => {
-    if (!formData.title || !formData.content) {
+  const handleAddNotice = async () => {
+    if (!token) return;
+    
+    if (!formData.title || !formData.content || !formData.author) {
       toast({
         title: "입력 오류",
-        description: "제목과 내용은 필수 입력 항목입니다.",
+        description: "제목, 내용, 작성자는 필수 항목입니다.",
         variant: "destructive",
       });
       return;
     }
-    
-    const newNotice = {
-      id: Date.now().toString(),
-      ...formData,
-      createdAt: new Date().toISOString(),
-    };
-    
-    const updatedNotices = [...notices, newNotice];
-    localStorage.setItem('notices', JSON.stringify(updatedNotices));
-    setNotices(updatedNotices);
-    setIsAddDialogOpen(false);
-    
-    toast({
-      title: "공지사항 추가",
-      description: "새로운 공지사항이 성공적으로 추가되었습니다.",
-    });
-  };
 
-  const handleSaveChanges = () => {
-    if (!selectedNotice) return;
-    
-    if (!formData.title || !formData.content) {
-      toast({
-        title: "입력 오류",
-        description: "제목과 내용은 필수 입력 항목입니다.",
-        variant: "destructive",
+    setIsLoading(true);
+    try {
+      // API를 통해 공지사항 추가
+      const response = await axios.post(`${API_BASE_URL}/notices`, formData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
-      return;
-    }
-    
-    const updatedNotices = notices.map((notice) =>
-      notice.id === selectedNotice.id
-        ? { ...notice, ...formData }
-        : notice
-    );
-    
-    localStorage.setItem('notices', JSON.stringify(updatedNotices));
-    setNotices(updatedNotices);
-    setIsEditDialogOpen(false);
-    
-    toast({
-      title: "공지사항 수정",
-      description: "공지사항이 성공적으로 수정되었습니다.",
-    });
-  };
-
-  const handleDeleteNotice = (id: string) => {
-    if (window.confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
-      const updatedNotices = notices.filter(notice => notice.id !== id);
-      localStorage.setItem('notices', JSON.stringify(updatedNotices));
-      setNotices(updatedNotices);
       
+      if (response.data) {
+        toast({
+          title: "공지사항 추가 성공",
+          description: "새 공지사항이 성공적으로 추가되었습니다.",
+        });
+        
+        // 공지사항 목록 새로고침
+        await loadNotices();
+        setIsAddDialogOpen(false);
+      }
+    } catch (error) {
+      console.error('공지사항 추가 실패:', error);
       toast({
-        title: "공지사항 삭제",
-        description: "공지사항이 성공적으로 삭제되었습니다.",
+        title: "공지사항 추가 실패",
+        description: "공지사항을 추가하는 중 오류가 발생했습니다.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!selectedNotice || !token) return;
+    
+    if (!formData.title || !formData.content || !formData.author) {
+      toast({
+        title: "입력 오류",
+        description: "제목, 내용, 작성자는 필수 항목입니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // API를 통해 공지사항 수정
+      const response = await axios.put(`${API_BASE_URL}/notices/${selectedNotice._id || selectedNotice.id}`, formData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.data) {
+        toast({
+          title: "공지사항 수정 성공",
+          description: "공지사항이 성공적으로 수정되었습니다.",
+        });
+        
+        // 공지사항 목록 새로고침
+        await loadNotices();
+        setIsEditDialogOpen(false);
+      }
+    } catch (error) {
+      console.error('공지사항 수정 실패:', error);
+      toast({
+        title: "공지사항 수정 실패",
+        description: "공지사항을 수정하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteNotice = async (id: string) => {
+    if (!token) return;
+    
+    if (window.confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
+      setIsLoading(true);
+      try {
+        // API를 통해 공지사항 삭제
+        const response = await axios.delete(`${API_BASE_URL}/notices/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.data) {
+          toast({
+            title: "공지사항 삭제 성공",
+            description: "공지사항이 성공적으로 삭제되었습니다.",
+          });
+          
+          // 공지사항 목록 새로고침
+          await loadNotices();
+        }
+      } catch (error) {
+        console.error('공지사항 삭제 실패:', error);
+        toast({
+          title: "공지사항 삭제 실패",
+          description: "공지사항을 삭제하는 중 오류가 발생했습니다.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -206,6 +282,125 @@ const NoticesManage = () => {
       month: 'long',
       day: 'numeric',
     });
+  };
+
+  const addNoticeDialog = () => {
+    return (
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>새 공지사항 추가</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">제목</Label>
+              <Input
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                placeholder="공지사항 제목을 입력하세요"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="content">내용</Label>
+              <Textarea
+                id="content"
+                name="content"
+                value={formData.content}
+                onChange={handleInputChange}
+                placeholder="공지사항 내용을 입력하세요"
+                rows={5}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="author">작성자</Label>
+              <Input
+                id="author"
+                name="author"
+                value={formData.author}
+                onChange={handleInputChange}
+                placeholder="작성자를 입력하세요"
+              />
+            </div>
+            <div className="flex items-center space-x-2 mt-4">
+              <Checkbox 
+                id="isImportant" 
+                checked={Boolean(formData.isImportant)}
+                onCheckedChange={(checked) => {
+                  setFormData({ ...formData, isImportant: Boolean(checked) });
+                }}
+              />
+              <Label htmlFor="isImportant">중요 공지로 표시</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">취소</Button>
+            </DialogClose>
+            <Button onClick={handleAddNotice}>추가</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const editNoticeDialog = () => {
+    return (
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>공지사항 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">제목</Label>
+              <Input
+                id="edit-title"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-content">내용</Label>
+              <Textarea
+                id="edit-content"
+                name="content"
+                value={formData.content}
+                onChange={handleInputChange}
+                rows={5}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-author">작성자</Label>
+              <Input
+                id="edit-author"
+                name="author"
+                value={formData.author}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="flex items-center space-x-2 mt-4">
+              <Checkbox 
+                id="editIsImportant" 
+                checked={Boolean(formData.isImportant)}
+                onCheckedChange={(checked) => {
+                  setFormData({ ...formData, isImportant: Boolean(checked) });
+                }}
+              />
+              <Label htmlFor="editIsImportant">중요 공지로 표시</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">취소</Button>
+            </DialogClose>
+            <Button onClick={handleSaveChanges}>저장</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   return (
@@ -267,7 +462,7 @@ const NoticesManage = () => {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleDeleteNotice(notice.id)}
+                            onClick={() => handleDeleteNotice(notice.id || '')}
                           >
                             삭제
                           </Button>
@@ -287,121 +482,9 @@ const NoticesManage = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* 공지사항 추가 다이얼로그 */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>새 공지사항 추가</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">제목</Label>
-              <Input
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                placeholder="공지사항 제목을 입력하세요"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="content">내용</Label>
-              <Textarea
-                id="content"
-                name="content"
-                value={formData.content}
-                onChange={handleInputChange}
-                placeholder="공지사항 내용을 입력하세요"
-                rows={5}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="author">작성자</Label>
-              <Input
-                id="author"
-                name="author"
-                value={formData.author}
-                onChange={handleInputChange}
-                placeholder="작성자를 입력하세요"
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="isImportant"
-                name="isImportant"
-                checked={formData.isImportant}
-                onChange={handleCheckboxChange}
-                className="rounded border-gray-300 text-mainBlue focus:ring-mainBlue h-4 w-4"
-              />
-              <Label htmlFor="isImportant" className="text-sm cursor-pointer">중요 공지사항으로 표시</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">취소</Button>
-            </DialogClose>
-            <Button onClick={handleAddNotice}>추가</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 공지사항 수정 다이얼로그 */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>공지사항 수정</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-title">제목</Label>
-              <Input
-                id="edit-title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-content">내용</Label>
-              <Textarea
-                id="edit-content"
-                name="content"
-                value={formData.content}
-                onChange={handleInputChange}
-                rows={5}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-author">작성자</Label>
-              <Input
-                id="edit-author"
-                name="author"
-                value={formData.author}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="edit-isImportant"
-                name="isImportant"
-                checked={formData.isImportant}
-                onChange={handleCheckboxChange}
-                className="rounded border-gray-300 text-mainBlue focus:ring-mainBlue h-4 w-4"
-              />
-              <Label htmlFor="edit-isImportant" className="text-sm cursor-pointer">중요 공지사항으로 표시</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">취소</Button>
-            </DialogClose>
-            <Button onClick={handleSaveChanges}>저장</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      
+      {addNoticeDialog()}
+      {editNoticeDialog()}
     </AdminLayout>
   );
 };

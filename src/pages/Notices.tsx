@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
+import { apiService } from '@/lib/apiService';
 
 // Add CSS for white header
 const headerStyle = `
@@ -15,7 +16,8 @@ const headerStyle = `
 `;
 
 interface Notice {
-  id: string;
+  _id?: string;
+  id?: string;
   title: string;
   content: string;
   author: string;
@@ -53,28 +55,51 @@ const Notices = () => {
     }
   }, [searchTerm, notices]);
 
-  const loadNotices = () => {
+  const loadNotices = async () => {
     setLoading(true);
+    console.log('공지사항 로딩 시작');
     try {
-      const storedNotices = localStorage.getItem('notices');
-      if (storedNotices) {
-        const parsedNotices = JSON.parse(storedNotices);
+      // MongoDB API를 통해 공지사항 데이터 가져오기
+      console.log('API 호출 시작: ', `${process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api'}/notices`);
+      const data = await apiService.getNotices();
+      console.log('API 호출 결과:', data);
+      
+      if (Array.isArray(data) && data.length > 0) {
+        // MongoDB에서 가져온 데이터를 필요한 형식으로 변환
+        console.log('데이터 변환 시작');
+        const formattedData = data.map(item => ({
+          id: item._id,
+          _id: item._id,
+          title: item.title,
+          content: item.content,
+          author: item.author,
+          createdAt: new Date(item.createdAt).toISOString(),
+          isImportant: item.isImportant
+        }));
+        console.log('변환된 데이터:', formattedData);
+        
         // 중요 공지사항을 먼저 표시하고, 그 다음에 날짜 내림차순으로 정렬
-        const sortedNotices = parsedNotices.sort((a: Notice, b: Notice) => {
+        const sortedNotices = formattedData.sort((a, b) => {
           if (a.isImportant && !b.isImportant) return -1;
           if (!a.isImportant && b.isImportant) return 1;
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
+        console.log('정렬된 데이터:', sortedNotices);
+        
         setNotices(sortedNotices);
         setFilteredNotices(sortedNotices);
       } else {
+        console.log('데이터가 없거나 배열이 아님:', data);
         setNotices([]);
         setFilteredNotices([]);
       }
     } catch (error) {
       console.error('공지사항 로드 중 오류 발생:', error);
+      setNotices([]);
+      setFilteredNotices([]);
     } finally {
       setLoading(false);
+      console.log('공지사항 로딩 완료');
     }
   };
 

@@ -69,6 +69,68 @@ export const apiService = {
     }
   },
 
+  // 관리자용 교수진 전체 목록 조회 API
+  getProfessorsAll: async (token: string) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/content/professors/all`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching all professors data:', error);
+      throw error;
+    }
+  },
+  
+  // 새 교수진 섹션 생성 API
+  createProfessorSection: async (sectionData: any, token: string) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/content/professors`, sectionData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating professor section:', error);
+      throw error;
+    }
+  },
+  
+  // 교수진 섹션 업데이트 API
+  updateProfessorSection: async (sectionId: string, sectionData: any, token: string) => {
+    try {
+      const response = await axios.put(`${API_BASE_URL}/content/professors/${sectionId}`, sectionData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating professor section:', error);
+      throw error;
+    }
+  },
+  
+  // 교수진 섹션 삭제 API
+  deleteProfessorSection: async (sectionId: string, token: string) => {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/content/professors/${sectionId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting professor section:', error);
+      throw error;
+    }
+  },
+
   // 일정(Schedules) 관련 API
   getSchedules: async (category?: string) => {
     try {

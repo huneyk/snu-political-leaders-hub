@@ -5,20 +5,23 @@ import { motion } from 'framer-motion';
 import { apiService } from '@/lib/apiService';
 
 interface Professor {
-  _id: string;
+  _id?: string;
   name: string;
-  title: string;
-  department: string;
-  specialization: string;
-  imageUrl: string;
-  bio: string;
-  email: string;
+  position: string;
+  organization: string;
+  profile: string;
+}
+
+interface ProfessorSection {
+  _id: string;
+  sectionTitle: string;
+  professors: Professor[];
   order: number;
   isActive: boolean;
 }
 
 const Professors = () => {
-  const [professors, setProfessors] = useState<Professor[]>([]);
+  const [professorSections, setProfessorSections] = useState<ProfessorSection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +34,7 @@ const Professors = () => {
         setIsLoading(true);
         const data = await apiService.getProfessors();
         if (data && Array.isArray(data)) {
-          setProfessors(data);
+          setProfessorSections(data);
         }
         setError(null);
       } catch (err) {
@@ -87,73 +90,51 @@ const Professors = () => {
             <div className="text-center text-red-500 py-12">
               <p>{error}</p>
             </div>
-          ) : professors.length === 0 ? (
+          ) : professorSections.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-xl text-gray-500">등록된 교수진 정보가 없습니다.</p>
             </div>
           ) : (
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid gap-8 md:grid-cols-2"
-            >
-              {professors.map((professor) => (
-                <motion.div 
-                  key={professor._id}
-                  variants={itemVariants}
-                  className="bg-white rounded-lg shadow-md overflow-hidden"
-                >
-                  <div className="p-6">
-                    <div className="flex flex-col md:flex-row gap-6">
-                      {professor.imageUrl && (
-                        <div className="flex-shrink-0">
-                          <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-gray-100 shadow-sm mx-auto md:mx-0">
-                            <img 
-                              src={professor.imageUrl} 
-                              alt={`${professor.name} 사진`} 
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                // Fallback if image fails to load
-                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=No+Image';
-                              }}
-                            />
+            <div className="space-y-16">
+              {professorSections.map((section) => (
+                <div key={section._id} className="mb-12">
+                  <h2 className="text-2xl font-bold text-mainBlue mb-6 pb-2 border-b-2 border-mainBlue/30">
+                    {section.sectionTitle}
+                  </h2>
+                  
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid gap-8 md:grid-cols-2"
+                  >
+                    {section.professors.map((professor, index) => (
+                      <motion.div 
+                        key={index}
+                        variants={itemVariants}
+                        className="bg-white rounded-lg shadow-md overflow-hidden"
+                      >
+                        <div className="p-6">
+                          <div className="flex flex-col gap-6">
+                            <div className="flex-1">
+                              <h3 className="text-xl font-bold text-mainBlue mb-1">{professor.name}</h3>
+                              <p className="text-gray-700 mb-1">{professor.position}</p>
+                              <p className="text-gray-600 mb-3">{professor.organization}</p>
+                            </div>
                           </div>
+                          
+                          {professor.profile && (
+                            <div className="mt-4 pt-4 border-t border-gray-100">
+                              <p className="text-gray-700 text-sm whitespace-pre-line">{professor.profile}</p>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-mainBlue mb-1">{professor.name}</h3>
-                        <p className="text-gray-700 mb-1">{professor.title}</p>
-                        <p className="text-gray-600 mb-3">{professor.department}</p>
-                        
-                        {professor.specialization && (
-                          <p className="text-gray-700 text-sm">
-                            <span className="font-semibold">전문 분야: </span>
-                            {professor.specialization}
-                          </p>
-                        )}
-                        
-                        {professor.email && (
-                          <p className="text-gray-700 text-sm">
-                            <span className="font-semibold">이메일: </span>
-                            <a href={`mailto:${professor.email}`} className="text-blue-600 hover:underline">
-                              {professor.email}
-                            </a>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {professor.bio && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <p className="text-gray-700 text-sm whitespace-pre-line">{professor.bio}</p>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           )}
         </div>
       </main>

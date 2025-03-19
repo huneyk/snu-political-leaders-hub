@@ -6,10 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
 import './Gallery.css'; // Import CSS file for gallery styles
+import { apiService } from '@/lib/apiService';
 
 // 갤러리 아이템 인터페이스
 interface GalleryItem {
-  id: string;
+  _id?: string;
+  id?: string;
   title: string;
   description: string;
   imageUrl: string;
@@ -17,7 +19,7 @@ interface GalleryItem {
   term: string;
 }
 
-// 하드코딩된 갤러리 데이터
+// 하드코딩된 갤러리 데이터 (API가 실패할 경우의 폴백으로 사용)
 const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: '1',
@@ -71,7 +73,7 @@ const GALLERY_ITEMS: GalleryItem[] = [
 
 const Gallery = () => {
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryItem | null>(null);
@@ -96,28 +98,36 @@ const Gallery = () => {
     };
   }, []);
   
-  const loadGalleryData = () => {
-    setLoading(true);
+  const loadGalleryData = async () => {
+    setIsLoading(true);
     try {
-      const storedItems = localStorage.getItem('galleryItems');
-      if (storedItems) {
-        const parsedItems = JSON.parse(storedItems);
-        if (Array.isArray(parsedItems) && parsedItems.length > 0) {
-          console.log('갤러리 데이터 로드 성공:', parsedItems.length, '개 항목');
-          
-          // 날짜 기준 내림차순 정렬 (최신순)
-          const sortedItems = parsedItems.sort((a, b) => 
-            new Date(b.date).getTime() - new Date(a.date).getTime()
-          );
-          
-          console.log('날짜순 정렬 완료 (최신순)');
-          setGalleryItems(sortedItems);
-        } else {
-          console.warn('갤러리 데이터가 비어있거나 배열이 아닙니다.');
-          setGalleryItems(GALLERY_ITEMS);
-        }
+      // MongoDB API를 통해 갤러리 데이터 가져오기
+      const data = await apiService.getGallery();
+      
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('갤러리 데이터 로드 성공:', data.length, '개 항목');
+        
+        // MongoDB에서 가져온 데이터를 필요한 형식으로 변환
+        const formattedData = data.map(item => ({
+          id: item._id,
+          _id: item._id,
+          title: item.title,
+          description: item.description,
+          imageUrl: item.imageUrl,
+          // 날짜는 원본 형식 그대로 저장 (포맷팅은 표시할 때 수행)
+          date: new Date(item.date).toISOString(),
+          term: item.term
+        }));
+        
+        // 날짜 기준 내림차순 정렬 (최신순)
+        const sortedItems = formattedData.sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        
+        console.log('날짜순 정렬 완료 (최신순)');
+        setGalleryItems(sortedItems);
       } else {
-        console.warn('로컬 스토리지에 갤러리 데이터가 없습니다.');
+        console.warn('갤러리 데이터가 비어있거나 배열이 아닙니다.');
         setGalleryItems(GALLERY_ITEMS);
       }
       setError(null);
@@ -126,14 +136,13 @@ const Gallery = () => {
       setError('갤러리 데이터를 불러오는 중 오류가 발생했습니다.');
       setGalleryItems(GALLERY_ITEMS);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   // 디버그 기능: 갤러리 데이터 확인
   const checkGalleryData = () => {
-    const storedItems = localStorage.getItem('galleryItems');
-    console.log('현재 갤러리 데이터:', storedItems ? JSON.parse(storedItems) : '없음');
+    console.log('현재 갤러리 데이터:', galleryItems);
   };
 
   // 디버그 기능: 갤러리 데이터 새로고침
@@ -187,11 +196,12 @@ const Gallery = () => {
   // 날짜 포맷팅 함수
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    // mm/dd/yyyy 형식으로 표시
+    return new Intl.DateTimeFormat('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric'
+    }).format(date);
   };
   
   console.log('Gallery 렌더링 반환');

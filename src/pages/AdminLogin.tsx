@@ -1,39 +1,65 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import axios from 'axios';
+
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : 'http://localhost:5001/api';
 
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAdminAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    
+    console.log('로그인 시도:', { username });
+    console.log('API 엔드포인트:', `${API_BASE_URL}/auth/admin/login`);
 
-    // 실제 구현에서는 API를 통해 인증을 처리해야 합니다.
-    // 여기서는 간단한 데모를 위해 하드코딩된 값을 사용합니다.
-    if (username === 'admin' && password === 'password') {
-      // 로그인 성공 시 세션 저장
-      localStorage.setItem('adminAuth', 'true');
-      toast({
-        title: "로그인 성공",
-        description: "관리자 대시보드로 이동합니다.",
+    try {
+      // API를 통한 실제 로그인 처리
+      const response = await axios.post(`${API_BASE_URL}/auth/admin/login`, {
+        username,
+        password
       });
-      navigate('/admin');
-    } else {
+      
+      console.log('로그인 응답:', response.data);
+      
+      if (response.data && response.data.token) {
+        login(response.data.token);
+        toast({
+          title: "로그인 성공",
+          description: "관리자 대시보드로 이동합니다.",
+        });
+        navigate('/admin');
+      } else {
+        console.error('토큰 없음:', response.data);
+        toast({
+          title: "로그인 실패",
+          description: "인증 토큰을 받지 못했습니다.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('로그인 오류:', error);
+      console.error('오류 응답:', error.response?.data);
       toast({
         title: "로그인 실패",
-        description: "아이디 또는 비밀번호가 잘못되었습니다.",
+        description: error.response?.data?.message || "아이디 또는 비밀번호가 잘못되었습니다.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (

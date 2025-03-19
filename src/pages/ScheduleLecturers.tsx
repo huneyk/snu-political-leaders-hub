@@ -9,15 +9,18 @@ import { apiService } from '@/lib/apiService';
 interface Lecturer {
   _id: string;
   name: string;
-  title: string;
-  organization: string;
-  position: string;
-  specialization: string;
+  term: string;
+  category: string;
   imageUrl: string;
-  bio: string;
-  lectures: string[];
+  biography: string;
   order: number;
   isActive: boolean;
+  // 프론트엔드에서 사용하는 필드 (MongoDB에 없지만 UI에 필요한 경우)
+  title?: string;
+  organization?: string;
+  position?: string;
+  specialization?: string;
+  lectures?: string[];
 }
 
 interface LecturersByTerm {
@@ -32,7 +35,7 @@ const ScheduleLecturers = () => {
   const [activeTermIndex, setActiveTermIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  
   // 컴포넌트 마운트 시 한 번만 실행
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -44,6 +47,9 @@ const ScheduleLecturers = () => {
     try {
       setLoading(true);
       const data = await apiService.getLecturers();
+      
+      // API 응답 로깅 추가
+      console.log('강사진 데이터 응답:', data);
       
       if (data && Array.isArray(data)) {
         setLecturers(data);
@@ -66,19 +72,29 @@ const ScheduleLecturers = () => {
 
   // 강사진을 기수별로 그룹화하는 함수
   const groupLecturersByTerm = (lecturers: Lecturer[]): LecturersByTerm[] => {
-    // 기수 정보 추출 (실제 데이터에 맞게 수정 필요)
-    // 여기서는 organization 필드에 기수 정보가 포함되어 있다고 가정
-    // 예: "1기 특별강사", "2기 서울대 교수" 등
+    // 기수별로 그룹화
+    const termGroups: { [key: string]: Lecturer[] } = {};
     
-    // 임시로 모든 강사를 현재 기수(1기)로 할당
-    const currentTerm = "1";
-    
-    return [
-      {
-        term: currentTerm,
-        lecturers: lecturers.sort((a, b) => a.order - b.order)
+    lecturers.forEach(lecturer => {
+      const term = lecturer.term || '기타';
+      if (!termGroups[term]) {
+        termGroups[term] = [];
       }
-    ];
+      termGroups[term].push(lecturer);
+    });
+    
+    // 기수 정보를 배열로 변환하고 정렬
+    return Object.keys(termGroups)
+      .sort((a, b) => {
+        // 기수에서 숫자만 추출하여 내림차순 정렬
+        const numA = parseInt(a.replace(/\D/g, '') || '0');
+        const numB = parseInt(b.replace(/\D/g, '') || '0');
+        return numB - numA;
+      })
+      .map(term => ({
+        term,
+        lecturers: termGroups[term].sort((a, b) => a.order - b.order)
+      }));
   };
 
   // 현재 선택된 기수의 강사진
@@ -130,7 +146,7 @@ const ScheduleLecturers = () => {
                       }`}
                       onClick={() => setActiveTermIndex(index)}
                     >
-                      {termGroup.term}기
+                      {termGroup.term}
                     </button>
                   ))}
                 </div>
@@ -164,13 +180,18 @@ const ScheduleLecturers = () => {
                         </div>
                       )}
                       <h3 className="text-xl font-bold text-mainBlue">{lecturer.name}</h3>
-                      <p className="text-gray-600">{lecturer.title}</p>
-                      <p className="text-gray-500 text-sm">{lecturer.organization} {lecturer.position}</p>
+                      <p className="text-gray-600">{lecturer.title || lecturer.category}</p>
+                      <p className="text-gray-500 text-sm">
+                        {lecturer.organization || ''} 
+                        {lecturer.position ? ` ${lecturer.position}` : ''}
+                      </p>
                     </div>
                     
-                    {lecturer.bio && (
-                      <div className="whitespace-pre-line text-gray-600 text-center mt-4">
-                        {lecturer.bio}
+                    {lecturer.biography && (
+                      <div className="text-gray-600 text-center mt-4">
+                        <div className="biography-multiline">
+                          {lecturer.biography}
+                        </div>
                       </div>
                     )}
                     

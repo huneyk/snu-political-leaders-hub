@@ -14,7 +14,7 @@ import NoticeTab from '@/components/admin/NoticeTab';
 import FooterTab from '@/components/admin/FooterTab';
 
 const Admin = () => {
-  const { isAuthenticated, isLoading } = useAdminAuth();
+  const { isAuthenticated, isLoading, logout } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -26,7 +26,7 @@ const Admin = () => {
   }, [location]);
 
   const handleLogout = () => {
-    localStorage.removeItem('adminAuth');
+    logout();
     toast({
       title: "로그아웃",
       description: "관리자 계정에서 로그아웃되었습니다.",

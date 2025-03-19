@@ -2,49 +2,63 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
+import { apiService } from '@/lib/apiService';
 
-interface Target {
+interface Item {
   text: string;
 }
 
-interface Subsection {
-  title: string;
-  content: string;
-}
-
-interface Section {
-  title: string;
-  content: string;
-  subsections: Subsection[];
-  targets?: Target[];
+interface Document {
+  name: string;
+  description: string;
 }
 
 interface AdmissionInfo {
+  _id?: string;
   title: string;
   term: string;
   year: string;
   startMonth: string;
   endMonth: string;
   capacity: string;
-  sections: Section[];
+  qualificationContent: string;
+  targets: Item[];
+  applicationMethodContent: string;
+  requiredDocuments: Document[];
+  applicationProcessContent: string;
+  applicationAddress: string;
+  scheduleContent: string;
+  educationLocation: string;
+  classSchedule: string;
+  additionalItems: Item[];
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 const AdmissionInfo = () => {
   const [admissionInfo, setAdmissionInfo] = useState<AdmissionInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 로컬 스토리지에서 데이터 로드
-    const savedData = localStorage.getItem('admission-info');
-    if (savedData) {
+    const fetchAdmissionData = async () => {
+      setIsLoading(true);
       try {
-        const parsedData = JSON.parse(savedData);
-        setAdmissionInfo(parsedData);
-      } catch (error) {
-        console.error('Failed to parse admission info:', error);
+        // MongoDB에서 데이터 로드
+        const data = await apiService.getAdmission();
+        console.log('Admission data from API:', data);
+        setAdmissionInfo(data);
+        setError(null);
+      } catch (err) {
+        console.error('입학 정보를 불러오는 중 오류가 발생했습니다:', err);
+        setError('입학 정보를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+
+    fetchAdmissionData();
   }, []);
 
   // 애니메이션 변수
@@ -85,6 +99,10 @@ const AdmissionInfo = () => {
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
             </div>
+          ) : error ? (
+            <div className="text-center py-12 text-red-500">
+              <p className="text-xl">{error}</p>
+            </div>
           ) : !admissionInfo ? (
             <div className="text-center py-12">
               <p className="text-xl text-gray-500">등록된 입학 지원 정보가 없습니다.</p>
@@ -102,48 +120,112 @@ const AdmissionInfo = () => {
                 </h2>
               </motion.div>
 
-              {admissionInfo.sections.map((section, sectionIndex) => (
-                <motion.div key={sectionIndex} variants={itemVariants} className="mb-12">
+              {/* 모집 인원 */}
+              <motion.div variants={itemVariants} className="mb-12">
+                <h3 className="text-2xl font-bold text-mainBlue mb-6 pb-2 border-b border-gray-200">
+                  모집 인원
+                </h3>
+                <p className="text-lg mb-4">{admissionInfo.capacity}명 내외</p>
+              </motion.div>
+
+              {/* 지원 자격 */}
+              <motion.div variants={itemVariants} className="mb-12">
+                <h3 className="text-2xl font-bold text-mainBlue mb-6 pb-2 border-b border-gray-200">
+                  지원 자격
+                </h3>
+                <p className="text-lg mb-4">{admissionInfo.qualificationContent}</p>
+
+                {admissionInfo.targets && admissionInfo.targets.length > 0 && (
+                  <ul className="list-decimal pl-6 mb-6 space-y-2">
+                    {admissionInfo.targets.map((target, index) => (
+                      target.text && (
+                        <li key={index} className="text-lg">
+                          {target.text}
+                        </li>
+                      )
+                    ))}
+                  </ul>
+                )}
+              </motion.div>
+
+              {/* 교육 정보 */}
+              <motion.div variants={itemVariants} className="mb-12">
+                <h3 className="text-2xl font-bold text-mainBlue mb-6 pb-2 border-b border-gray-200">
+                  교육 정보
+                </h3>
+                <div className="bg-gray-50 p-6 rounded-lg mb-4">
+                  <h4 className="text-xl font-bold text-mainBlue mb-4">교육 장소</h4>
+                  <p className="text-lg">{admissionInfo.educationLocation}</p>
+                </div>
+                <div className="bg-gray-50 p-6 rounded-lg mb-4">
+                  <h4 className="text-xl font-bold text-mainBlue mb-4">수업 일정</h4>
+                  <div className="whitespace-pre-line text-gray-700">
+                    {admissionInfo.classSchedule}
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* 지원 방법 */}
+              <motion.div variants={itemVariants} className="mb-12">
+                <h3 className="text-2xl font-bold text-mainBlue mb-6 pb-2 border-b border-gray-200">
+                  지원 방법
+                </h3>
+                <p className="text-lg mb-4">{admissionInfo.applicationMethodContent}</p>
+
+                {/* 제출 서류 */}
+                <div className="bg-gray-50 p-6 rounded-lg mb-6">
+                  <h4 className="text-xl font-bold text-mainBlue mb-4">제출 서류</h4>
+                  <ul className="list-decimal pl-6 space-y-2">
+                    {admissionInfo.requiredDocuments.map((doc, index) => (
+                      <li key={index} className="text-lg">
+                        {doc.name} {doc.description && <span className="text-gray-600">({doc.description})</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* 접수 방법 */}
+                <div className="bg-gray-50 p-6 rounded-lg mb-6">
+                  <h4 className="text-xl font-bold text-mainBlue mb-4">접수 방법</h4>
+                  <div className="whitespace-pre-line text-gray-700">
+                    {admissionInfo.applicationProcessContent}
+                  </div>
+                </div>
+
+                {/* 접수처 */}
+                <div className="bg-gray-50 p-6 rounded-lg mb-6">
+                  <h4 className="text-xl font-bold text-mainBlue mb-4">접수처</h4>
+                  <div className="whitespace-pre-line text-gray-700">
+                    {admissionInfo.applicationAddress}
+                  </div>
+                </div>
+
+                {/* 전형 일정 */}
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <h4 className="text-xl font-bold text-mainBlue mb-4">전형 일정</h4>
+                  <div className="whitespace-pre-line text-gray-700">
+                    {admissionInfo.scheduleContent}
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* 기타 추가 항목 */}
+              {admissionInfo.additionalItems && admissionInfo.additionalItems.length > 0 && (
+                <motion.div variants={itemVariants} className="mb-12">
                   <h3 className="text-2xl font-bold text-mainBlue mb-6 pb-2 border-b border-gray-200">
-                    {section.title}
+                    특별 활동
                   </h3>
-
-                  {section.title === '모집 인원' && (
-                    <p className="text-lg mb-4">{admissionInfo.capacity}명 내외</p>
-                  )}
-
-                  {section.content && section.title !== '모집 인원' && (
-                    <p className="text-lg mb-4">{section.content}</p>
-                  )}
-
-                  {section.targets && section.targets.length > 0 && (
-                    <ul className="list-decimal pl-6 mb-6 space-y-2">
-                      {section.targets.map((target, targetIndex) => (
-                        target.text && (
-                          <li key={targetIndex} className="text-lg">
-                            {target.text}
-                          </li>
-                        )
-                      ))}
-                    </ul>
-                  )}
-
-                  {section.subsections.length > 0 && (
-                    <div className="space-y-8 mt-8">
-                      {section.subsections.map((subsection, subsectionIndex) => (
-                        <div key={subsectionIndex} className="bg-gray-50 p-6 rounded-lg">
-                          <h4 className="text-xl font-bold text-mainBlue mb-4">
-                            {subsection.title}
-                          </h4>
-                          <div className="whitespace-pre-line text-gray-700">
-                            {subsection.content}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <ul className="list-disc pl-6 mb-6 space-y-2">
+                    {admissionInfo.additionalItems.map((item, index) => (
+                      item.text && (
+                        <li key={index} className="text-lg">
+                          {item.text}
+                        </li>
+                      )
+                    ))}
+                  </ul>
                 </motion.div>
-              ))}
+              )}
 
               <motion.div variants={itemVariants} className="mt-12 text-center">
                 <p className="text-lg text-gray-600 mb-6">

@@ -10,8 +10,11 @@ import AdminNavTabs from '@/components/admin/AdminNavTabs';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
 import AdminHomeButton from '@/components/admin/AdminHomeButton';
+import { apiService } from '@/lib/apiService';
+import { Loader } from 'lucide-react';
 
 interface Professor {
+  _id?: string;
   name: string;
   position: string;
   organization: string;
@@ -19,54 +22,61 @@ interface Professor {
 }
 
 interface ProfessorSection {
-  title: string;
+  _id?: string;
+  sectionTitle: string;
   professors: Professor[];
+  order?: number;
+  isActive?: boolean;
 }
 
 const ProfessorsManage = () => {
-  const [sections, setSections] = useState<ProfessorSection[]>([
-    {
-      title: '',
-      professors: [{ name: '', position: '', organization: '', profile: '' }]
-    }
-  ]);
+  const [sections, setSections] = useState<ProfessorSection[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
+  const [isFetching, setIsFetching] = useState(true);
+  const { isAuthenticated, isLoading: authLoading, token } = useAdminAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
-    // 로컬 스토리지에서 기존 데이터 로드
-    const savedSections = localStorage.getItem('professor-sections');
+    if (!isAuthenticated || !token) return;
     
-    if (savedSections) {
+    const fetchProfessorSections = async () => {
       try {
-        const parsedSections = JSON.parse(savedSections);
-        setSections(parsedSections);
-      } catch (error) {
-        console.error('Failed to parse professor sections:', error);
-      }
-    } else {
-      // 이전 형식의 데이터가 있는지 확인
-      const savedTitle = localStorage.getItem('professors-title');
-      const savedProfessors = localStorage.getItem('professors');
-      
-      if (savedTitle && savedProfessors) {
-        try {
-          const parsedProfessors = JSON.parse(savedProfessors);
+        setIsFetching(true);
+        const response = await apiService.getProfessorsAll(token);
+        
+        if (response && Array.isArray(response) && response.length > 0) {
+          setSections(response);
+        } else {
+          // 데이터가 없으면 기본 템플릿 생성
           setSections([{
-            title: savedTitle,
-            professors: parsedProfessors
+            sectionTitle: '',
+            professors: [{ name: '', position: '', organization: '', profile: '' }]
           }]);
-        } catch (error) {
-          console.error('Failed to parse professors:', error);
         }
+      } catch (error) {
+        console.error('교수진 데이터를 불러오는 중 오류가 발생했습니다:', error);
+        toast({
+          title: "데이터 로드 실패",
+          description: "교수진 정보를 불러오는데 실패했습니다. 다시 시도해주세요.",
+          variant: "destructive"
+        });
+        
+        // 오류 발생 시 기본 템플릿 생성
+        setSections([{
+          sectionTitle: '',
+          professors: [{ name: '', position: '', organization: '', profile: '' }]
+        }]);
+      } finally {
+        setIsFetching(false);
       }
-    }
-  }, []);
+    };
+    
+    fetchProfessorSections();
+  }, [isAuthenticated, token]);
   
   const handleSectionTitleChange = (sectionIndex: number, value: string) => {
     const newSections = [...sections];
-    newSections[sectionIndex].title = value;
+    newSections[sectionIndex].sectionTitle = value;
     setSections(newSections);
   };
   
@@ -96,7 +106,7 @@ const ProfessorsManage = () => {
     setSections([
       ...sections,
       {
-        title: '',
+        sectionTitle: '',
         professors: [{ name: '', position: '', organization: '', profile: '' }]
       }
     ]);
@@ -108,25 +118,97 @@ const ProfessorsManage = () => {
     setSections(newSections);
   };
   
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!token) {
+      toast({
+        title: "인증 실패",
+        description: "관리자 인증이 필요합니다. 다시 로그인해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
-    // 빈 항목 필터링
-    const filteredSections = sections.map(section => ({
-      ...section,
-      professors: section.professors.filter(prof => prof.name.trim() !== '')
-    })).filter(section => section.title.trim() !== '' && section.professors.length > 0);
-    
-    // 로컬 스토리지에 저장
-    localStorage.setItem('professor-sections', JSON.stringify(filteredSections));
-    
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // 빈 항목 필터링
+      const filteredSections = sections.map(section => ({
+        ...section,
+        professors: section.professors.filter(prof => prof.name.trim() !== '')
+      })).filter(section => section.sectionTitle.trim() !== '' && section.professors.length > 0);
+      
+      // 유효성 검사
+      if (filteredSections.length === 0) {
+        toast({
+          title: "저장 실패",
+          description: "최소 하나의 섹션과 교수 정보가 필요합니다.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // 모든 섹션을 병렬로 저장 또는 업데이트
+      const savePromises = filteredSections.map(async section => {
+        if (section._id) {
+          // 기존 섹션 업데이트
+          return await apiService.updateProfessorSection(section._id, section, token);
+        } else {
+          // 새 섹션 생성
+          return await apiService.createProfessorSection(section, token);
+        }
+      });
+      
+      await Promise.all(savePromises);
+      
+      // 변경된 데이터로 다시 불러오기
+      const updatedSections = await apiService.getProfessorsAll(token);
+      setSections(updatedSections);
+      
       toast({
         title: "저장 완료",
         description: "운영 교수진 정보가 성공적으로 저장되었습니다.",
       });
-    }, 500);
+    } catch (error) {
+      console.error('교수진 정보 저장 중 오류가 발생했습니다:', error);
+      toast({
+        title: "저장 실패",
+        description: "서버 오류가 발생했습니다. 다시 시도해주세요.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleDeleteSection = async (sectionId: string) => {
+    if (!token || !sectionId) return;
+    
+    if (!window.confirm('이 섹션을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      await apiService.deleteProfessorSection(sectionId, token);
+      
+      // 삭제 후 목록에서 제거
+      setSections(sections.filter(section => section._id !== sectionId));
+      
+      toast({
+        title: "삭제 완료",
+        description: "교수진 섹션이 성공적으로 삭제되었습니다.",
+      });
+    } catch (error) {
+      console.error('교수진 섹션 삭제 중 오류가 발생했습니다:', error);
+      toast({
+        title: "삭제 실패",
+        description: "서버 오류가 발생했습니다. 다시 시도해주세요.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   if (authLoading) {
@@ -141,153 +223,173 @@ const ProfessorsManage = () => {
     navigate('/admin/login');
     return null;
   }
-  
+
   return (
     <>
       <Header />
-      <div className="container mx-auto py-8 px-4 pt-24">
-        <h1 className="text-3xl font-bold text-mainBlue mb-6">관리자 대시보드</h1>
+      <AdminHomeButton />
+      <div className="main-container py-10">
+        <AdminNavTabs />
         
-        <AdminNavTabs activeTab="content" />
-        <AdminHomeButton />
-        
-        <Card className="w-full mt-6">
+        <Card className="my-6">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-mainBlue">운영 교수진 관리</CardTitle>
+            <CardTitle>교수진 관리</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-8">
-            {sections.map((section, sectionIndex) => (
-              <div key={sectionIndex} className="border border-gray-200 rounded-lg p-5 space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2 flex-1">
-                    <label htmlFor={`section-title-${sectionIndex}`} className="text-sm font-medium">
-                      섹션 제목 <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      id={`section-title-${sectionIndex}`}
-                      value={section.title}
-                      onChange={(e) => handleSectionTitleChange(sectionIndex, e.target.value)}
-                      placeholder="교수진 섹션의 제목을 입력하세요"
-                      required
-                    />
-                    {section.title.trim() === '' && (
-                      <p className="text-xs text-red-500">섹션 제목은 필수 입력 항목입니다.</p>
-                    )}
-                  </div>
-                  
-                  {sections.length > 1 && (
-                    <Button 
-                      type="button" 
-                      variant="destructive" 
-                      onClick={() => removeSection(sectionIndex)}
-                      size="sm"
-                      className="ml-4 mt-6"
-                    >
-                      섹션 삭제
-                    </Button>
-                  )}
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">교수 목록</h3>
-                    <p className="text-xs text-gray-500">각 항목은 '교수 # - 이름 - 직위'가 한 세트로 구성됩니다</p>
-                  </div>
-                  
-                  {section.professors.map((professor, professorIndex) => (
-                    <div key={professorIndex} className="border p-4 rounded-md space-y-4 bg-gray-50">
-                      <div className="flex justify-between items-center">
-                        <h3 className="font-medium">교수 #{professorIndex + 1}</h3>
+          <CardContent>
+            {isFetching ? (
+              <div className="py-20 flex flex-col items-center justify-center">
+                <Loader className="animate-spin mb-4" />
+                <p>교수진 정보를 불러오는 중...</p>
+              </div>
+            ) : sections.length === 0 ? (
+              <div className="py-10 text-center">
+                <p className="mb-4">등록된 교수진 섹션이 없습니다.</p>
+                <Button onClick={addSection}>새 섹션 추가</Button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {sections.map((section, sectionIndex) => (
+                  <div key={sectionIndex} className="border border-gray-200 rounded-lg p-5 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h2 className="font-bold text-lg">섹션 #{sectionIndex + 1}</h2>
+                      <div className="flex gap-2">
+                        {section._id && (
+                          <Button 
+                            type="button" 
+                            variant="destructive"
+                            onClick={() => handleDeleteSection(section._id!)}
+                            disabled={isLoading}
+                            size="sm"
+                          >
+                            DB에서 삭제
+                          </Button>
+                        )}
                         <Button 
                           type="button" 
                           variant="destructive" 
-                          onClick={() => removeProfessor(sectionIndex, professorIndex)}
-                          disabled={section.professors.length <= 1}
+                          onClick={() => removeSection(sectionIndex)}
+                          disabled={sections.length <= 1 || isLoading}
                           size="sm"
                         >
-                          삭제
+                          섹션 삭제
                         </Button>
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">이름 <span className="text-red-500">*</span></label>
-                          <Input
-                            value={professor.name}
-                            onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'name', e.target.value)}
-                            placeholder="교수 이름"
-                            required
-                          />
-                          {professor.name.trim() === '' && (
-                            <p className="text-xs text-red-500">이름은 필수 입력 항목입니다.</p>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">직위 <span className="text-red-500">*</span></label>
-                          <Input
-                            value={professor.position}
-                            onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'position', e.target.value)}
-                            placeholder="직위"
-                            required
-                          />
-                          {professor.position.trim() === '' && (
-                            <p className="text-xs text-red-500">직위는 필수 입력 항목입니다.</p>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">소속</label>
-                          <Input
-                            value={professor.organization}
-                            onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'organization', e.target.value)}
-                            placeholder="소속"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">프로필 설명</label>
-                        <Textarea
-                          value={professor.profile}
-                          onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'profile', e.target.value)}
-                          placeholder="교수 프로필 정보"
-                          rows={3}
-                        />
-                      </div>
                     </div>
-                  ))}
-                  
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => addProfessor(sectionIndex)} 
-                    className="w-full flex items-center justify-center gap-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    교수 추가
-                  </Button>
-                </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">섹션 제목</label>
+                      <Input
+                        value={section.sectionTitle}
+                        onChange={(e) => handleSectionTitleChange(sectionIndex, e.target.value)}
+                        placeholder="섹션 제목 (예: 운영 교수진, 특별 강의 교수진 등)"
+                      />
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">교수 목록</h3>
+                        <p className="text-xs text-gray-500">각 항목은 '교수 # - 이름 - 직위'가 한 세트로 구성됩니다</p>
+                      </div>
+                      
+                      {section.professors.map((professor, professorIndex) => (
+                        <div key={professorIndex} className="border p-4 rounded-md space-y-4 bg-gray-50">
+                          <div className="flex justify-between items-center">
+                            <h3 className="font-medium">교수 #{professorIndex + 1}</h3>
+                            <Button 
+                              type="button" 
+                              variant="destructive" 
+                              onClick={() => removeProfessor(sectionIndex, professorIndex)}
+                              disabled={section.professors.length <= 1 || isLoading}
+                              size="sm"
+                            >
+                              삭제
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">이름</label>
+                              <Input
+                                value={professor.name}
+                                onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'name', e.target.value)}
+                                placeholder="이름"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">직위</label>
+                              <Input
+                                value={professor.position}
+                                onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'position', e.target.value)}
+                                placeholder="직위 (예: 교수, 부교수 등)"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">소속</label>
+                              <Input
+                                value={professor.organization}
+                                onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'organization', e.target.value)}
+                                placeholder="소속"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">프로필 설명</label>
+                            <Textarea
+                              value={professor.profile}
+                              onChange={(e) => handleProfessorChange(sectionIndex, professorIndex, 'profile', e.target.value)}
+                              placeholder="교수 프로필 정보"
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => addProfessor(sectionIndex)} 
+                        className="w-full flex items-center justify-center gap-2"
+                        disabled={isLoading}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="5" x2="12" y2="19"></line>
+                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        교수 추가
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={addSection} 
+                  className="w-full flex items-center justify-center gap-2"
+                  disabled={isLoading}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  새 섹션 추가
+                </Button>
               </div>
-            ))}
-            
-            <Button 
-              type="button" 
-              variant="secondary" 
-              onClick={addSection} 
-              className="w-full flex items-center justify-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              새 섹션 추가
-            </Button>
+            )}
           </CardContent>
-          <CardFooter>
-            <Button onClick={handleSave} disabled={isLoading} className="ml-auto">
-              {isLoading ? '저장 중...' : '저장하기'}
+          <CardFooter className="flex justify-end">
+            <Button 
+              onClick={handleSave} 
+              disabled={isLoading || sections.length === 0}
+            >
+              {isLoading ? (
+                <>
+                  <Loader className="mr-2 h-4 w-4 animate-spin" /> 저장 중...
+                </>
+              ) : "변경사항 저장"}
             </Button>
           </CardFooter>
         </Card>
