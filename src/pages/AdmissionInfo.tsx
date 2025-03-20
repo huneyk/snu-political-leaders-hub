@@ -168,9 +168,9 @@ const AdmissionInfo = () => {
               {/* 지원 방법 */}
               <motion.div variants={itemVariants} className="mb-12">
                 <h3 className="text-2xl font-bold text-mainBlue mb-6 pb-2 border-b border-gray-200">
-                  지원 방법
+                  지원 일정
                 </h3>
-                <p className="text-lg mb-4">{admissionInfo.applicationMethodContent}</p>
+                <p className="text-lg mb-4 whitespace-pre-wrap">{admissionInfo.applicationMethodContent}</p>
 
                 {/* 제출 서류 */}
                 <div className="bg-gray-50 p-6 rounded-lg mb-6">
@@ -213,7 +213,7 @@ const AdmissionInfo = () => {
               {admissionInfo.additionalItems && admissionInfo.additionalItems.length > 0 && (
                 <motion.div variants={itemVariants} className="mb-12">
                   <h3 className="text-2xl font-bold text-mainBlue mb-6 pb-2 border-b border-gray-200">
-                    특별 활동
+                    기타 사항
                   </h3>
                   <ul className="list-disc pl-6 mb-6 space-y-2">
                     {admissionInfo.additionalItems.map((item, index) => (

@@ -378,11 +378,11 @@ const AdmissionManage = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-4">
-            <Label className="mb-2 block">지원 방법 내용</Label>
+            <Label className="mb-2 block">지원 일정</Label>
             <Textarea 
               value={admissionInfo.applicationMethodContent}
               onChange={(e) => handleBasicInfoChange('applicationMethodContent', e.target.value)}
-              className="min-h-20"
+              className="min-h-20 whitespace-pre-wrap"
             />
           </div>
 
