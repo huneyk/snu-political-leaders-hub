@@ -6,6 +6,8 @@ import { apiService } from '@/lib/apiService';
 
 interface Recommendation {
   _id: string;
+  sectionTitle: string;
+  title: string;
   name: string;
   position: string;
   content: string;
@@ -115,6 +117,11 @@ const Recommendations = () => {
                     )}
                     
                     <div className={`flex-1 ${!recommendation.imageUrl ? 'md:pl-0' : ''}`}>
+                      {recommendation.title && (
+                        <h2 className="mb-3 text-xl font-bold text-gray-800" style={{ wordBreak: 'keep-all' }}>
+                          {recommendation.title}
+                        </h2>
+                      )}
                       <div className="mb-4 text-lg md:text-xl leading-relaxed text-gray-700 italic" style={{ wordBreak: 'keep-all' }}>
                         "{recommendation.content}"
                       </div>

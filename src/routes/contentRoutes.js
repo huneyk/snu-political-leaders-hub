@@ -490,7 +490,7 @@ router.get('/schedules/all', authenticateToken, async (req, res) => {
 
 router.post('/schedules', authenticateToken, async (req, res) => {
   try {
-    const { title, date, term, year, sessions, isActive } = req.body;
+    const { title, date, term, year, sessions, isActive, category, time, location, description } = req.body;
     
     if (!title || !date || !term || !year) {
       return res.status(400).json({ message: '제목, 날짜, 기수, 년도는 필수 항목입니다.' });
@@ -501,6 +501,10 @@ router.post('/schedules', authenticateToken, async (req, res) => {
       date: new Date(date),
       term,
       year,
+      category: category || 'academic',
+      time,
+      location,
+      description,
       sessions: sessions || [],
       isActive: isActive !== undefined ? isActive : true
     });
@@ -515,7 +519,7 @@ router.post('/schedules', authenticateToken, async (req, res) => {
 
 router.put('/schedules/:id', authenticateToken, async (req, res) => {
   try {
-    const { title, date, term, year, sessions, isActive } = req.body;
+    const { title, date, term, year, sessions, isActive, category, time, location, description } = req.body;
     
     if (!title || !date || !term || !year) {
       return res.status(400).json({ message: '제목, 날짜, 기수, 년도는 필수 항목입니다.' });
@@ -528,6 +532,10 @@ router.put('/schedules/:id', authenticateToken, async (req, res) => {
         date: new Date(date),
         term,
         year,
+        category: category || 'academic',
+        time,
+        location,
+        description,
         sessions: sessions || [],
         isActive: isActive !== undefined ? isActive : true
       },

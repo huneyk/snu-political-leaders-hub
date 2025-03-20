@@ -742,13 +742,13 @@ const FacultyManage = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={terms[activeTermIndex]?.term || '1'} className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">기수 선택</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium text-lg text-mainBlue">기수 선택</h3>
               <Button 
                 onClick={addTerm} 
                 variant="outline" 
                 size="sm"
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -758,53 +758,49 @@ const FacultyManage = () => {
               </Button>
             </div>
             
-            <TabsList className="w-full overflow-x-auto flex-wrap">
-              {terms.map((term, index) => (
-                <div key={index} className="flex items-center">
-                  <TabsTrigger 
-                    value={term.term} 
-                    onClick={() => setActiveTermIndex(index)}
-                    className="flex-shrink-0"
-                  >
-                    {index + 1}기
-                  </TabsTrigger>
-                  {terms.length > 1 && (
-                    <Button 
-                      onClick={() => removeTerm(index)} 
-                      variant="ghost" 
-                      size="sm"
-                      className="h-6 w-6 p-0 ml-1 text-gray-400 hover:text-red-500"
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
+              <p className="text-sm text-slate-600 mb-3">현재 선택된 기수: <span className="font-bold text-mainBlue">{activeTermIndex + 1}기</span></p>
+              
+              <TabsList className="w-full overflow-x-auto flex-wrap bg-white p-2 rounded-xl border border-mainBlue/20 shadow-sm">
+                {terms.map((term, index) => (
+                  <div key={index} className="flex items-center m-1">
+                    <TabsTrigger 
+                      value={term.term} 
+                      onClick={() => setActiveTermIndex(index)}
+                      className="flex-shrink-0 px-8 py-3 text-base font-semibold rounded-lg data-[state=active]:bg-mainBlue data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 border-2 border-transparent data-[state=active]:border-mainBlue"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                      </svg>
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </TabsList>
+                      {index + 1}기
+                    </TabsTrigger>
+                    {terms.length > 1 && (
+                      <Button 
+                        onClick={() => removeTerm(index)} 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-6 w-6 p-0 ml-1 text-gray-400 hover:text-red-500"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </TabsList>
+            </div>
             
             {terms.map((term, termIndex) => (
               <TabsContent key={termIndex} value={term.term} className="space-y-6">
                 {/* 카테고리 선택 */}
                 <div className="space-y-4">
                   <div className="mb-4">
-                    <h3 className="text-lg font-semibold mb-2">카테고리 선택</h3>
-                    <p className="text-sm text-gray-500 mb-2">
+                    <h3 className="text-lg font-semibold mb-2 text-mainBlue">카테고리 선택</h3>
+                    <p className="text-sm text-gray-500 mb-3">
                       아래 버튼을 클릭하여 입력할 강사진 카테고리를 선택하세요.
                     </p>
-                    <p className="text-xs text-blue-500 mb-2">
-                      현재 선택된 카테고리: {selectedCategory?.name || '없음'} (인덱스: {activeCategoryIndex})
-                    </p>
-                    <p className="text-xs text-red-500 mb-2">
-                      카테고리 수: {term.categories?.length || 0}
-                    </p>
-                    {term.categories?.map((cat, idx) => (
-                      <p key={idx} className="text-xs text-gray-500">
-                        카테고리 {idx+1}: {cat.name} (ID: {cat.id})
-                      </p>
-                    ))}
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-3">
+                      <p className="text-sm text-slate-600">현재 선택된 카테고리: <span className="font-bold text-mainBlue">{selectedCategory?.name || '없음'}</span></p>
+                    </div>
                   </div>
                   
                   {/* 카테고리 버튼 */}
@@ -816,8 +812,8 @@ const FacultyManage = () => {
                           type="button"
                           className={`py-5 px-6 rounded-lg text-center transition-all text-lg border-2 ${
                             activeCategoryIndex === categoryIndex 
-                              ? 'bg-mainBlue text-white font-bold shadow-lg border-mainBlue' 
-                              : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-200'
+                              ? 'bg-mainBlue text-white font-bold shadow-md border-mainBlue ring-2 ring-mainBlue/30' 
+                              : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-200 hover:border-mainBlue/30'
                           }`}
                           onClick={() => {
                             console.log('카테고리 버튼 클릭:', categoryIndex, category.name);
@@ -832,6 +828,9 @@ const FacultyManage = () => {
                             });
                           }}
                         >
+                          {activeCategoryIndex === categoryIndex && (
+                            <span className="inline-block mr-2 w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                          )}
                           {category.name}
                         </button>
                       ))
@@ -848,18 +847,6 @@ const FacultyManage = () => {
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <h3 className="font-medium">{selectedCategory.name} 목록</h3>
-                          <Button 
-                            onClick={() => addFaculty(activeTermIndex, activeCategoryIndex)} 
-                            variant="outline" 
-                            size="sm"
-                            className="flex items-center gap-1"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <line x1="12" y1="5" x2="12" y2="19"></line>
-                              <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                            강사 추가
-                          </Button>
                         </div>
                         
                         {selectedCategory.faculty.map((faculty, facultyIndex) => (
@@ -951,7 +938,20 @@ const FacultyManage = () => {
             ))}
           </Tabs>
         </CardContent>
-        <CardFooter className="flex justify-end">
+        <CardFooter className="flex justify-between">
+          {selectedCategory && (
+            <Button 
+              onClick={() => addFaculty(activeTermIndex, activeCategoryIndex)}
+              variant="outline"
+              className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 font-medium border-0 flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>강사 추가</span>
+            </Button>
+          )}
           <Button 
             onClick={handleSave} 
             disabled={isSaving}

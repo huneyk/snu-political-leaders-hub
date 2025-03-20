@@ -275,37 +275,48 @@ const ScheduleCalendar: React.FC = () => {
                       {daySchedules.length > 0 ? (
                         <div className="space-y-4">
                           {daySchedules.map(schedule => (
-                            <div key={schedule._id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                            <div key={schedule._id} className="p-4 border rounded-lg hover:shadow-md transition-shadow bg-white">
                               <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-lg font-semibold text-blue-800">{schedule.title}</h3>
                                 <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">
                                   {getCategoryName(schedule.category)}
                                 </span>
                               </div>
-                              <div className="grid grid-cols-1 gap-3 text-sm">
-                                <div className="flex flex-wrap gap-4 mb-2">
+                              <div className="grid grid-cols-1 gap-3">
+                                <div className="flex flex-col space-y-2">
                                   {schedule.time && (
                                     <div className="flex items-center text-gray-700">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                       </svg>
-                                      <p><span className="font-medium">시간:</span> {schedule.time}</p>
+                                      <p className="text-sm md:text-base"><span className="font-medium">시간:</span> {schedule.time}</p>
                                     </div>
                                   )}
                                   {schedule.location && (
                                     <div className="flex items-center text-gray-700">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                       </svg>
-                                      <p><span className="font-medium">장소:</span> {schedule.location}</p>
+                                      <p className="text-sm md:text-base"><span className="font-medium">장소:</span> {schedule.location}</p>
                                     </div>
                                   )}
                                 </div>
                                 {schedule.description && (
-                                  <div className="mt-2 border-t pt-2">
-                                    <p className="whitespace-pre-line text-gray-700">{schedule.description}</p>
+                                  <div className="mt-2 border-t pt-3">
+                                    <div className="flex items-start">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                      </svg>
+                                      <div>
+                                        <p className="font-medium text-sm md:text-base mb-1 text-gray-700">내용:</p>
+                                        <p className="whitespace-pre-line text-gray-700 text-sm md:text-base bg-gray-50 p-2 rounded">{schedule.description}</p>
+                                      </div>
+                                    </div>
                                   </div>
+                                )}
+                                {!schedule.time && !schedule.location && !schedule.description && (
+                                  <div className="mt-2 py-2"></div>
                                 )}
                               </div>
                             </div>
@@ -328,7 +339,7 @@ const ScheduleCalendar: React.FC = () => {
                     {upcomingSchedules.length > 0 ? (
                       <div className="space-y-4">
                         {upcomingSchedules.map(schedule => (
-                          <div key={schedule._id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                          <div key={schedule._id} className="p-4 border rounded-lg hover:shadow-md transition-shadow bg-white">
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
                               <div className="flex items-center space-x-2">
                                 <h3 className="text-lg font-semibold text-blue-800">{schedule.title}</h3>
@@ -338,30 +349,41 @@ const ScheduleCalendar: React.FC = () => {
                               </div>
                               <p className="font-medium text-gray-600 mt-1 md:mt-0">{formatDate(schedule.date)}</p>
                             </div>
-                            <div className="grid grid-cols-1 gap-3 text-sm">
-                              <div className="flex flex-wrap gap-4 mb-2">
+                            <div className="grid grid-cols-1 gap-3">
+                              <div className="flex flex-col space-y-2">
                                 {schedule.time && (
                                   <div className="flex items-center text-gray-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <p><span className="font-medium">시간:</span> {schedule.time}</p>
+                                    <p className="text-sm md:text-base"><span className="font-medium">시간:</span> {schedule.time}</p>
                                   </div>
                                 )}
                                 {schedule.location && (
                                   <div className="flex items-center text-gray-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
-                                    <p><span className="font-medium">장소:</span> {schedule.location}</p>
+                                    <p className="text-sm md:text-base"><span className="font-medium">장소:</span> {schedule.location}</p>
                                   </div>
                                 )}
                               </div>
                               {schedule.description && (
-                                <div className="mt-2 border-t pt-2">
-                                  <p className="whitespace-pre-line text-gray-700">{schedule.description}</p>
+                                <div className="mt-2 border-t pt-3">
+                                  <div className="flex items-start">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <div>
+                                      <p className="font-medium text-sm md:text-base mb-1 text-gray-700">내용:</p>
+                                      <p className="whitespace-pre-line text-gray-700 text-sm md:text-base bg-gray-50 p-2 rounded">{schedule.description}</p>
+                                    </div>
+                                  </div>
                                 </div>
+                              )}
+                              {!schedule.time && !schedule.location && !schedule.description && (
+                                <div className="mt-2 py-2"></div>
                               )}
                             </div>
                           </div>

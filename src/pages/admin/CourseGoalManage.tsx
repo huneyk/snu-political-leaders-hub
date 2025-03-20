@@ -174,8 +174,36 @@ const CourseGoalManage = () => {
     ]);
   };
   
-  const removeObjective = (index: number) => {
+  const removeObjective = async (index: number) => {
     if (objectives.length <= 1) return;
+    
+    const objectiveToRemove = objectives[index];
+    
+    // If the objective has an ID, it exists in the database and needs to be deleted
+    if (objectiveToRemove._id) {
+      try {
+        await axios.delete(`${API_BASE_URL}/content/objectives/${objectiveToRemove._id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        toast({
+          title: "삭제 완료",
+          description: "목표가 성공적으로 삭제되었습니다.",
+        });
+      } catch (error) {
+        console.error('Failed to delete objective:', error);
+        toast({
+          title: "삭제 실패",
+          description: "서버에서 목표를 삭제하는데 실패했습니다.",
+          variant: "destructive"
+        });
+        return; // 삭제 실패 시 함수 종료
+      }
+    }
+    
+    // Update local state
     const newObjectives = objectives.filter((_, i) => i !== index);
     
     // 순서 재정렬
@@ -347,7 +375,12 @@ const CourseGoalManage = () => {
                         <Button 
                           type="button" 
                           variant="destructive" 
-                          onClick={() => removeObjective(index)}
+                          onClick={async () => {
+                            // Display a confirmation dialog
+                            if (window.confirm('정말로 이 목표를 삭제하시겠습니까?')) {
+                              await removeObjective(index);
+                            }
+                          }}
                           disabled={objectives.length <= 1}
                           size="sm"
                         >
