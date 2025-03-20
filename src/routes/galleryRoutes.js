@@ -1,6 +1,6 @@
-const express = require('express');
-const Gallery = require('../models/Gallery');
-const { isAdmin } = require('../middleware/authMiddleware');
+import express from 'express';
+import Gallery from '../models/Gallery.js';
+import { isAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -26,75 +26,75 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const galleryItem = await Gallery.findById(req.params.id);
-    if (!galleryItem) {
-      return res.status(404).json({ message: '갤러리 아이템을 찾을 수 없습니다.' });
+    const gallery = await Gallery.findById(req.params.id);
+    if (!gallery) {
+      return res.status(404).json({ message: '갤러리 항목을 찾을 수 없습니다.' });
     }
-    res.json(galleryItem);
+    res.json(gallery);
   } catch (error) {
-    console.error('갤러리 아이템 조회 실패:', error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    console.error('갤러리 항목 조회 오류:', error);
+    res.status(500).json({ message: '갤러리 항목을 불러오는 중 오류가 발생했습니다.' });
   }
 });
 
 /**
  * @route   POST /api/gallery
  * @desc    새 갤러리 아이템 추가
- * @access  Private
+ * @access  Private/Admin
  */
 router.post('/', isAdmin, async (req, res) => {
   try {
-    const galleryItem = new Gallery(req.body);
-    const savedItem = await galleryItem.save();
-    res.status(201).json(savedItem);
+    const newGallery = new Gallery(req.body);
+    await newGallery.save();
+    res.status(201).json(newGallery);
   } catch (error) {
     console.error('갤러리 항목 생성 오류:', error);
-    res.status(500).json({ message: '갤러리 항목을 생성하는 중 오류가 발생했습니다.' });
+    res.status(500).json({ message: '갤러리 항목 생성 중 오류가 발생했습니다.' });
   }
 });
 
 /**
  * @route   PUT /api/gallery/:id
- * @desc    갤러리 아이템 수정
- * @access  Private
+ * @desc    갤러리 아이템 업데이트
+ * @access  Private/Admin
  */
 router.put('/:id', isAdmin, async (req, res) => {
   try {
-    const updatedItem = await Gallery.findByIdAndUpdate(
+    const gallery = await Gallery.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
     
-    if (!updatedItem) {
-      return res.status(404).json({ message: '해당 갤러리 항목을 찾을 수 없습니다.' });
+    if (!gallery) {
+      return res.status(404).json({ message: '갤러리 항목을 찾을 수 없습니다.' });
     }
     
-    res.json(updatedItem);
+    res.json(gallery);
   } catch (error) {
-    console.error('갤러리 항목 수정 오류:', error);
-    res.status(500).json({ message: '갤러리 항목을 수정하는 중 오류가 발생했습니다.' });
+    console.error('갤러리 항목 업데이트 오류:', error);
+    res.status(500).json({ message: '갤러리 항목 업데이트 중 오류가 발생했습니다.' });
   }
 });
 
 /**
  * @route   DELETE /api/gallery/:id
  * @desc    갤러리 아이템 삭제
- * @access  Private
+ * @access  Private/Admin
  */
 router.delete('/:id', isAdmin, async (req, res) => {
   try {
-    const deletedItem = await Gallery.findByIdAndDelete(req.params.id);
+    const gallery = await Gallery.findByIdAndDelete(req.params.id);
     
-    if (!deletedItem) {
-      return res.status(404).json({ message: '해당 갤러리 항목을 찾을 수 없습니다.' });
+    if (!gallery) {
+      return res.status(404).json({ message: '갤러리 항목을 찾을 수 없습니다.' });
     }
     
     res.json({ message: '갤러리 항목이 성공적으로 삭제되었습니다.' });
   } catch (error) {
     console.error('갤러리 항목 삭제 오류:', error);
-    res.status(500).json({ message: '갤러리 항목을 삭제하는 중 오류가 발생했습니다.' });
+    res.status(500).json({ message: '갤러리 항목 삭제 중 오류가 발생했습니다.' });
   }
 });
 
-module.exports = router; 
+export default router; 

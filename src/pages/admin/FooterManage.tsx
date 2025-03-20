@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
 import axios from 'axios';
 
 // API 기본 URL 설정
@@ -24,7 +23,6 @@ interface FooterConfig {
 
 const FooterManage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, token } = useAdminAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [footerConfig, setFooterConfig] = useState<FooterConfig>({
@@ -41,24 +39,27 @@ const FooterManage: React.FC = () => {
 
   // Admin 인증 체크
   useEffect(() => {
-    // 컴포넌트 마운트 시 한 번만 체크
-    const checkAuth = async () => {
-      if (!isAuthenticated) {
-        navigate('/admin/login');
-        return;
-      }
+    const checkAuth = () => {
+      const token = localStorage.getItem('adminToken');
+      const adminAuth = localStorage.getItem('adminAuth');
       
-      // 인증된 경우에만 데이터 로드
-      await loadFooterConfig();
+      console.log('인증 체크:', { token, adminAuth });
+      
+      // token이 있거나 adminAuth가 'true'인 경우 접근 허용
+      if (!token && adminAuth !== 'true') {
+        console.log('인증 실패: 로그인 페이지로 이동');
+        navigate('/admin/login');
+      } else {
+        console.log('인증 성공: Footer 관리 페이지 접근 허용');
+        loadFooterConfig();
+      }
     };
     
     checkAuth();
-  }, [isAuthenticated, navigate]);
+  }, []); // 빈 의존성 배열
 
   // MongoDB에서 footer 설정 로드
   const loadFooterConfig = async () => {
-    if (!token) return;
-    
     try {
       setIsLoading(true);
       const response = await axios.get(`${API_BASE_URL}/footer`);
@@ -178,15 +179,7 @@ const FooterManage: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!token) {
-      toast({
-        title: "인증 오류",
-        description: "관리자 인증이 필요합니다. 다시 로그인해주세요.",
-        variant: "destructive",
-      });
-      navigate('/admin/login');
-      return;
-    }
+    const authToken = localStorage.getItem('adminToken') || 'admin-auth';
     
     setIsSaving(true);
     
@@ -195,7 +188,7 @@ const FooterManage: React.FC = () => {
       const response = await axios.post(`${API_BASE_URL}/footer`, footerConfig, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${authToken}`
         }
       });
       
