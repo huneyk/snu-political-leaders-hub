@@ -18,9 +18,17 @@ export const apiService = {
   getGreeting: async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/greeting`);
+      console.log('Greeting API Response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching greeting data:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
       throw error;
     }
   },
@@ -29,9 +37,17 @@ export const apiService = {
   getRecommendations: async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/content/recommendations`);
+      console.log('Recommendations API Response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching recommendations data:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
       throw error;
     }
   },
@@ -40,9 +56,17 @@ export const apiService = {
   getObjectives: async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/content/objectives`);
+      console.log('Objectives API Response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching objectives data:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
       throw error;
     }
   },
@@ -51,9 +75,17 @@ export const apiService = {
   getBenefits: async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/content/benefits`);
+      console.log('Benefits API Response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching benefits data:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
       throw error;
     }
   },
@@ -62,9 +94,17 @@ export const apiService = {
   getProfessors: async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/content/professors`);
+      console.log('Professors API Response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching professors data:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
       throw error;
     }
   },
@@ -226,9 +266,112 @@ export const apiService = {
   getGallery: async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/gallery`);
+      console.log('Gallery API Response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching gallery data:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      throw error;
+    }
+  },
+
+  // 갤러리 항목 추가
+  createGalleryItem: async (galleryData: any, token: string) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/gallery`, galleryData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      console.log('Create Gallery Item Response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating gallery item:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      throw error;
+    }
+  },
+
+  // 갤러리 항목 수정
+  updateGalleryItem: async (id: string, galleryData: any, token: string) => {
+    try {
+      const response = await axios.put(`${API_BASE_URL}/gallery/${id}`, galleryData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      console.log('Update Gallery Item Response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating gallery item with id ${id}:`, error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      throw error;
+    }
+  },
+
+  // 갤러리 항목 삭제
+  deleteGalleryItem: async (id: string, token: string) => {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/gallery/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      console.log('Delete Gallery Item Response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error deleting gallery item with id ${id}:`, error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      throw error;
+    }
+  },
+
+  // 갤러리 항목 일괄 생성
+  createBulkGalleryItems: async (items: any[], token: string) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/gallery/bulk`, items, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      console.log('Create Bulk Gallery Items Response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating bulk gallery items:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
       throw error;
     }
   },

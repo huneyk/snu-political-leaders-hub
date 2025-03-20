@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const gallerySchema = new mongoose.Schema({
   title: {
-    type: String,
+    type: String, 
     required: true,
     trim: true
   },
@@ -31,9 +31,7 @@ const gallerySchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-}, { 
-  timestamps: true 
-});
+}, { timestamps: true });
 
 // 날짜 순 정렬을 위한 인덱스
 gallerySchema.index({ date: -1 });

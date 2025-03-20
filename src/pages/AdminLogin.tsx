@@ -23,19 +23,25 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     console.log('로그인 시도:', { username });
-    console.log('API 엔드포인트:', `${API_BASE_URL}/auth/admin/login`);
+    console.log('API 엔드포인트:', `${API_BASE_URL}/auth/login`);
 
     try {
       // API를 통한 실제 로그인 처리
-      const response = await axios.post(`${API_BASE_URL}/auth/admin/login`, {
-        username,
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+        email: username,
         password
       });
       
       console.log('로그인 응답:', response.data);
       
       if (response.data && response.data.token) {
+        // 토큰과 인증 상태를 localStorage에 저장
+        localStorage.setItem('adminToken', response.data.token);
+        localStorage.setItem('adminAuth', 'true');
+        
+        // useAdminAuth의 login 함수 호출
         login(response.data.token);
+        
         toast({
           title: "로그인 성공",
           description: "관리자 대시보드로 이동합니다.",

@@ -9,41 +9,44 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { apiService } from '@/lib/apiService';
 
 interface GalleryItem {
-  id: string;
+  _id?: string;
   title: string;
   description: string;
   imageUrl: string;
   date: string;
-  term: string;
+  term: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // 기본 샘플 데이터
 const DEFAULT_GALLERY_ITEMS: GalleryItem[] = [
   {
-    id: '1',
+    _id: '1',
     title: '입학식',
     description: '2023년 봄학기 입학식 현장',
-    imageUrl: 'https://placehold.co/600x400?text=입학식',
+    imageUrl: 'data:image/jpeg;base64,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',
     date: new Date(2023, 2, 2).toISOString(),
-    term: '1',
+    term: 1,
   },
   {
-    id: '2',
+    _id: '2',
     title: '특별 강연',
     description: '국제 정치 특별 강연 세미나',
-    imageUrl: 'https://placehold.co/600x400?text=특별강연',
+    imageUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCABkAGQDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD0S7ukt49znnsBVVWkuX3OcL2HSiigDRt1VUAAxVXUbeadCLaXy5AeR3HsaKKAK1vp1xGdzXbFT12g0s1pNM25rxwPRQBRRQA6GxQffZ3x3atio4bZYwMZJooqZNt3A//Z',
     date: new Date(2023, 3, 15).toISOString(),
-    term: '1',
+    term: 1,
   },
   {
-    id: '3',
+    _id: '3',
     title: '워크샵',
     description: '리더십 개발 워크샵',
-    imageUrl: 'https://placehold.co/600x400?text=워크샵',
+    imageUrl: 'data:image/jpeg;base64,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',
     date: new Date(2023, 4, 10).toISOString(),
-    term: '2',
+    term: 2,
   },
 ];
 
@@ -51,7 +54,7 @@ const GalleryManage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(DEFAULT_GALLERY_ITEMS);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -71,9 +74,22 @@ const GalleryManage = () => {
   // Admin 인증 체크
   useEffect(() => {
     const checkAuth = () => {
-      const auth = localStorage.getItem('adminAuth');
-      if (auth !== 'true') {
+      const token = localStorage.getItem('adminToken');
+      const adminAuth = localStorage.getItem('adminAuth');
+      
+      console.log('인증 체크:', { token, adminAuth });
+      
+      // token이 있거나 adminAuth가 'true'인 경우 접근 허용
+      if (!token && adminAuth !== 'true') {
+        console.log('인증 실패: 로그인 페이지로 이동');
         navigate('/admin/login');
+      } else {
+        console.log('인증 성공: 갤러리 관리 페이지 접근 허용');
+        
+        // 인증 성공 시 초기 기수값 설정
+        if (selectedItem && selectedItem.term) {
+          setSelectedTerm(selectedItem.term.toString());
+        }
       }
     };
     
@@ -98,32 +114,31 @@ const GalleryManage = () => {
 
   // 갤러리 데이터 로드
   useEffect(() => {
-    const loadGalleryItems = () => {
-      const storedItems = localStorage.getItem('galleryItems');
-      console.log('관리자 페이지 - 로컬 스토리지에서 불러온 데이터:', storedItems);
-      
-      if (storedItems) {
-        try {
-          const parsedItems = JSON.parse(storedItems);
-          console.log('관리자 페이지 - 파싱된 갤러리 아이템:', parsedItems);
+    const loadGalleryItems = async () => {
+      try {
+        console.log('갤러리 데이터 로드 시작');
+        const response = await apiService.getGallery();
+        console.log('API 응답:', response);
+        
+        if (response && Array.isArray(response) && response.length > 0) {
+          // 날짜 기준 내림차순 정렬 (최신순)
+          const sortedItems = response.sort((a: GalleryItem, b: GalleryItem) => 
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
           
-          if (parsedItems && Array.isArray(parsedItems) && parsedItems.length > 0) {
-            // 날짜 기준 내림차순 정렬 (최신순)
-            const sortedItems = parsedItems.sort((a: GalleryItem, b: GalleryItem) => 
-              new Date(b.date).getTime() - new Date(a.date).getTime()
-            );
-            
-            setGalleryItems(sortedItems);
-          } else {
-            console.log('관리자 페이지 - 파싱된 데이터가 비어있거나 배열이 아닙니다. 샘플 데이터를 생성합니다.');
-            createSampleData();
-          }
-        } catch (error) {
-          console.error('Failed to parse gallery data:', error);
+          setGalleryItems(sortedItems);
+          console.log('갤러리 데이터 로드 완료:', sortedItems.length, '개 항목');
+        } else {
+          console.log('API에서 받은 데이터가 비어있습니다. 샘플 데이터를 생성합니다.');
           createSampleData();
         }
-      } else {
-        console.log('관리자 페이지 - 저장된 갤러리 데이터가 없습니다. 샘플 데이터를 생성합니다.');
+      } catch (error) {
+        console.error('갤러리 데이터 로드 실패:', error);
+        toast({
+          title: "데이터 로드 실패",
+          description: "갤러리 데이터를 불러오는 중 오류가 발생했습니다. 샘플 데이터를 사용합니다.",
+          variant: "destructive",
+        });
         createSampleData();
       }
     };
@@ -132,47 +147,100 @@ const GalleryManage = () => {
   }, []);
 
   // 샘플 데이터 생성 함수
-  const createSampleData = () => {
-    // 샘플 데이터 사용
-    console.log('관리자 페이지 - 샘플 데이터 생성:', DEFAULT_GALLERY_ITEMS);
-    
-    // 로컬 스토리지에 저장 - 이 데이터는 갤러리 페이지에서도 사용됨
-    localStorage.setItem('galleryItems', JSON.stringify(DEFAULT_GALLERY_ITEMS));
-    
-    // 현재 관리자 페이지의 상태 업데이트
-    setGalleryItems(DEFAULT_GALLERY_ITEMS);
-    
-    toast({
-      title: "샘플 데이터 생성",
-      description: "갤러리 샘플 데이터가 생성되었습니다. 갤러리 페이지에서 확인할 수 있습니다.",
-    });
+  const createSampleData = async () => {
+    try {
+      console.log('샘플 데이터 생성 시작');
+      
+      // 서버에 샘플 데이터 저장 시도
+      for (const item of DEFAULT_GALLERY_ITEMS) {
+        const itemToCreate = {
+          ...item,
+          _id: undefined // _id는 MongoDB가 자동 생성하도록 제거
+        };
+        // 관리자 권한으로 API 호출
+        await apiService.createGalleryItem(itemToCreate, 'admin-auth');
+      }
+      
+      // 다시 데이터 로드
+      const response = await apiService.getGallery();
+      setGalleryItems(response);
+      
+      toast({
+        title: "샘플 데이터 생성",
+        description: "갤러리 샘플 데이터가 생성되었습니다.",
+      });
+      
+      console.log('샘플 데이터 생성 완료');
+    } catch (error) {
+      console.error('샘플 데이터 생성 실패:', error);
+      // 실패 시 로컬 상태에만 적용
+      setGalleryItems(DEFAULT_GALLERY_ITEMS);
+      
+      toast({
+        title: "샘플 데이터 생성 실패",
+        description: "서버에 샘플 데이터를 저장하는데 실패했습니다. 로컬에서만 표시됩니다.",
+        variant: "destructive",
+      });
+    }
   };
 
   // 디버깅용 함수: 갤러리 데이터 초기화
-  const resetGalleryData = () => {
-    localStorage.removeItem('galleryItems');
-    console.log('갤러리 데이터가 초기화되었습니다.');
-    createSampleData();
-    
-    toast({
-      title: "데이터 초기화",
-      description: "갤러리 데이터가 초기화되고 샘플 데이터가 생성되었습니다.",
-    });
-    
-    return '갤러리 데이터가 초기화되고 샘플 데이터가 생성되었습니다.';
+  const resetGalleryData = async () => {
+    try {
+      // 모든 갤러리 항목 가져오기
+      const items = await apiService.getGallery();
+      
+      // 각 항목 삭제
+      for (const item of items) {
+        if (item._id) {
+          await apiService.deleteGalleryItem(item._id, 'admin-auth');
+        }
+      }
+      
+      setGalleryItems([]);
+      
+      toast({
+        title: "데이터 초기화",
+        description: "갤러리 데이터가 초기화되었습니다.",
+      });
+      
+      return '갤러리 데이터가 초기화되었습니다.';
+    } catch (error) {
+      console.error('데이터 초기화 실패:', error);
+      
+      toast({
+        title: "데이터 초기화 실패",
+        description: "갤러리 데이터 초기화 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+      
+      return '갤러리 데이터 초기화 실패';
+    }
   };
 
   // 디버깅용 함수: 갤러리 데이터 확인
-  const checkGalleryData = () => {
-    const storedItems = localStorage.getItem('galleryItems');
-    console.log('현재 갤러리 데이터:', storedItems);
-    
-    toast({
-      title: "데이터 확인",
-      description: `현재 ${storedItems ? JSON.parse(storedItems).length : 0}개의 갤러리 항목이 있습니다.`,
-    });
-    
-    return storedItems;
+  const checkGalleryData = async () => {
+    try {
+      const items = await apiService.getGallery();
+      console.log('현재 갤러리 데이터:', items);
+      
+      toast({
+        title: "데이터 확인",
+        description: `현재 ${items ? items.length : 0}개의 갤러리 항목이 있습니다.`,
+      });
+      
+      return JSON.stringify(items);
+    } catch (error) {
+      console.error('데이터 확인 실패:', error);
+      
+      toast({
+        title: "데이터 확인 실패",
+        description: "갤러리 데이터를 확인하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+      
+      return '갤러리 데이터 확인 실패';
+    }
   };
 
   // 검색어로 필터링
@@ -202,6 +270,14 @@ const GalleryManage = () => {
       date: item.date ? new Date(item.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     });
     setEditPreviewImage(item.imageUrl);
+    
+    // 기수 값 설정
+    if (item.term) {
+      setSelectedTerm(item.term.toString());
+    } else {
+      setSelectedTerm('1');
+    }
+    
     setIsEditDialogOpen(true);
   };
 
@@ -213,149 +289,63 @@ const GalleryManage = () => {
     });
   };
 
-  // 이미지 리사이징 함수
-  const resizeImage = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      console.log('이미지 리사이징 시작:', file.name, file.type, file.size);
-      
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target?.result as string;
-        
-        img.onload = () => {
-          console.log('원본 이미지 크기:', img.width, 'x', img.height);
-          
-          // 이미지 리사이징을 위한 캔버스 생성
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          if (!ctx) {
-            reject(new Error('Canvas context not available'));
-            return;
-          }
-          
-          // 너비 1080px로 설정하고 종횡비 유지
-          const targetWidth = 1080;
-          const scaleFactor = targetWidth / img.width;
-          const targetHeight = Math.round(img.height * scaleFactor);
-          
-          console.log('리사이즈 후 크기:', targetWidth, 'x', targetHeight, '(비율:', scaleFactor, ')');
-          
-          canvas.width = targetWidth;
-          canvas.height = targetHeight;
-          
-          // 캔버스 초기화 (배경 투명하게)
-          ctx.clearRect(0, 0, targetWidth, targetHeight);
-          
-          // 이미지 그리기 (안티앨리어싱 적용)
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-          
-          // 이미지 포맷 결정 (원본이 PNG인 경우 PNG로, 그 외에는 JPEG로)
-          const outputFormat = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
-          const quality = outputFormat === 'image/png' ? 1.0 : 0.92; // PNG는 무손실, JPEG는 92% 품질
-          
-          // 리사이즈된 이미지를 base64 문자열로 변환
-          const resizedImage = canvas.toDataURL(outputFormat, quality);
-          
-          console.log('리사이징 완료:', outputFormat, '포맷, 품질:', quality);
-          
-          // base64 문자열 크기 확인 (디버깅용)
-          console.log('리사이즈된 이미지 크기(base64):', Math.round(resizedImage.length / 1024), 'KB');
-          
-          resolve(resizedImage);
-        };
-        
-        img.onerror = (error) => {
-          console.error('이미지 로드 실패:', error);
-          reject(new Error('Failed to load image'));
-        };
-      };
-      
-      reader.onerror = (error) => {
-        console.error('파일 읽기 실패:', error);
-        reject(new Error('Failed to read file'));
-      };
-    });
-  };
-
-  // 파일 선택 핸들러
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    const file = files[0];
-    
-    try {
-      setIsUploading(true);
-      console.log('이미지 업로드 시작:', file.name, file.type, file.size);
-      
-      // 이미지 리사이징
-      const resizedImageUrl = await resizeImage(file);
-      
-      // 미리보기 이미지 설정
-      setPreviewImage(resizedImageUrl);
-      
-      // 폼 데이터 업데이트
-      setFormData({
-        ...formData,
-        imageUrl: resizedImageUrl,
-      });
-      
-      console.log('이미지 업로드 완료');
-    } catch (error) {
-      console.error('이미지 업로드 실패:', error);
-      toast({
-        title: "이미지 업로드 실패",
-        description: "이미지 처리 중 오류가 발생했습니다. 다른 이미지를 시도해보세요.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
+  const handleFileClick = (isEdit: boolean = false) => {
+    if (isEdit && editFileInputRef.current) {
+      editFileInputRef.current.click();
+    } else if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
   };
 
-  // 수정용 파일 선택 핸들러
-  const handleEditFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    const file = files[0];
-    
-    try {
-      setIsUploading(true);
-      console.log('편집 이미지 업로드 시작:', file.name, file.type, file.size);
-      
-      // 이미지 리사이징
-      const resizedImageUrl = await resizeImage(file);
-      
-      // 미리보기 이미지 설정
-      setEditPreviewImage(resizedImageUrl);
-      
-      // 폼 데이터 업데이트
-      setFormData({
-        ...formData,
-        imageUrl: resizedImageUrl,
-      });
-      
-      console.log('편집 이미지 업로드 완료');
-    } catch (error) {
-      console.error('편집 이미지 업로드 실패:', error);
-      toast({
-        title: "이미지 업로드 실패",
-        description: "이미지 처리 중 오류가 발생했습니다. 다른 이미지를 시도해보세요.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      // 이미지 리사이징 처리
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // 너비가 1200px을 초과하는 경우에만 리사이징
+        const maxWidth = 1200;
+        if (width > maxWidth) {
+          const ratio = maxWidth / width;
+          width = maxWidth;
+          height = Math.round(height * ratio);
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // 리사이징된 이미지를 Base64로 변환
+        const resizedBase64 = canvas.toDataURL('image/jpeg', 0.7); // 압축률 0.7
+        
+        if (isEdit) {
+          setFormData({
+            ...formData,
+            imageUrl: resizedBase64
+          });
+          setEditPreviewImage(resizedBase64);
+        } else {
+          setFormData({
+            ...formData,
+            imageUrl: resizedBase64
+          });
+          setPreviewImage(resizedBase64);
+        }
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (!formData.title || !formData.imageUrl) {
       toast({
         title: "필수 정보 누락",
@@ -365,42 +355,64 @@ const GalleryManage = () => {
       return;
     }
     
+    // 숫자로 변환 시 유효성 검사
+    const termValue = parseInt(selectedTerm, 10);
+    if (isNaN(termValue) || termValue < 1) {
+      toast({
+        title: "기수 입력 오류",
+        description: "기수는 1 이상의 숫자여야 합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const newItem: GalleryItem = {
-      id: Date.now().toString(),
       title: formData.title,
       description: formData.description,
-      imageUrl: formData.imageUrl,
-      term: selectedTerm,
+      imageUrl: formData.imageUrl, // 이미 Base64 형식
+      term: termValue, // 문자열에서 숫자로 변환
       date: new Date(formData.date).toISOString(),
     };
     
-    const updatedItems = [...galleryItems, newItem];
-    
-    // 날짜 기준 내림차순 정렬
-    const sortedItems = updatedItems.sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    
-    localStorage.setItem('galleryItems', JSON.stringify(sortedItems));
-    setGalleryItems(sortedItems);
-    
-    setIsAddDialogOpen(false);
-    setPreviewImage(null);
-    setFormData({
-      title: '',
-      description: '',
-      imageUrl: '',
-      date: new Date().toISOString().split('T')[0],
-    });
-    
-    toast({
-      title: "갤러리 항목 추가",
-      description: "새로운 갤러리 항목이 성공적으로 추가되었습니다.",
-    });
+    try {
+      // 서버에 새 항목 추가
+      const createdItem = await apiService.createGalleryItem(newItem, 'admin-auth');
+      
+      // 상태 업데이트
+      const updatedItems = [...galleryItems, createdItem];
+      
+      // 날짜 기준 내림차순 정렬
+      const sortedItems = updatedItems.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      
+      setGalleryItems(sortedItems);
+      
+      setIsAddDialogOpen(false);
+      setPreviewImage(null);
+      setFormData({
+        title: '',
+        description: '',
+        imageUrl: '',
+        date: new Date().toISOString().split('T')[0],
+      });
+      
+      toast({
+        title: "갤러리 항목 추가",
+        description: "새로운 갤러리 항목이 성공적으로 추가되었습니다.",
+      });
+    } catch (error) {
+      console.error('갤러리 항목 추가 실패:', error);
+      toast({
+        title: "항목 추가 실패",
+        description: "새 갤러리 항목을 저장하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleSaveChanges = () => {
-    if (!selectedItem) return;
+  const handleSaveChanges = async () => {
+    if (!selectedItem || !selectedItem._id) return;
     
     if (!formData.imageUrl) {
       toast({
@@ -411,49 +423,84 @@ const GalleryManage = () => {
       return;
     }
     
+    // 숫자로 변환 시 유효성 검사
+    const termValue = parseInt(selectedTerm, 10);
+    if (isNaN(termValue) || termValue < 1) {
+      toast({
+        title: "기수 입력 오류",
+        description: "기수는 1 이상의 숫자여야 합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // 날짜 형식 변환 및 기존 기수 정보 유지
     const updatedItem: GalleryItem = {
       ...selectedItem,
       title: formData.title,
       description: formData.description,
-      imageUrl: formData.imageUrl,
+      imageUrl: formData.imageUrl, // 이미 Base64 형식
       date: new Date(formData.date).toISOString(),
-      term: selectedTerm,
+      term: termValue, // 문자열에서 숫자로 변환
     };
     
-    const updatedItems = galleryItems.map((item) =>
-      item.id === selectedItem.id ? updatedItem : item
-    );
-    
-    // 날짜 기준 내림차순 정렬
-    const sortedItems = updatedItems.sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    
-    localStorage.setItem('galleryItems', JSON.stringify(sortedItems));
-    setGalleryItems(sortedItems);
-    
-    setIsEditDialogOpen(false);
-    setEditPreviewImage(null);
-    
-    toast({
-      title: "갤러리 항목 수정",
-      description: "갤러리 항목이 성공적으로 수정되었습니다.",
-    });
+    try {
+      // 서버에 항목 업데이트
+      await apiService.updateGalleryItem(selectedItem._id, updatedItem, 'admin-auth');
+      
+      // 상태 업데이트
+      const updatedItems = galleryItems.map((item) =>
+        item._id === selectedItem._id ? updatedItem : item
+      );
+      
+      // 날짜 기준 내림차순 정렬
+      const sortedItems = updatedItems.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      
+      setGalleryItems(sortedItems);
+      
+      setIsEditDialogOpen(false);
+      setEditPreviewImage(null);
+      
+      toast({
+        title: "갤러리 항목 수정",
+        description: "갤러리 항목이 성공적으로 수정되었습니다.",
+      });
+    } catch (error) {
+      console.error('갤러리 항목 수정 실패:', error);
+      toast({
+        title: "항목 수정 실패",
+        description: "갤러리 항목을 수정하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
   };
 
   // 항목 삭제 핸들러
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteItem = async (id: string) => {
     if (window.confirm('정말로 이 갤러리 항목을 삭제하시겠습니까?')) {
-      const updatedItems = galleryItems.filter(item => item.id !== id);
-      localStorage.setItem('galleryItems', JSON.stringify(updatedItems));
-      setGalleryItems(updatedItems);
-      
-      toast({
-        title: "갤러리 항목 삭제",
-        description: "갤러리 항목이 성공적으로 삭제되었습니다.",
-        variant: "destructive",
-      });
+      try {
+        // 서버에서 항목 삭제
+        await apiService.deleteGalleryItem(id, 'admin-auth');
+        
+        // 상태 업데이트
+        const updatedItems = galleryItems.filter(item => item._id !== id);
+        setGalleryItems(updatedItems);
+        
+        toast({
+          title: "갤러리 항목 삭제",
+          description: "갤러리 항목이 성공적으로 삭제되었습니다.",
+          variant: "destructive",
+        });
+      } catch (error) {
+        console.error('갤러리 항목 삭제 실패:', error);
+        toast({
+          title: "항목 삭제 실패",
+          description: "갤러리 항목을 삭제하는 중 오류가 발생했습니다.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -529,7 +576,7 @@ const GalleryManage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
             {filteredItems.length > 0 ? (
               filteredItems.map((item) => (
-                <div key={item.id} className="border rounded-md overflow-hidden shadow-sm">
+                <div key={item._id} className="border rounded-md overflow-hidden shadow-sm">
                   <div className="aspect-w-16 aspect-h-9 w-full">
                     <img
                       src={item.imageUrl}
@@ -547,7 +594,7 @@ const GalleryManage = () => {
                       <Button variant="outline" size="sm" onClick={() => handleEditClick(item)}>
                         수정
                       </Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteItem(item.id)}>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteItem(item._id)}>
                         삭제
                       </Button>
                     </div>
@@ -628,7 +675,7 @@ const GalleryManage = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => handleFileClick(false)}
                   disabled={isUploading}
                 >
                   {isUploading ? '업로드 중...' : '이미지 선택'}
@@ -639,7 +686,7 @@ const GalleryManage = () => {
                   ref={fileInputRef}
                   className="hidden"
                   accept="image/*"
-                  onChange={handleFileSelect}
+                  onChange={(e) => handleFileChange(e, false)}
                   disabled={isUploading}
                 />
                 <span className="text-sm text-gray-500">
@@ -758,7 +805,7 @@ const GalleryManage = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => editFileInputRef.current?.click()}
+                  onClick={() => handleFileClick(true)}
                   disabled={isUploading}
                 >
                   {isUploading ? '업로드 중...' : '이미지 선택'}
@@ -769,7 +816,7 @@ const GalleryManage = () => {
                   ref={editFileInputRef}
                   className="hidden"
                   accept="image/*"
-                  onChange={handleEditFileSelect}
+                  onChange={(e) => handleFileChange(e, true)}
                   disabled={isUploading}
                 />
                 <span className="text-sm text-gray-500">

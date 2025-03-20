@@ -22,14 +22,11 @@ export const useAdminAuth = () => {
         setIsAuthenticated(false);
         setToken(null);
         
-        // 인증 체크 로직을 개선하기 위해 주석 처리하거나 제거
-        // 이 부분이 모든 admin 페이지에서 login 페이지로 리디렉션하는 원인
-        /*
+        // admin 페이지에서 로그인 페이지가 아닌 경우에만 리디렉션
         if (window.location.pathname.startsWith('/admin') && 
             window.location.pathname !== '/admin/login') {
           navigate('/admin/login');
         }
-        */
       }
       
       setIsLoading(false);

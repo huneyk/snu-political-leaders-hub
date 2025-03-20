@@ -4,11 +4,7 @@ const { isAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-/**
- * @route   GET /api/gallery
- * @desc    모든 갤러리 아이템 가져오기
- * @access  Public
- */
+// 모든 갤러리 항목 가져오기 (공개)
 router.get('/', async (req, res) => {
   try {
     const galleries = await Gallery.find().sort({ date: -1 });
@@ -19,29 +15,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/gallery/:id
- * @desc    특정 갤러리 아이템 가져오기
- * @access  Public
- */
-router.get('/:id', async (req, res) => {
-  try {
-    const galleryItem = await Gallery.findById(req.params.id);
-    if (!galleryItem) {
-      return res.status(404).json({ message: '갤러리 아이템을 찾을 수 없습니다.' });
-    }
-    res.json(galleryItem);
-  } catch (error) {
-    console.error('갤러리 아이템 조회 실패:', error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
-  }
-});
-
-/**
- * @route   POST /api/gallery
- * @desc    새 갤러리 아이템 추가
- * @access  Private
- */
+// 갤러리 항목 생성 (관리자 전용)
 router.post('/', isAdmin, async (req, res) => {
   try {
     const galleryItem = new Gallery(req.body);
@@ -53,11 +27,7 @@ router.post('/', isAdmin, async (req, res) => {
   }
 });
 
-/**
- * @route   PUT /api/gallery/:id
- * @desc    갤러리 아이템 수정
- * @access  Private
- */
+// 갤러리 항목 수정 (관리자 전용)
 router.put('/:id', isAdmin, async (req, res) => {
   try {
     const updatedItem = await Gallery.findByIdAndUpdate(
@@ -77,11 +47,7 @@ router.put('/:id', isAdmin, async (req, res) => {
   }
 });
 
-/**
- * @route   DELETE /api/gallery/:id
- * @desc    갤러리 아이템 삭제
- * @access  Private
- */
+// 갤러리 항목 삭제 (관리자 전용)
 router.delete('/:id', isAdmin, async (req, res) => {
   try {
     const deletedItem = await Gallery.findByIdAndDelete(req.params.id);
