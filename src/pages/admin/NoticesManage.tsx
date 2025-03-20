@@ -46,8 +46,24 @@ const NoticesManage: React.FC = () => {
     isImportant: false,
   });
 
-  // Admin 인증 체크 - 의존성 배열에서 isAuthenticated와 navigate 제거
+  // Admin 인증 체크
   useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('adminToken');
+      const adminAuth = localStorage.getItem('adminAuth');
+      
+      console.log('인증 체크:', { token, adminAuth });
+      
+      // token이 있거나 adminAuth가 'true'인 경우 접근 허용
+      if (!token && adminAuth !== 'true') {
+        console.log('인증 실패: 로그인 페이지로 이동');
+        navigate('/admin/login');
+      } else {
+        console.log('인증 성공: 공지사항 관리 페이지 접근 허용');
+      }
+    };
+    
+    checkAuth();
     // 컴포넌트 마운트 시 한 번만 실행
     loadNotices();
   }, []); // 빈 의존성 배열
@@ -56,10 +72,16 @@ const NoticesManage: React.FC = () => {
   const loadNotices = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/notices`);
+      console.log('공지사항 데이터 로드 시작');
+      const data = await apiService.getNotices();
+      console.log('API 응답:', data);
       
-      if (response.data) {
-        setNotices(response.data);
+      if (data && Array.isArray(data)) {
+        setNotices(data);
+        console.log('공지사항 데이터 로드 완료:', data.length, '개 항목');
+      } else {
+        console.log('API에서 받은 데이터가 비어 있거나 형식이 올바르지 않습니다.');
+        setNotices([]);
       }
     } catch (error) {
       console.error('공지사항 로드 실패:', error);
@@ -68,6 +90,7 @@ const NoticesManage: React.FC = () => {
         description: "공지사항을 불러오는 중 오류가 발생했습니다.",
         variant: "destructive",
       });
+      setNotices([]);
     } finally {
       setIsLoading(false);
     }
@@ -118,8 +141,6 @@ const NoticesManage: React.FC = () => {
   };
 
   const handleAddNotice = async () => {
-    if (!token) return;
-    
     if (!formData.title || !formData.content || !formData.author) {
       toast({
         title: "입력 오류",
@@ -131,24 +152,23 @@ const NoticesManage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // API를 통해 공지사항 추가
-      const response = await axios.post(`${API_BASE_URL}/notices`, formData, {
+      // MongoDB에 공지사항 추가
+      const token = localStorage.getItem('adminToken') || 'admin-auth';
+      await axios.post(`${API_BASE_URL}/notices`, formData, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
       });
       
-      if (response.data) {
-        toast({
-          title: "공지사항 추가 성공",
-          description: "새 공지사항이 성공적으로 추가되었습니다.",
-        });
-        
-        // 공지사항 목록 새로고침
-        await loadNotices();
-        setIsAddDialogOpen(false);
-      }
+      toast({
+        title: "공지사항 추가 성공",
+        description: "새 공지사항이 성공적으로 추가되었습니다.",
+      });
+      
+      // 공지사항 목록 새로고침
+      await loadNotices();
+      setIsAddDialogOpen(false);
     } catch (error) {
       console.error('공지사항 추가 실패:', error);
       toast({
@@ -162,7 +182,7 @@ const NoticesManage: React.FC = () => {
   };
 
   const handleSaveChanges = async () => {
-    if (!selectedNotice || !token) return;
+    if (!selectedNotice) return;
     
     if (!formData.title || !formData.content || !formData.author) {
       toast({
@@ -175,24 +195,24 @@ const NoticesManage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // API를 통해 공지사항 수정
-      const response = await axios.put(`${API_BASE_URL}/notices/${selectedNotice._id || selectedNotice.id}`, formData, {
+      // MongoDB에 공지사항 수정
+      const token = localStorage.getItem('adminToken') || 'admin-auth';
+      const noticeId = selectedNotice._id || selectedNotice.id;
+      await axios.put(`${API_BASE_URL}/notices/${noticeId}`, formData, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
       });
       
-      if (response.data) {
-        toast({
-          title: "공지사항 수정 성공",
-          description: "공지사항이 성공적으로 수정되었습니다.",
-        });
-        
-        // 공지사항 목록 새로고침
-        await loadNotices();
-        setIsEditDialogOpen(false);
-      }
+      toast({
+        title: "공지사항 수정 성공",
+        description: "공지사항이 성공적으로 수정되었습니다.",
+      });
+      
+      // 공지사항 목록 새로고침
+      await loadNotices();
+      setIsEditDialogOpen(false);
     } catch (error) {
       console.error('공지사항 수정 실패:', error);
       toast({
@@ -206,27 +226,24 @@ const NoticesManage: React.FC = () => {
   };
 
   const handleDeleteNotice = async (id: string) => {
-    if (!token) return;
-    
     if (window.confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
       setIsLoading(true);
       try {
-        // API를 통해 공지사항 삭제
-        const response = await axios.delete(`${API_BASE_URL}/notices/${id}`, {
+        // MongoDB에서 공지사항 삭제
+        const token = localStorage.getItem('adminToken') || 'admin-auth';
+        await axios.delete(`${API_BASE_URL}/notices/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         
-        if (response.data) {
-          toast({
-            title: "공지사항 삭제 성공",
-            description: "공지사항이 성공적으로 삭제되었습니다.",
-          });
-          
-          // 공지사항 목록 새로고침
-          await loadNotices();
-        }
+        toast({
+          title: "공지사항 삭제 성공",
+          description: "공지사항이 성공적으로 삭제되었습니다.",
+        });
+        
+        // 공지사항 목록 새로고침
+        await loadNotices();
       } catch (error) {
         console.error('공지사항 삭제 실패:', error);
         toast({
@@ -404,7 +421,7 @@ const NoticesManage: React.FC = () => {
               <TableBody>
                 {filteredNotices.length > 0 ? (
                   filteredNotices.map((notice) => (
-                    <TableRow key={notice.id}>
+                    <TableRow key={notice._id || notice.id}>
                       <TableCell>
                         {notice.isImportant ? (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
@@ -427,7 +444,7 @@ const NoticesManage: React.FC = () => {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleDeleteNotice(notice.id || '')}
+                            onClick={() => handleDeleteNotice(notice._id || notice.id || '')}
                           >
                             삭제
                           </Button>

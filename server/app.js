@@ -23,12 +23,14 @@ const usersRoutes = require('./routes/usersRoutes');
 const contentRoutes = require('./routes/contentRoutes');
 const authRoutes = require('./routes/authRoutes');
 const galleryRoutes = require('./routes/galleryRoutes');
+const noticeRoutes = require('./routes/noticeRoutes');
 
 // 라우트 설정
 app.use('/api/users', usersRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/gallery', galleryRoutes);
+app.use('/api/notices', noticeRoutes);
 
 // 기본 경로
 app.get('/api', (req, res) => {
