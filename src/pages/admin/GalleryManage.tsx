@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { apiService } from '@/lib/apiService';
+import axios from 'axios';
 
 interface GalleryItem {
   _id?: string;
@@ -71,30 +72,8 @@ const GalleryManage = () => {
   const [debugMode, setDebugMode] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState('1');
 
-  // Admin 인증 체크
+  // 단순화된 인증 체크
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('adminToken');
-      const adminAuth = localStorage.getItem('adminAuth');
-      
-      console.log('인증 체크:', { token, adminAuth });
-      
-      // token이 있거나 adminAuth가 'true'인 경우 접근 허용
-      if (!token && adminAuth !== 'true') {
-        console.log('인증 실패: 로그인 페이지로 이동');
-        navigate('/admin/login');
-      } else {
-        console.log('인증 성공: 갤러리 관리 페이지 접근 허용');
-        
-        // 인증 성공 시 초기 기수값 설정
-        if (selectedItem && selectedItem.term) {
-          setSelectedTerm(selectedItem.term.toString());
-        }
-      }
-    };
-    
-    checkAuth();
-    
     // URL 파라미터에서 디버그 모드 확인
     const urlParams = new URLSearchParams(window.location.search);
     const debug = urlParams.get('debug');
@@ -110,7 +89,7 @@ const GalleryManage = () => {
       setGalleryItems(DEFAULT_GALLERY_ITEMS);
       return "샘플 데이터가 강제로 로드되었습니다.";
     };
-  }, [navigate]);
+  }, []);
 
   // 갤러리 데이터 로드
   useEffect(() => {
@@ -158,7 +137,8 @@ const GalleryManage = () => {
           _id: undefined // _id는 MongoDB가 자동 생성하도록 제거
         };
         // 관리자 권한으로 API 호출
-        await apiService.createGalleryItem(itemToCreate, 'admin-auth');
+        console.log('샘플 항목 생성 시도:', itemToCreate);
+        await apiService.addGalleryItem(itemToCreate);
       }
       
       // 다시 데이터 로드
@@ -189,11 +169,13 @@ const GalleryManage = () => {
     try {
       // 모든 갤러리 항목 가져오기
       const items = await apiService.getGallery();
+      console.log('초기화할 항목:', items);
       
       // 각 항목 삭제
       for (const item of items) {
         if (item._id) {
-          await apiService.deleteGalleryItem(item._id, 'admin-auth');
+          console.log(`항목 삭제 시도 (ID: ${item._id})`);
+          await apiService.deleteGalleryItem(item._id);
         }
       }
       
@@ -376,7 +358,9 @@ const GalleryManage = () => {
     
     try {
       // 서버에 새 항목 추가
-      const createdItem = await apiService.createGalleryItem(newItem, 'admin-auth');
+      console.log('새 항목 추가 요청:', newItem);
+      const createdItem = await apiService.addGalleryItem(newItem);
+      console.log('새 항목 추가 응답:', createdItem);
       
       // 상태 업데이트
       const updatedItems = [...galleryItems, createdItem];
@@ -403,9 +387,19 @@ const GalleryManage = () => {
       });
     } catch (error) {
       console.error('갤러리 항목 추가 실패:', error);
+      let errorMessage = "새 갤러리 항목을 저장하는 중 오류가 발생했습니다.";
+      
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage += ` (상태: ${error.response.status}, 메시지: ${error.response.statusText})`;
+        console.error('상세 오류 정보:', {
+          status: error.response.status,
+          data: error.response.data
+        });
+      }
+      
       toast({
         title: "항목 추가 실패",
-        description: "새 갤러리 항목을 저장하는 중 오류가 발생했습니다.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -446,7 +440,9 @@ const GalleryManage = () => {
     
     try {
       // 서버에 항목 업데이트
-      await apiService.updateGalleryItem(selectedItem._id, updatedItem, 'admin-auth');
+      console.log(`항목 수정 요청 (ID: ${selectedItem._id}):`, updatedItem);
+      await apiService.updateGalleryItem(selectedItem._id, updatedItem);
+      console.log('항목 수정 성공');
       
       // 상태 업데이트
       const updatedItems = galleryItems.map((item) =>
@@ -469,9 +465,19 @@ const GalleryManage = () => {
       });
     } catch (error) {
       console.error('갤러리 항목 수정 실패:', error);
+      let errorMessage = "갤러리 항목을 수정하는 중 오류가 발생했습니다.";
+      
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage += ` (상태: ${error.response.status}, 메시지: ${error.response.statusText})`;
+        console.error('상세 오류 정보:', {
+          status: error.response.status,
+          data: error.response.data
+        });
+      }
+      
       toast({
         title: "항목 수정 실패",
-        description: "갤러리 항목을 수정하는 중 오류가 발생했습니다.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -482,7 +488,9 @@ const GalleryManage = () => {
     if (window.confirm('정말로 이 갤러리 항목을 삭제하시겠습니까?')) {
       try {
         // 서버에서 항목 삭제
-        await apiService.deleteGalleryItem(id, 'admin-auth');
+        console.log(`항목 삭제 시도 (ID: ${id})`);
+        await apiService.deleteGalleryItem(id);
+        console.log(`항목 삭제 성공 (ID: ${id})`);
         
         // 상태 업데이트
         const updatedItems = galleryItems.filter(item => item._id !== id);
@@ -495,9 +503,19 @@ const GalleryManage = () => {
         });
       } catch (error) {
         console.error('갤러리 항목 삭제 실패:', error);
+        let errorMessage = "갤러리 항목을 삭제하는 중 오류가 발생했습니다.";
+        
+        if (axios.isAxiosError(error) && error.response) {
+          errorMessage += ` (상태: ${error.response.status}, 메시지: ${error.response.statusText})`;
+          console.error('상세 오류 정보:', {
+            status: error.response.status,
+            data: error.response.data
+          });
+        }
+        
         toast({
           title: "항목 삭제 실패",
-          description: "갤러리 항목을 삭제하는 중 오류가 발생했습니다.",
+          description: errorMessage,
           variant: "destructive",
         });
       }

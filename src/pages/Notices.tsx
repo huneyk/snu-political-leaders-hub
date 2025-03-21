@@ -163,7 +163,7 @@ const Notices = () => {
                   <CardContent className="p-6">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                       <div>
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2">
                           <h3 className="text-xl font-bold">{notice.title}</h3>
                           {notice.isImportant && (
                             <Badge variant="destructive" className="ml-2">
@@ -171,10 +171,8 @@ const Notices = () => {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-gray-600 line-clamp-2 mb-2">{notice.content}</p>
                       </div>
                       <div className="flex flex-col items-start md:items-end text-sm text-gray-500">
-                        <span>{notice.author}</span>
                         <span>{formatDate(notice.createdAt)}</span>
                       </div>
                     </div>
@@ -192,7 +190,7 @@ const Notices = () => {
       
       {/* 공지사항 상세 보기 다이얼로그 */}
       <Dialog open={!!selectedNotice} onOpenChange={(open) => !open && setSelectedNotice(null)}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-2xl max-h-[50vh] overflow-hidden">
           <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6L6 18M6 6l12 12"/>
@@ -201,7 +199,7 @@ const Notices = () => {
           </DialogClose>
           
           {selectedNotice && (
-            <div className="py-4">
+            <div className="py-4 pr-2 h-[calc(50vh-80px)] overflow-y-auto scrollbar-thin">
               <div className="flex items-center gap-2 mb-4">
                 <h2 className="text-2xl font-bold">{selectedNotice.title}</h2>
                 {selectedNotice.isImportant && (

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
 import axios from 'axios';
 
@@ -38,6 +38,7 @@ interface TermFaculty {
 const FacultyManage = () => {
   const { isAuthenticated, isLoading: authLoading, token } = useAdminAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
   
   const [terms, setTerms] = useState<TermFaculty[]>([
