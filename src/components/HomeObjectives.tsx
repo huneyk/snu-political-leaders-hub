@@ -2,45 +2,116 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import { apiService } from '@/lib/apiService';
 
 interface GoalItem {
+  _id?: string;
   title: string;
   content: string;
-  imageUrl: string;
+  imageUrl?: string;
+  order?: number;
+  isActive?: boolean;
 }
 
-const HomeObjectives = () => {
+interface ObjectivesProps {
+  onStatusChange?: (loaded: boolean, error: string | null) => void;
+}
+
+const HomeObjectives = ({ onStatusChange }: ObjectivesProps) => {
   const [sectionTitle, setSectionTitle] = useState('과정의 목표');
   const [goals, setGoals] = useState<GoalItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load goals from localStorage
-    const savedTitle = localStorage.getItem('course-goal-title');
-    const savedGoals = localStorage.getItem('course-goals');
-    
-    if (savedTitle) setSectionTitle(savedTitle);
-    if (savedGoals) {
-      try {
-        const parsedGoals = JSON.parse(savedGoals);
-        // Handle old format (string array)
-        if (Array.isArray(parsedGoals) && typeof parsedGoals[0] === 'string') {
-          setGoals(parsedGoals.map(goal => ({ 
-            title: '', 
-            content: goal, 
-            imageUrl: '' 
-          })));
-        } else {
-          // 홈페이지에는 최대 3개만 표시
-          setGoals(parsedGoals.slice(0, 3));
-        }
-      } catch (error) {
-        console.error('Failed to parse goals:', error);
+    loadObjectivesFromMongoDB();
+  }, []);
+
+  // MongoDB에서 과정 목표 데이터 로드
+  const loadObjectivesFromMongoDB = async () => {
+    try {
+      console.log('MongoDB에서 과정 목표 데이터 로드 시도');
+      setIsLoading(true);
+      setError(null);
+      
+      if (onStatusChange) onStatusChange(false, null);
+      
+      const data = await apiService.getObjectives();
+      console.log('과정 목표 데이터 로드 완료:', data);
+      
+      // 섹션 제목 설정 - MongoDB에서 sectionTitle 필드가 있으면 사용, 없으면 기본값 유지
+      if (data.sectionTitle) {
+        setSectionTitle(data.sectionTitle);
       }
+      
+      if (Array.isArray(data.objectives) && data.objectives.length > 0) {
+        // MongoDB 데이터 구조에 맞게 필드 매핑
+        const mappedGoals = data.objectives.map((item: any) => ({
+          _id: item._id,
+          title: item.title || '',
+          content: item.content || item.description || '',
+          imageUrl: item.iconImage || item.imageUrl || item.image || item.iconUrl || '',
+          order: item.order || 0,
+          isActive: item.isActive !== false
+        }));
+        
+        // 활성화된 목표만 필터링하고 순서대로 정렬
+        const activeGoals = mappedGoals
+          .filter(goal => goal.isActive !== false)
+          .sort((a, b) => (a.order || 0) - (b.order || 0));
+        
+        // 홈페이지에는 최대 3개만 표시
+        setGoals(activeGoals.slice(0, 3));
+        console.log('처리된 목표 데이터:', activeGoals);
+      } else if (Array.isArray(data) && data.length > 0) {
+        // 배열 형태로 직접 반환되는 경우
+        const mappedGoals = data.map((item: any) => ({
+          _id: item._id,
+          title: item.title || '',
+          content: item.content || item.description || '',
+          imageUrl: item.iconImage || item.imageUrl || item.image || item.iconUrl || '',
+          order: item.order || 0,
+          isActive: item.isActive !== false
+        }));
+        
+        // 활성화된 목표만 필터링하고 순서대로 정렬
+        const activeGoals = mappedGoals
+          .filter(goal => goal.isActive !== false)
+          .sort((a, b) => (a.order || 0) - (b.order || 0));
+        
+        // 홈페이지에는 최대 3개만 표시
+        setGoals(activeGoals.slice(0, 3));
+        console.log('처리된 목표 데이터 (배열):', activeGoals);
+      } else {
+        setGoals([]);
+        console.log('목표 데이터가 없거나 형식이 올바르지 않습니다.');
+      }
+      
+      setIsLoading(false);
+      if (onStatusChange) onStatusChange(true, null);
+    } catch (err) {
+      console.error('과정 목표 데이터 로드 실패:', err);
+      setError('데이터를 불러오는 중 오류가 발생했습니다.');
+      setIsLoading(false);
+      if (onStatusChange) onStatusChange(true, '과정 목표 로드 실패');
+    }
+  };
+
+  // 이미지 URL 처리 함수
+  const getImageUrl = (url?: string): string => {
+    if (!url) return '';
+    
+    // 상대 경로인 경우 API 기본 URL 추가
+    if (url.startsWith('/') && !url.startsWith('//')) {
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://plp.snu.ac.kr' 
+        : 'http://localhost:5000';
+      return `${baseUrl}${url}`;
     }
     
-    setIsLoading(false);
-  }, []);
+    // 이미 http:// 또는 https://로 시작하는 URL은 그대로 사용
+    return url;
+  };
 
   return (
     <section className="py-16 bg-gray-50">
@@ -56,6 +127,10 @@ const HomeObjectives = () => {
           <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-mainBlue"></div>
           </div>
+        ) : error ? (
+          <div className="text-center text-red-500 py-8">
+            <p>{error}</p>
+          </div>
         ) : goals.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
             <p>등록된 과정 목표가 없습니다.</p>
@@ -64,17 +139,18 @@ const HomeObjectives = () => {
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto mb-10">
             {goals.map((goal, index) => (
               <div 
-                key={index}
+                key={goal._id || index}
                 className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-center mb-4">
                   <div className="w-10 h-10 rounded-full overflow-hidden shadow-md bg-mainBlue flex-shrink-0 mr-4">
                     {goal.imageUrl ? (
                       <img 
-                        src={goal.imageUrl} 
+                        src={getImageUrl(goal.imageUrl)} 
                         alt={goal.title} 
                         className="w-full h-full object-cover"
                         onError={(e) => {
+                          console.error('이미지 로드 실패:', goal.title, goal.imageUrl);
                           // Fallback if image fails to load
                           (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Icon';
                         }}

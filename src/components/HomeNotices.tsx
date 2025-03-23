@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { apiService } from '@/lib/apiService';
 
 interface Notice {
+  _id?: string;
   id: string;
   title: string;
   content: string;
@@ -23,89 +25,111 @@ const DEFAULT_NOTICE: Notice = {
 
 const HomeNotices: React.FC = () => {
   const [notice, setNotice] = useState<Notice>(DEFAULT_NOTICE);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
-  const updateIntervalRef = useRef<number | null>(null);
 
   // 컴포넌트 마운트/언마운트 처리
   useEffect(() => {
     isMountedRef.current = true;
     
     // 초기 공지사항 로드
-    loadNotice();
-    
-    // localStorage 변경 이벤트 리스너 등록
-    window.addEventListener('storage', handleStorageChange);
-    
-    // 주기적으로 공지사항 업데이트 (5초마다)
-    updateIntervalRef.current = window.setInterval(() => {
-      if (isMountedRef.current) {
-        console.log('공지사항 주기적 업데이트 실행');
-        loadNotice();
-      }
-    }, 5000);
+    loadNoticeFromMongoDB();
     
     return () => {
       isMountedRef.current = false;
-      window.removeEventListener('storage', handleStorageChange);
-      
-      if (updateIntervalRef.current) {
-        window.clearInterval(updateIntervalRef.current);
-        updateIntervalRef.current = null;
-      }
     };
   }, []);
 
-  // localStorage 변경 감지 시 공지사항 리로드
-  const handleStorageChange = (event: StorageEvent) => {
-    if (event.key === 'notices' && isMountedRef.current) {
-      console.log('공지사항 localStorage 변경 감지');
-      loadNotice();
-    }
-  };
-
-  // 공지사항 로드 함수
-  const loadNotice = () => {
+  // MongoDB에서 공지사항 로드
+  const loadNoticeFromMongoDB = async () => {
     try {
-      console.log('공지사항 로드 시도');
-      const savedNotices = localStorage.getItem('notices');
+      setIsLoading(true);
+      setError(null);
+      console.log('MongoDB에서 공지사항 로드 시도');
       
-      if (savedNotices) {
-        const parsedNotices: Notice[] = JSON.parse(savedNotices);
-        console.log(`파싱된 공지사항 수: ${parsedNotices.length}`);
-        
+      // apiService를 사용하여 MongoDB에서 공지사항 데이터 가져오기
+      const notices = await apiService.getNotices();
+      console.log('공지사항 데이터 로드 완료', notices);
+      
+      if (Array.isArray(notices) && notices.length > 0) {
         // 중요 공지사항 필터링
-        const importantNotices = parsedNotices.filter(notice => notice.isImportant);
+        const importantNotices = notices.filter(notice => notice.isImportant);
         console.log(`중요 공지사항 수: ${importantNotices.length}`);
         
         if (importantNotices.length > 0) {
           // 최신 공지사항 정렬 (생성일 기준 내림차순)
           const sortedNotices = importantNotices.sort((a, b) => {
-            // createdAt이 있으면 날짜 기준, 없으면 id 기준으로 정렬
             if (a.createdAt && b.createdAt) {
               return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
             }
-            return b.id.localeCompare(a.id);
+            return 0;
           });
           
           // 가장 최신 중요 공지사항 선택
           const latestNotice = sortedNotices[0];
           console.log('최신 중요 공지사항 로드:', latestNotice.title);
           
+          // MongoDB에서 가져온 데이터 형식으로 변환
+          const formattedNotice = {
+            id: latestNotice._id || latestNotice.id,
+            _id: latestNotice._id,
+            title: latestNotice.title || '제목 없음',
+            content: latestNotice.content || '내용 없음',
+            author: latestNotice.author || '작성자 미상',
+            createdAt: latestNotice.createdAt || new Date().toISOString(),
+            isImportant: latestNotice.isImportant || false
+          };
+          
           if (isMountedRef.current) {
-            setNotice(latestNotice);
+            setNotice(formattedNotice);
+            setIsLoading(false);
+            setError(null);
+          }
+          return;
+        }
+        
+        // 중요 공지사항이 없는 경우 일반 공지사항 중 최신 공지사항 선택
+        const sortedNotices = notices.sort((a, b) => {
+          if (a.createdAt && b.createdAt) {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }
+          return 0;
+        });
+        
+        if (sortedNotices.length > 0) {
+          const latestNotice = sortedNotices[0];
+          const formattedNotice = {
+            id: latestNotice._id || latestNotice.id,
+            _id: latestNotice._id,
+            title: latestNotice.title || '제목 없음',
+            content: latestNotice.content || '내용 없음',
+            author: latestNotice.author || '작성자 미상',
+            createdAt: latestNotice.createdAt || new Date().toISOString(),
+            isImportant: latestNotice.isImportant || false
+          };
+          
+          if (isMountedRef.current) {
+            setNotice(formattedNotice);
+            setIsLoading(false);
+            setError(null);
           }
           return;
         }
       }
       
-      console.log('저장된 중요 공지사항이 없어 기본 공지사항 사용');
+      console.log('공지사항이 없어 기본 공지사항 사용');
       if (isMountedRef.current) {
         setNotice(DEFAULT_NOTICE);
+        setIsLoading(false);
+        setError(null);
       }
     } catch (error) {
       console.error('공지사항 로드 중 오류 발생:', error);
       if (isMountedRef.current) {
         setNotice(DEFAULT_NOTICE);
+        setIsLoading(false);
+        setError('공지사항을 불러오는 중 오류가 발생했습니다.');
       }
     }
   };
@@ -120,34 +144,38 @@ const HomeNotices: React.FC = () => {
     }
   };
 
-  // 내용 요약 함수 (최대 100자)
-  const summarizeContent = (content: string, maxLength = 100) => {
-    if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength) + '...';
-  };
-
   return (
     <section className="py-12 bg-gray-50">
       <div className="container mx-auto px-4">
-
-
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-900" style={{ wordBreak: 'keep-all' }}>{notice.title}</h3>
-              <span className="text-sm text-gray-500">{formatDate(notice.createdAt)}</span>
+          {isLoading ? (
+            <div className="p-6 text-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-mainBlue mx-auto"></div>
+              <p className="mt-4 text-gray-600">공지사항을 불러오는 중입니다...</p>
             </div>
-            <p className="text-gray-700 mb-4" style={{ wordBreak: 'keep-all' }}>{summarizeContent(notice.content)}</p>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">작성자: {notice.author}</span>
-              <Link
-                to="/notices"
-                className="inline-block px-4 py-2 bg-mainBlue/70 text-white font-medium rounded hover:bg-blue-900/70 transition-colors duration-300 text-sm"
-              >
-                자세한 내용 보기 {'>'}
-              </Link>
+          ) : error ? (
+            <div className="p-6 text-center">
+              <div className="text-red-500 mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-red-700">{error}</h3>
+              <p className="text-sm text-gray-600 mt-2">새로고침 후 다시 시도해주세요.</p>
             </div>
-          </div>
+          ) : (
+            <div className="p-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-900" style={{ wordBreak: 'keep-all' }}>{notice.title}</h3>
+                <Link
+                  to="/notices"
+                  className="inline-block px-4 py-2 bg-mainBlue/70 text-white font-medium rounded hover:bg-blue-900/70 transition-colors duration-300 text-sm"
+                >
+                  더보기 {'>'}
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </section>

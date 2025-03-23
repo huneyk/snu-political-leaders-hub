@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FC } from 'react';
 import { Link } from 'react-router-dom';
+import { apiService } from '@/lib/apiService';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 
 interface Target {
   text: string;
@@ -18,6 +21,7 @@ interface Section {
 }
 
 interface AdmissionInfoData {
+  _id?: string;
   title: string;
   term: string;
   year: string;
@@ -25,151 +29,135 @@ interface AdmissionInfoData {
   endMonth: string;
   capacity: string;
   sections: Section[];
+  qualificationContent?: string;
+  applicationMethodContent?: string;
+  targets?: Array<{text: string}>;
+  isActive?: boolean;
 }
 
-const HomeAdmission = () => {
+interface HomeAdmissionProps {
+  onStatusChange?: (loaded: boolean, error: string | null) => void;
+}
+
+const HomeAdmission: FC<HomeAdmissionProps> = ({ onStatusChange }) => {
   const [admissionInfo, setAdmissionInfo] = useState<AdmissionInfoData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 로컬 스토리지에서 데이터 로드
-    const savedData = localStorage.getItem('admission-info');
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        setAdmissionInfo(parsedData);
-      } catch (error) {
-        console.error('Failed to parse admission info:', error);
-      }
-    }
-    setIsLoading(false);
+    loadAdmissionFromMongoDB();
   }, []);
+
+  // MongoDB에서 입학 안내 데이터 로드
+  const loadAdmissionFromMongoDB = async () => {
+    try {
+      console.log('MongoDB에서 입학 안내 데이터 로드 시도');
+      setIsLoading(true);
+      setError(null);
+      
+      if (onStatusChange) onStatusChange(false, null);
+      
+      const data = await apiService.getAdmission();
+      console.log('입학 안내 데이터 로드 완료:', data);
+      
+      if (data) {
+        // 활성화된 입학 안내만 사용 (여러 개 있을 경우 가장 최근 것 사용)
+        const activeAdmission = Array.isArray(data) 
+          ? data.find(item => item.isActive !== false) || data[0]
+          : data;
+        
+        setAdmissionInfo(activeAdmission);
+      } else {
+        setAdmissionInfo(null);
+      }
+      
+      setIsLoading(false);
+      if (onStatusChange) onStatusChange(true, null);
+    } catch (err) {
+      console.error('입학 안내 데이터 로드 실패:', err);
+      setError('데이터를 불러오는 중 오류가 발생했습니다.');
+      setIsLoading(false);
+      if (onStatusChange) onStatusChange(true, '입학 안내 로드 실패');
+    }
+  };
 
   return (
     <section className="py-16 bg-gray-50" id="admission">
       <div className="main-container">
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-mainBlue mb-4 reveal" style={{ wordBreak: 'keep-all' }}>입학 안내</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto reveal reveal-delay-100" style={{ wordBreak: 'keep-all' }}>
-            정치지도자 과정 모집 일정 및 전형 일정
+          <h2 className="text-3xl md:text-4xl font-bold text-mainBlue reveal" style={{ wordBreak: 'keep-all' }}>입학 안내</h2>
+          <p className="text-gray-600 max-w-3xl mx-auto mt-4 reveal reveal-delay-100" style={{ wordBreak: 'keep-all' }}>
+            서울대학교 정치지도자 과정은 각급 선거 출마 희망자를 우대합니다.
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6 md:p-8 max-w-4xl mx-auto mb-10 reveal reveal-delay-200">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
-            </div>
-          ) : !admissionInfo ? (
-            <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
-              <div className="bg-mainBlue/10 rounded-full p-6">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-mainBlue">
-                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-                  <line x1="16" x2="16" y1="2" y2="6" />
-                  <line x1="8" x2="8" y1="2" y2="6" />
-                  <line x1="3" x2="21" y1="10" y2="10" />
-                  <path d="M8 14h.01" />
-                  <path d="M12 14h.01" />
-                  <path d="M16 14h.01" />
-                  <path d="M8 18h.01" />
-                  <path d="M12 18h.01" />
-                  <path d="M16 18h.01" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-mainBlue mb-2" style={{ wordBreak: 'keep-all' }}>입학 정보가 준비 중입니다</h3>
-                <p className="text-gray-600" style={{ wordBreak: 'keep-all' }}>관리자 페이지에서 입학 정보를 등록해주세요.</p>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
-                <div className="bg-mainBlue/10 rounded-full p-6">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-mainBlue">
-                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-                    <line x1="16" x2="16" y1="2" y2="6" />
-                    <line x1="8" x2="8" y1="2" y2="6" />
-                    <line x1="3" x2="21" y1="10" y2="10" />
-                    <path d="M8 14h.01" />
-                    <path d="M12 14h.01" />
-                    <path d="M16 14h.01" />
-                    <path d="M8 18h.01" />
-                    <path d="M12 18h.01" />
-                    <path d="M16 18h.01" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-mainBlue mb-2" style={{ wordBreak: 'keep-all' }}>
-                    {admissionInfo.title} {admissionInfo.term}기 ({admissionInfo.year}년 {admissionInfo.startMonth}~{admissionInfo.endMonth}월) 지원 안내
-                  </h3>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                {/* 모집 인원 섹션 */}
-                <div className="mb-6">
-                  <h4 className="text-xl font-semibold text-mainBlue mb-3" style={{ wordBreak: 'keep-all' }}>모집 인원</h4>
-                  <p className="text-gray-700 mb-4" style={{ wordBreak: 'keep-all' }}>{admissionInfo.capacity}명 내외</p>
-                </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-mainBlue"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center text-red-500 py-8">
+            <p>{error}</p>
+          </div>
+        ) : !admissionInfo ? (
+          <div className="text-center text-gray-500 py-8">
+            <p>등록된 입학 안내 정보가 없습니다.</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-8 mb-8">
+            {/* 지원 자격 */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-mainBlue mb-4" style={{ wordBreak: 'keep-all' }}>
+                  지원 자격
+                </h3>
+                {admissionInfo.qualificationContent && (
+                  <div className="text-gray-700 mb-4" style={{ wordBreak: 'keep-all', whiteSpace: 'pre-line' }}>
+                    <p>{admissionInfo.qualificationContent}</p>
+                  </div>
+                )}
                 
-                {/* 모집 대상 - 모든 섹션에서 찾기 */}
-                {(() => {
-                  // 모집 대상에 해당하는 섹션 찾기
-                  const targetSection = admissionInfo.sections.find(
-                    section => section.title.includes('모집 대상') || 
-                              section.title.includes('지원 자격') || 
-                              section.title.includes('대상')
-                  );
-                  
-                  // 섹션이 없으면 두 번째 섹션 사용
-                  const sectionToUse = targetSection || (admissionInfo.sections.length > 1 ? admissionInfo.sections[1] : null);
-                  
-                  if (!sectionToUse) return null;
-                  
-                  return (
-                    <div className="mb-6">
-                      <h4 className="text-xl font-semibold text-mainBlue mb-3" style={{ wordBreak: 'keep-all' }}>모집 대상</h4>
-                      
-                      {sectionToUse.content && (
-                        <p className="text-gray-700 mb-4" style={{ wordBreak: 'keep-all' }}>{sectionToUse.content}</p>
-                      )}
-                      
-                      {sectionToUse.targets && sectionToUse.targets.length > 0 && (
-                        <ul className="space-y-2 text-gray-700 mb-4">
-                          {sectionToUse.targets.map((target, targetIndex) => (
-                            target.text && (
-                              <li key={targetIndex} className="flex items-start gap-3">
-                                <span className="bg-mainBlue text-white rounded-full w-6 h-6 flex items-center justify-center text-sm flex-shrink-0 mt-0.5">{targetIndex + 1}</span>
-                                <div>
-                                  <p style={{ wordBreak: 'keep-all' }}>{target.text}</p>
-                                </div>
-                              </li>
-                            )
-                          ))}
-                        </ul>
-                      )}
-                      
-                      {sectionToUse.subsections && sectionToUse.subsections.length > 0 && sectionToUse.subsections.map((subsection, subIndex) => (
-                        <div key={subIndex} className="mt-4">
-                          <p className="font-medium" style={{ wordBreak: 'keep-all' }}>{subsection.title}</p>
-                          <p className="text-gray-600 mt-1" style={{ wordBreak: 'keep-all' }}>{subsection.content}</p>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
+                {admissionInfo.targets && admissionInfo.targets.length > 0 && (
+                  <ul className="space-y-2 text-gray-700">
+                    {admissionInfo.targets.map((target, index) => (
+                      target.text && (
+                        <li key={index} className="flex items-start gap-3">
+                          <span className="bg-mainBlue text-white rounded-full w-6 h-6 flex items-center justify-center text-sm flex-shrink-0 mt-0.5">
+                            {index + 1}
+                          </span>
+                          <div>
+                            <p style={{ wordBreak: 'keep-all' }}>{target.text}</p>
+                          </div>
+                        </li>
+                      )
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
-          )}
-        </div>
+            
+            {/* 지원 일정 */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-mainBlue mb-4" style={{ wordBreak: 'keep-all' }}>
+                  지원 일정
+                </h3>
+                {admissionInfo.applicationMethodContent && (
+                  <div className="text-gray-700" style={{ wordBreak: 'keep-all', whiteSpace: 'pre-line' }}>
+                    <p>{admissionInfo.applicationMethodContent}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="text-center">
-          <Link 
-            to="/admission/info" 
-            className="inline-block px-4 py-2 bg-mainBlue/70 text-white font-medium rounded hover:bg-blue-900/70 transition-colors duration-300 text-sm"
-            style={{ wordBreak: 'keep-all' }}
-          >
-            자세한 내용 보기 {'>'}
+          <Link to="/admission/info">
+            <Button className="bg-mainBlue/70 hover:bg-blue-900/70 transition-colors text-white h-9 text-sm px-4">
+              <span>자세한 내용 보기</span>
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </Link>
         </div>
       </div>
