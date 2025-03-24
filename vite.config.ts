@@ -27,8 +27,9 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:5001',
+        target: 'https://snu-plp-hub-server.onrender.com',
         changeOrigin: true,
+        secure: false,
       },
     },
   },
