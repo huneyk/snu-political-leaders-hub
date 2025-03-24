@@ -8,16 +8,14 @@
 import axios from 'axios';
 
 // API 기본 URL 설정
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
-  : 'http://localhost:5001/api';
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 // API 서비스 정의
 export const apiService = {
   // 인사말(Greeting) 관련 API
   getGreeting: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/greeting`);
+      const response = await axios.get(`${baseURL}/greeting`);
       console.log('Greeting API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -36,7 +34,7 @@ export const apiService = {
   // 추천사(Recommendations) 관련 API
   getRecommendations: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/content/recommendations`);
+      const response = await axios.get(`${baseURL}/content/recommendations`);
       console.log('Recommendations API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -55,7 +53,7 @@ export const apiService = {
   // 목표(Objectives) 관련 API
   getObjectives: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/content/objectives`);
+      const response = await axios.get(`${baseURL}/content/objectives`);
       console.log('Objectives API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -74,7 +72,7 @@ export const apiService = {
   // 혜택(Benefits) 관련 API
   getBenefits: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/content/benefits`);
+      const response = await axios.get(`${baseURL}/content/benefits`);
       console.log('Benefits API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -93,7 +91,7 @@ export const apiService = {
   // 교수진(Professors) 관련 API
   getProfessors: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/content/professors`);
+      const response = await axios.get(`${baseURL}/content/professors`);
       console.log('Professors API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -112,7 +110,7 @@ export const apiService = {
   // 관리자용 교수진 전체 목록 조회 API
   getProfessorsAll: async (token: string) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/content/professors/all`, {
+      const response = await axios.get(`${baseURL}/content/professors/all`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -127,7 +125,7 @@ export const apiService = {
   // 새 교수진 섹션 생성 API
   createProfessorSection: async (sectionData: any, token: string) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/content/professors`, sectionData, {
+      const response = await axios.post(`${baseURL}/content/professors`, sectionData, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -143,7 +141,7 @@ export const apiService = {
   // 교수진 섹션 업데이트 API
   updateProfessorSection: async (sectionId: string, sectionData: any, token: string) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/content/professors/${sectionId}`, sectionData, {
+      const response = await axios.put(`${baseURL}/content/professors/${sectionId}`, sectionData, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -159,7 +157,7 @@ export const apiService = {
   // 교수진 섹션 삭제 API
   deleteProfessorSection: async (sectionId: string, token: string) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/content/professors/${sectionId}`, {
+      const response = await axios.delete(`${baseURL}/content/professors/${sectionId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -174,7 +172,7 @@ export const apiService = {
   // 일정(Schedules) 관련 API
   getSchedules: async (category?: string) => {
     try {
-      let url = `${API_BASE_URL}/content/schedules`;
+      let url = `${baseURL}/content/schedules`;
       
       // 카테고리가 지정된 경우 쿼리 매개변수로 추가
       if (category) {
@@ -192,7 +190,7 @@ export const apiService = {
   // 관리자용 모든 일정 조회 API
   getSchedulesAll: async (token: string) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/content/schedules/all`, {
+      const response = await axios.get(`${baseURL}/content/schedules/all`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -207,7 +205,7 @@ export const apiService = {
   // 일정 생성 API
   createSchedule: async (scheduleData: any, token: string) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/content/schedules`, scheduleData, {
+      const response = await axios.post(`${baseURL}/content/schedules`, scheduleData, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -223,7 +221,7 @@ export const apiService = {
   // 일정 수정 API
   updateSchedule: async (id: string, scheduleData: any, token: string) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/content/schedules/${id}`, scheduleData, {
+      const response = await axios.put(`${baseURL}/content/schedules/${id}`, scheduleData, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -239,7 +237,7 @@ export const apiService = {
   // 일정 삭제 API
   deleteSchedule: async (id: string, token: string) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/content/schedules/${id}`, {
+      const response = await axios.delete(`${baseURL}/content/schedules/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -254,7 +252,7 @@ export const apiService = {
   // 강사진(Lecturers) 관련 API
   getLecturers: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/content/lecturers`);
+      const response = await axios.get(`${baseURL}/content/lecturers`);
       return response.data;
     } catch (error) {
       console.error('Error fetching lecturers data:', error);
@@ -265,7 +263,7 @@ export const apiService = {
   // 갤러리(Gallery) 관련 API
   getGallery: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/gallery`);
+      const response = await axios.get(`${baseURL}/gallery`);
       console.log('Gallery API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -284,7 +282,7 @@ export const apiService = {
   // 갤러리 항목 추가
   createGalleryItem: async (galleryData: any, token: string) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/gallery`, galleryData, {
+      const response = await axios.post(`${baseURL}/gallery`, galleryData, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -319,7 +317,7 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      const response = await axios.post(`${API_BASE_URL}/gallery`, galleryData, {
+      const response = await axios.post(`${baseURL}/gallery`, galleryData, {
         headers
       });
       console.log('Add Gallery Item Response:', response.data);
@@ -351,7 +349,7 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      const response = await axios.put(`${API_BASE_URL}/gallery/${id}`, galleryData, {
+      const response = await axios.put(`${baseURL}/gallery/${id}`, galleryData, {
         headers
       });
       console.log('Update Gallery Item Response:', response.data);
@@ -381,7 +379,7 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      const response = await axios.delete(`${API_BASE_URL}/gallery/${id}`, {
+      const response = await axios.delete(`${baseURL}/gallery/${id}`, {
         headers
       });
       console.log('Delete Gallery Item Response:', response.data);
@@ -402,7 +400,7 @@ export const apiService = {
   // 갤러리 항목 일괄 생성
   createBulkGalleryItems: async (items: any[], token: string) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/gallery/bulk`, items, {
+      const response = await axios.post(`${baseURL}/gallery/bulk`, items, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -426,7 +424,7 @@ export const apiService = {
   // 공지사항(Notices) 관련 API
   getNotices: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/notices`);
+      const response = await axios.get(`${baseURL}/notices`);
       return response.data;
     } catch (error) {
       console.error('Error fetching notices data:', error);
@@ -437,7 +435,7 @@ export const apiService = {
   // 입학정보(Admission) 관련 API
   getAdmission: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/admission`);
+      const response = await axios.get(`${baseURL}/admission`);
       if (response.data && response.data.term) {
         // Ensure term is always returned as a number
         response.data.term = typeof response.data.term === 'string' 
@@ -470,7 +468,7 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      const response = await axios.put(`${API_BASE_URL}/admission`, admissionData, {
+      const response = await axios.put(`${baseURL}/admission`, admissionData, {
         headers
       });
       return response.data;
@@ -499,7 +497,7 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      const response = await axios.post(`${API_BASE_URL}/admission`, admissionData, {
+      const response = await axios.post(`${baseURL}/admission`, admissionData, {
         headers
       });
       return response.data;
@@ -512,7 +510,7 @@ export const apiService = {
   // 푸터(Footer) 관련 API
   getFooter: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/footer`);
+      const response = await axios.get(`${baseURL}/footer`);
       return response.data;
     } catch (error) {
       console.error('Error fetching footer data:', error);

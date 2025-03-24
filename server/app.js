@@ -11,12 +11,23 @@ dotenv.config();
 const app = express();
 
 // 미들웨어 설정
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:8080',
+    'http://localhost:3000',
+    'https://snu-political-leaders-hub-1.onrender.com'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json({ limit: '50mb' })); // 이미지 Base64 처리를 위해 용량 제한 증가
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// 정적 파일 제공
-app.use(express.static(path.join(__dirname, '..', 'build')));
+// 정적 파일 제공 (개발 환경에서만)
+if (process.env.NODE_ENV === 'development') {
+  app.use(express.static(path.join(__dirname, '../build')));
+}
 
 // 라우트 불러오기
 const usersRoutes = require('./routes/usersRoutes');
