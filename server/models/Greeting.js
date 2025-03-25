@@ -1,24 +1,14 @@
 const mongoose = require('mongoose');
 
 const greetingSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true
-  },
-  content: {
-    type: String,
-    required: true
-  },
-  author: {
-    type: String,
-    required: true
-  },
-  position: {
-    type: String,
-    required: true
-  },
-  imageUrl: {
-    type: String
+  title: String,
+  content: String,
+  author: String,
+  position: String,
+  imageUrl: String,
+  isActive: {
+    type: Boolean,
+    default: true
   },
   createdAt: {
     type: Date,
@@ -28,6 +18,9 @@ const greetingSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-}, { collection: 'greetings' }); // 컬렉션 이름 지정
+}, { 
+  collection: 'greetings',
+  strict: false // 스키마에 정의되지 않은 필드도 허용
+}); 
 
 module.exports = mongoose.model('Greeting', greetingSchema);
