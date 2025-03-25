@@ -49,20 +49,44 @@ const ScheduleCalendar: React.FC = () => {
       if (Array.isArray(data)) {
         console.log("API에서 가져온 일정 데이터:", data); // 데이터 로깅 추가
         setSchedules(data);
+        
+        // 데이터 캐싱 (로컬 스토리지 저장)
+        localStorage.setItem('schedules-data', JSON.stringify(data));
+        
         // 사용 가능한 학기 목록 추출
         loadAvailableTerms(data);
         setError(null);
       } else {
         console.error('API 응답이 배열 형태가 아닙니다:', data);
-        setError('일정 데이터 형식이 올바르지 않습니다.');
+        // API 데이터가 올바르지 않은 경우 로컬 스토리지에서 가져오기
+        loadFromLocalStorage();
       }
     } catch (err) {
       console.error('일정 데이터 로드 중 오류 발생:', err);
-      setError('일정 데이터를 불러오는 중 오류가 발생했습니다.');
-      // 오류 발생 시 빈 배열로 설정
-      setSchedules([]);
+      // API 오류 시 로컬 스토리지에서 가져오기
+      loadFromLocalStorage();
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // 로컬 스토리지에서 데이터 로드
+  const loadFromLocalStorage = () => {
+    try {
+      const savedData = localStorage.getItem('schedules-data');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        console.log("로컬 스토리지에서 가져온 일정 데이터:", parsedData);
+        setSchedules(parsedData);
+        // 사용 가능한 학기 목록 추출
+        loadAvailableTerms(parsedData);
+        setError(null);
+      } else {
+        setError('일정 데이터를 찾을 수 없습니다.');
+      }
+    } catch (err) {
+      console.error('로컬 스토리지에서 일정 데이터를 불러오는 중 오류가 발생했습니다:', err);
+      setError('일정 데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
     }
   };
   
