@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Content = require('../models/Content');
+const Greeting = require('../models/Greeting');
 const { isAdmin } = require('../middleware/authMiddleware');
 
 // 인사말 정보 가져오기 (공개)
@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
     console.log('인사말 정보 조회 요청 수신');
     
     // MongoDB에서 인사말 데이터 가져오기
-    const greeting = await Content.findOne({ type: 'greeting' }).sort({ createdAt: -1 });
+    const greeting = await Greeting.findOne().sort({ createdAt: -1 });
     
     // 데이터가 없는 경우 처리
     if (!greeting) {
@@ -35,16 +35,17 @@ router.post('/', isAdmin, async (req, res) => {
     }
     
     // 기존 인사말이 있는지 확인
-    const existingGreeting = await Content.findOne({ type: 'greeting' });
+    const existingGreeting = await Greeting.findOne();
     
     if (existingGreeting) {
       // 기존 인사말이 있으면 업데이트
       existingGreeting.title = title;
       existingGreeting.content = content;
+      existingGreeting.updatedAt = Date.now();
       
       // 추가 필드가 있다면 업데이트
       Object.keys(req.body).forEach(key => {
-        if (!['title', 'content', 'type'].includes(key)) {
+        if (!['title', 'content'].includes(key)) {
           existingGreeting[key] = req.body[key];
         }
       });
@@ -54,8 +55,7 @@ router.post('/', isAdmin, async (req, res) => {
     }
     
     // 새 인사말 생성
-    const newGreeting = new Content({
-      type: 'greeting',
+    const newGreeting = new Greeting({
       title,
       content,
       ...req.body // 추가 필드
