@@ -65,23 +65,111 @@ app.get('/api/status', (req, res) => {
   res.json({ status: 'ok', message: '서버가 정상 실행 중입니다. ' + new Date() });
 });
 
-// 정적 파일 제공 설정 (API 라우트 이후, 클라이언트 라우트 이전)
-const staticPath = process.env.NODE_ENV === 'production' 
-  ? path.join(__dirname, '../dist') 
-  : path.join(__dirname, '../build');
+// 렌더 환경에서는 항상 프로덕션 모드로 강제 설정
+process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 
+// 정적 파일 경로 설정
+const clientRoot = path.resolve(__dirname, '..');
+const distPath = path.join(clientRoot, 'dist');
+const backupPath = path.join(clientRoot, 'build');
+
+// 존재하는 정적 파일 경로 선택
+let staticPath;
+if (require('fs').existsSync(distPath)) {
+  staticPath = distPath;
+  console.log('dist 폴더 사용:', staticPath);
+} else if (require('fs').existsSync(backupPath)) {
+  staticPath = backupPath;
+  console.log('build 폴더 사용:', staticPath);
+} else {
+  console.error('❌ 정적 파일 폴더가 존재하지 않습니다!');
+  // 임시 디렉토리 생성
+  staticPath = path.join(__dirname, 'public');
+  if (!require('fs').existsSync(staticPath)) {
+    require('fs').mkdirSync(staticPath, { recursive: true });
+  }
+}
+
+// 정적 파일 제공
 console.log(`정적 파일 경로 설정: ${staticPath}`);
 app.use(express.static(staticPath));
 
-// 클라이언트 라우팅 처리 (SPA 지원) - API 라우트와 정적 파일 이후에 처리
-app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api/')) {
-    console.log(`클라이언트 라우팅 처리: ${req.method} ${req.path}`);
-    res.sendFile(path.join(staticPath, 'index.html'));
+// 디렉토리 구조 출력 (디버깅 용도)
+function listDir(dir, level = 0) {
+  if (level > 2) return; // 최대 2레벨까지만 출력
+  
+  try {
+    const files = require('fs').readdirSync(dir);
+    console.log(`${'  '.repeat(level)}📂 ${dir}:`);
+    
+    files.forEach(file => {
+      const fullPath = path.join(dir, file);
+      try {
+        const stat = require('fs').statSync(fullPath);
+        if (stat.isDirectory()) {
+          listDir(fullPath, level + 1);
+        } else {
+          console.log(`${'  '.repeat(level + 1)}📄 ${file} (${stat.size} bytes)`);
+        }
+      } catch (err) {
+        console.log(`${'  '.repeat(level + 1)}❌ ${file} - 오류: ${err.message}`);
+      }
+    });
+  } catch (err) {
+    console.error(`❌ 디렉토리 읽기 오류 (${dir}):`, err.message);
+  }
+}
+
+// 디렉토리 구조 출력 (프로덕션 환경에서만)
+if (process.env.NODE_ENV === 'production') {
+  console.log('\n📂 프로젝트 구조:');
+  listDir(clientRoot);
+}
+
+// 모든 요청에 대해 index.html 제공 (API 제외)
+app.get('*', (req, res, next) => {
+  // API 요청은 제외
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+
+  // 디버깅 로그
+  console.log(`클라이언트 라우팅 처리: ${req.method} ${req.path}`);
+  
+  // index.html 경로
+  const indexPath = path.join(staticPath, 'index.html');
+  
+  // index.html 파일 확인
+  if (require('fs').existsSync(indexPath)) {
+    return res.sendFile(indexPath);
   } else {
-    // API 경로지만 앞선 라우트에서 처리되지 않은 경우
-    console.log(`404 API 요청: ${req.method} ${req.url}`);
-    res.status(404).json({ message: '요청한 API 리소스를 찾을 수 없습니다.' });
+    // index.html 파일이 없는 경우 응급 HTML 생성
+    console.error(`⚠️ index.html 파일을 찾을 수 없습니다: ${indexPath}`);
+    
+    const emergencyHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>서울대학교 정치리더십과정</title>
+        <meta http-equiv="refresh" content="3;url=/">
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px 20px; text-align: center; }
+          h1 { color: #333; }
+          a { color: #0066cc; text-decoration: none; }
+          a:hover { text-decoration: underline; }
+        </style>
+      </head>
+      <body>
+        <h1>서울대학교 정치리더십과정</h1>
+        <p>페이지를 찾을 수 없습니다. 3초 후 메인 페이지로 이동합니다.</p>
+        <p><a href="/">메인 페이지로 바로 이동</a></p>
+        <p>환경: ${process.env.NODE_ENV}, 경로: ${req.path}</p>
+      </body>
+      </html>
+    `;
+    
+    return res.status(200).send(emergencyHtml);
   }
 });
 
@@ -155,7 +243,50 @@ app.listen(PORT, () => {
 // 에러 처리
 app.use((err, req, res, next) => {
   console.error('서버 오류:', err);
-  res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  
+  // API 요청인 경우 JSON 응답
+  if (req.path.startsWith('/api/')) {
+    return res.status(500).json({ message: '서버 오류가 발생했습니다.', error: err.message });
+  }
+  
+  // 웹 페이지 요청인 경우 HTML 응답
+  const errorHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>서버 오류 - 서울대학교 정치리더십과정</title>
+      <meta http-equiv="refresh" content="5;url=/">
+      <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px 20px; text-align: center; }
+        h1 { color: #d32f2f; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; text-align: left; overflow: auto; }
+        a { color: #0066cc; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+      </style>
+    </head>
+    <body>
+      <h1>서버 오류</h1>
+      <p>서버에서 오류가 발생했습니다. 5초 후 메인 페이지로 이동합니다.</p>
+      <p><a href="/">메인 페이지로 바로 이동</a></p>
+      <pre>${err.stack || err.message}</pre>
+    </body>
+    </html>
+  `;
+  
+  res.status(500).send(errorHtml);
+});
+
+// 404 처리 - API 요청에만 적용
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) {
+    console.log(`404 API 요청: ${req.method} ${req.url}`);
+    return res.status(404).json({ message: '요청한 API 리소스를 찾을 수 없습니다.' });
+  }
+  
+  // API가 아닌 경우는 이미 처리되었어야 함
+  console.log(`예상치 못한 404 요청: ${req.method} ${req.url}`);
+  res.redirect('/');
 });
 
 module.exports = app; 
