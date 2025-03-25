@@ -10,6 +10,13 @@ import axios from 'axios';
 // API 기본 URL 설정
 const baseURL = 'https://snu-plp-hub-server.onrender.com/api';
 
+// API 요청 시 기본 헤더 설정
+const apiConfig = {
+  headers: {
+    'Content-Type': 'application/json'
+  }
+};
+
 // API 서비스 정의
 export const apiService = {
   // 인사말(Greeting) 관련 API

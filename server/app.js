@@ -12,22 +12,16 @@ const app = express();
 
 // CORS 설정 - 반드시 다른 미들웨어보다 먼저 적용
 app.use(cors({
-  origin: [
-    'http://localhost:8080',
-    'http://localhost:3000',
-    'https://snu-political-leaders-hub-1.onrender.com'
-  ],
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
 }));
 
 // 추가 CORS 헤더 설정
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://snu-political-leaders-hub-1.onrender.com');
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
 
@@ -48,6 +42,8 @@ const contentRoutes = require('./routes/contentRoutes');
 const authRoutes = require('./routes/authRoutes');
 const galleryRoutes = require('./routes/galleryRoutes');
 const noticeRoutes = require('./routes/noticeRoutes');
+const footerRoutes = require('./routes/footerRoutes');
+const admissionRoutes = require('./routes/admissionRoutes');
 
 // 라우트 설정
 app.use('/api/users', usersRoutes);
@@ -55,6 +51,8 @@ app.use('/api/content', contentRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/notices', noticeRoutes);
+app.use('/api/footer', footerRoutes);
+app.use('/api/admission', admissionRoutes);
 
 // 기본 경로
 app.get('/api', (req, res) => {
