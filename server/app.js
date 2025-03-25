@@ -10,7 +10,7 @@ dotenv.config();
 // Express 앱 생성
 const app = express();
 
-// 미들웨어 설정
+// CORS 설정 - 반드시 다른 미들웨어보다 먼저 적용
 app.use(cors({
   origin: [
     'http://localhost:8080',
@@ -21,6 +21,17 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
+
+// 추가 CORS 헤더 설정
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://snu-political-leaders-hub-1.onrender.com');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
+
+// 미들웨어 설정
 app.use(express.json({ limit: '50mb' })); // 이미지 Base64 처리를 위해 용량 제한 증가
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
