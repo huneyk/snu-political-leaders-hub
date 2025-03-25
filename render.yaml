@@ -1,0 +1,34 @@
+services:
+  # 백엔드 서비스
+  - type: web
+    name: snu-plp-hub-server
+    env: node
+    buildCommand: cd server && npm install
+    startCommand: cd server && node app.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+    autoDeploy: true
+
+  # 프론트엔드 서비스
+  - type: web
+    name: snu-political-leaders-hub-1
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    headers:
+      # SPA 라우팅을 위한 설정
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      # SPA를 위한 모든 경로를 index.html로 리다이렉트
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://snu-plp-hub-server.onrender.com
+    autoDeploy: true

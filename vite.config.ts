@@ -32,5 +32,9 @@ export default defineConfig({
         secure: false,
       },
     },
+    historyApiFallback: {
+      disableDotRule: true,
+      index: '/index.html'
+    },
   },
 });
