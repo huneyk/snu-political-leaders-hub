@@ -19,9 +19,8 @@ const gallerySchema = new mongoose.Schema({
     required: true
   },
   term: {
-    type: Number,
-    required: true,
-    min: 1
+    type: String,
+    required: true
   },
   createdAt: {
     type: Date,
@@ -31,7 +30,10 @@ const gallerySchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-}, { timestamps: true });
+}, { 
+  collection: 'galleries',
+  timestamps: true 
+});
 
 // 날짜 순 정렬을 위한 인덱스
 gallerySchema.index({ date: -1 });

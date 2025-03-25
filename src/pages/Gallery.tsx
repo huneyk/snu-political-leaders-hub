@@ -124,19 +124,44 @@ const Gallery = () => {
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         
+        // 데이터 캐싱 (로컬 스토리지 저장)
+        localStorage.setItem('gallery-data', JSON.stringify(sortedItems));
+        
         console.log('날짜순 정렬 완료 (최신순)');
         setGalleryItems(sortedItems);
       } else {
         console.warn('갤러리 데이터가 비어있거나 배열이 아닙니다.');
-        setGalleryItems(GALLERY_ITEMS);
+        // 로컬 스토리지에서 데이터 로드 시도
+        loadFromLocalStorage();
       }
       setError(null);
     } catch (err) {
       console.error('갤러리 데이터 로드 중 오류:', err);
-      setError('갤러리 데이터를 불러오는 중 오류가 발생했습니다.');
-      setGalleryItems(GALLERY_ITEMS);
+      // 로컬 스토리지에서 데이터 로드 시도
+      loadFromLocalStorage();
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // 로컬 스토리지에서 데이터 로드
+  const loadFromLocalStorage = () => {
+    try {
+      const savedData = localStorage.getItem('gallery-data');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        console.log('로컬 스토리지에서 갤러리 데이터 로드 성공:', parsedData.length, '개 항목');
+        setGalleryItems(parsedData);
+        setError(null);
+      } else {
+        console.warn('로컬 스토리지에 갤러리 데이터가 없습니다.');
+        setGalleryItems(GALLERY_ITEMS);
+        setError('갤러리 데이터를 불러올 수 없습니다.');
+      }
+    } catch (err) {
+      console.error('로컬 스토리지에서 갤러리 데이터 로드 중 오류:', err);
+      setGalleryItems(GALLERY_ITEMS);
+      setError('갤러리 데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
     }
   };
 
