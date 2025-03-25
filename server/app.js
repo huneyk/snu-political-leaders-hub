@@ -59,6 +59,11 @@ const galleryRoutes = require('./routes/galleryRoutes');
 const noticeRoutes = require('./routes/noticeRoutes');
 const footerRoutes = require('./routes/footerRoutes');
 const admissionRoutes = require('./routes/admissionRoutes');
+const objectivesRoutes = require('./routes/objectivesRoutes');
+const recommendationsRoutes = require('./routes/recommendationsRoutes');
+const benefitsRoutes = require('./routes/benefitsRoutes');
+const lecturersRoutes = require('./routes/lecturersRoutes');
+const schedulesRoutes = require('./routes/schedulesRoutes');
 
 // 라우트 설정
 app.use('/api/users', usersRoutes);
@@ -68,6 +73,11 @@ app.use('/api/gallery', galleryRoutes);
 app.use('/api/notices', noticeRoutes);
 app.use('/api/footer', footerRoutes);
 app.use('/api/admission', admissionRoutes);
+app.use('/api/objectives', objectivesRoutes);
+app.use('/api/recommendations', recommendationsRoutes);
+app.use('/api/benefits', benefitsRoutes);
+app.use('/api/lecturers', lecturersRoutes);
+app.use('/api/schedules', schedulesRoutes);
 
 // 간단한 상태 확인 라우트
 app.get('/', (req, res) => {

@@ -43,7 +43,7 @@ export const apiService = {
   // 추천사(Recommendations) 관련 API
   getRecommendations: async () => {
     try {
-      const response = await axios.get(`${baseURL}/content/recommendations`);
+      const response = await axios.get(`${baseURL}/recommendations`);
       console.log('Recommendations API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -62,7 +62,7 @@ export const apiService = {
   // 목표(Objectives) 관련 API
   getObjectives: async () => {
     try {
-      const response = await axios.get(`${baseURL}/content/objectives`);
+      const response = await axios.get(`${baseURL}/objectives`);
       console.log('Objectives API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -81,7 +81,7 @@ export const apiService = {
   // 혜택(Benefits) 관련 API
   getBenefits: async () => {
     try {
-      const response = await axios.get(`${baseURL}/content/benefits`);
+      const response = await axios.get(`${baseURL}/benefits`);
       console.log('Benefits API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -100,7 +100,7 @@ export const apiService = {
   // 교수진(Professors) 관련 API
   getProfessors: async () => {
     try {
-      const response = await axios.get(`${baseURL}/content/professors`);
+      const response = await axios.get(`${baseURL}/professors`);
       console.log('Professors API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -181,7 +181,7 @@ export const apiService = {
   // 일정(Schedules) 관련 API
   getSchedules: async (category?: string) => {
     try {
-      let url = `${baseURL}/content/schedules`;
+      let url = `${baseURL}/schedules`;
       
       // 카테고리가 지정된 경우 쿼리 매개변수로 추가
       if (category) {
@@ -261,7 +261,8 @@ export const apiService = {
   // 강사진(Lecturers) 관련 API
   getLecturers: async () => {
     try {
-      const response = await axios.get(`${baseURL}/content/lecturers`);
+      const response = await axios.get(`${baseURL}/lecturers`);
+      console.log('Lecturers API Response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching lecturers data:', error);
