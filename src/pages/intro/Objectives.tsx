@@ -104,7 +104,7 @@ const Objectives = () => {
   const fetchObjectives = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/content/objectives`);
+      const response = await axios.get(`${API_BASE_URL}/objectives`);
       
       if (response.data && Array.isArray(response.data) && response.data.length > 0) {
         // 첫 번째 항목의 sectionTitle을 사용
