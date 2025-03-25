@@ -11,18 +11,16 @@ dotenv.config();
 const app = express();
 
 // CORS 설정 - 반드시 다른 미들웨어보다 먼저 적용
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  
-  // OPTIONS 요청에 즉시 응답
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
-  next();
-});
+app.use(cors({
+  origin: [
+    'https://snu-political-leaders-hub-1.onrender.com',
+    'https://snu-political-leaders-hub.onrender.com',
+    'http://localhost:8080',
+    'http://localhost:3000'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // 미들웨어 설정
 app.use(express.json({ limit: '50mb' })); // 이미지 Base64 처리를 위해 용량 제한 증가
@@ -71,10 +69,17 @@ app.get('/api', (req, res) => {
 // MongoDB 연결
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
-    console.log('MongoDB Atlas에 연결되었습니다.');
+    console.log('MongoDB 데이터베이스에 연결되었습니다');
   })
-  .catch((error) => {
-    console.error('MongoDB 연결 실패:', error);
+  .catch(err => {
+    console.error('MongoDB 연결 오류:', err.message);
+    // 연결 세부 정보 로깅 (비밀번호 제외)
+    const sanitizedUri = process.env.MONGODB_URI.replace(
+      /mongodb(\+srv)?:\/\/[^:]+:[^@]+@/, 
+      'mongodb$1://*****:*****@'
+    );
+    console.error('연결 시도한 URI:', sanitizedUri);
+    // 연결이 실패해도 서버는 시작
   });
 
 // Render에서 실행 시 정적 파일 제공 및 SPA 라우팅 비활성화
