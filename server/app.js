@@ -24,42 +24,11 @@ const corsOptions = {
 };
 
 // CORS 설정 - 반드시 다른 미들웨어보다 먼저 적용
-app.use(function(req, res, next) {
-  const origin = req.headers.origin;
-  if (corsOptions.origin.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else {
-    // 개발 환경에서는 모든 도메인 허용 (프로덕션에서는 제거)
-    res.header('Access-Control-Allow-Origin', '*');
-  }
-  
-  // CORS 헤더 설정
-  res.header('Access-Control-Allow-Methods', corsOptions.methods.join(', '));
-  res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(', '));
-  
-  // OPTIONS 요청에 즉시 응답
-  if (req.method === 'OPTIONS') {
-    console.log('🔄 CORS Preflight 요청 처리:', req.headers.origin);
-    return res.status(200).end();
-  }
-  
-  next();
-});
+app.use(cors(corsOptions));
 
 // 미들웨어 설정
 app.use(express.json({ limit: '50mb' })); // 이미지 Base64 처리를 위해 용량 제한 증가
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// 정적 파일 제공
-if (process.env.NODE_ENV === 'production') {
-  const clientBuildPath = path.join(__dirname, '../dist');
-  console.log('정적 파일 경로 설정:', clientBuildPath);
-  app.use(express.static(clientBuildPath));
-} else {
-  const devBuildPath = path.join(__dirname, '../build');
-  console.log('개발 환경 정적 파일 경로 설정:', devBuildPath);
-  app.use(express.static(devBuildPath));
-}
 
 // 라우트 불러오기
 const usersRoutes = require('./routes/usersRoutes');
@@ -76,7 +45,7 @@ const lecturersRoutes = require('./routes/lecturersRoutes');
 const schedulesRoutes = require('./routes/schedulesRoutes');
 const greetingRoutes = require('./routes/greetingRoutes');
 
-// 라우트 설정
+// API 라우트 설정
 app.use('/api/users', usersRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/auth', authRoutes);
@@ -91,29 +60,30 @@ app.use('/api/lecturers', lecturersRoutes);
 app.use('/api/schedules', schedulesRoutes);
 app.use('/api/greeting', greetingRoutes);
 
-// 간단한 상태 확인 라우트
+// API 상태 확인 엔드포인트
 app.get('/api/status', (req, res) => {
   res.json({ status: 'ok', message: '서버가 정상 실행 중입니다. ' + new Date() });
 });
 
-// 클라이언트 라우팅을 위한 설정은 API 라우트 설정 이후에 위치
-// 프로덕션 환경에서는 정적 파일 제공 및 모든 경로를 index.html로 라우팅
-if (process.env.NODE_ENV === 'production') {
-  // 정적 파일 서빙 (배포 환경용)
-  const path = require('path');
-  const clientBuildPath = path.join(__dirname, '../dist');
-  
-  // 정적 파일 제공
-  app.use(express.static(clientBuildPath));
-  
-  // 모든 경로에 대해 index.html 제공 (리액트 라우팅을 위함)
-  app.get('*', (req, res) => {
-    // API 경로는 제외
-    if (!req.path.startsWith('/api/')) {
-      res.sendFile(path.join(clientBuildPath, 'index.html'));
-    }
-  });
-}
+// 정적 파일 제공 설정 (API 라우트 이후, 클라이언트 라우트 이전)
+const staticPath = process.env.NODE_ENV === 'production' 
+  ? path.join(__dirname, '../dist') 
+  : path.join(__dirname, '../build');
+
+console.log(`정적 파일 경로 설정: ${staticPath}`);
+app.use(express.static(staticPath));
+
+// 클라이언트 라우팅 처리 (SPA 지원) - API 라우트와 정적 파일 이후에 처리
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api/')) {
+    console.log(`클라이언트 라우팅 처리: ${req.method} ${req.path}`);
+    res.sendFile(path.join(staticPath, 'index.html'));
+  } else {
+    // API 경로지만 앞선 라우트에서 처리되지 않은 경우
+    console.log(`404 API 요청: ${req.method} ${req.url}`);
+    res.status(404).json({ message: '요청한 API 리소스를 찾을 수 없습니다.' });
+  }
+});
 
 // MongoDB 연결
 if (process.env.MONGODB_URI) {
@@ -149,49 +119,43 @@ app.listen(PORT, () => {
   console.log(`\n----------- 서버 시작 -----------`);
   console.log(`🚀 서버가 포트 ${PORT}에서 시작되었습니다.`);
   console.log(`🔧 환경: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 CORS 허용 출처: ${JSON.stringify(corsOptions.origin || '*')}`);
   
-  if (process.env.NODE_ENV === 'production') {
-    console.log(`📂 정적 파일 경로: ${path.join(__dirname, '../dist')}`);
-    // 파일 존재 여부 확인
-    const indexPath = path.join(__dirname, '../dist/index.html');
+  // 정적 파일 경로 확인
+  const indexPath = path.join(staticPath, 'index.html');
+  try {
     if (require('fs').existsSync(indexPath)) {
-      console.log(`✅ index.html 파일 확인: ${indexPath}`);
+      console.log(`✅ index.html 파일 확인됨: ${indexPath}`);
+      // 파일 크기 확인
+      const stats = require('fs').statSync(indexPath);
+      console.log(`📄 index.html 크기: ${stats.size} bytes`);
     } else {
       console.log(`❌ index.html 파일 없음: ${indexPath}`);
+      // 디렉토리 내용 출력
+      try {
+        const files = require('fs').readdirSync(staticPath);
+        console.log(`📂 ${staticPath} 디렉토리 파일 목록:`, files);
+      } catch (err) {
+        console.error(`📂 ${staticPath} 디렉토리 읽기 실패:`, err.message);
+      }
     }
+  } catch (err) {
+    console.error(`❌ 파일 시스템 접근 오류:`, err.message);
   }
   
   console.log(`-------------------------------\n`);
   
-  // 서버 상태 주기적 로깅
-  setInterval(() => {
-    console.log(`서버가 포트 ${PORT}에서 정상 실행 중입니다. ${new Date()}`);
-  }, 60000); // 1분마다 로그 출력
+  // 서버 상태 주기적 로깅 (개발 환경에서는 비활성화)
+  if (process.env.NODE_ENV === 'production') {
+    setInterval(() => {
+      console.log(`서버가 포트 ${PORT}에서 정상 실행 중입니다. ${new Date()}`);
+    }, 300000); // 5분마다 로그 출력
+  }
 });
 
 // 에러 처리
 app.use((err, req, res, next) => {
   console.error('서버 오류:', err);
   res.status(500).json({ message: '서버 오류가 발생했습니다.' });
-});
-
-// 404 처리
-app.use((req, res) => {
-  // API 경로가 아닌 모든 요청은 index.html로 라우팅 (SPA 지원)
-  if (!req.path.startsWith('/api/')) {
-    if (process.env.NODE_ENV === 'production') {
-      console.log(`클라이언트 라우팅 처리: ${req.method} ${req.path}`);
-      return res.sendFile(path.join(__dirname, '../dist/index.html'));
-    } else {
-      console.log(`개발 환경 클라이언트 라우팅 처리: ${req.method} ${req.path}`);
-      return res.sendFile(path.join(__dirname, '../build/index.html'));
-    }
-  }
-  
-  // API 경로지만 찾을 수 없는 경우
-  console.log(`404 요청: ${req.method} ${req.url}`);
-  res.status(404).json({ message: '요청한 리소스를 찾을 수 없습니다.' });
 });
 
 module.exports = app; 
