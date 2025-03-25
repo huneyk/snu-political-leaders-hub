@@ -40,7 +40,7 @@ export const apiService = {
     }
   },
 
-  // 추천사(Recommendations) 관련 API
+  // 추천의 글 관련 API
   getRecommendations: async () => {
     try {
       const response = await axios.get(`${baseURL}/recommendations`);
