@@ -8,7 +8,9 @@
 import axios from 'axios';
 
 // API 기본 URL 설정
-const baseURL = 'https://snu-plp-hub-server.onrender.com/api';
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+console.log('🔗 API 기본 URL:', baseURL);
+console.log('🔧 환경 변수 VITE_API_URL:', import.meta.env.VITE_API_URL);
 
 // API 요청 시 기본 헤더 설정
 const apiConfig = {
