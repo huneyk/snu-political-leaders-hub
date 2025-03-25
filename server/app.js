@@ -59,14 +59,16 @@ mongoose.connect(process.env.MONGODB_URI)
     console.error('MongoDB 연결 실패:', error);
   });
 
-// 클라이언트 앱 제공 (SPA 지원)
-app.get('*', (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
-    res.sendFile(path.join(__dirname, '../dist', 'index.html'));
-  } else {
+// Render에서 실행 시 정적 파일 제공 및 SPA 라우팅 비활성화
+if (process.env.NODE_ENV !== 'production') {
+  // 정적 파일 제공 (개발 환경에서만)
+  app.use(express.static(path.join(__dirname, '../build')));
+  
+  // 클라이언트 앱 제공 (SPA 지원)
+  app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../build', 'index.html'));
-  }
-});
+  });
+}
 
 // 서버 시작
 const PORT = process.env.PORT || 5001;
