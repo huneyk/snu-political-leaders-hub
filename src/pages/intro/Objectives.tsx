@@ -1,14 +1,9 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 import ScrollReveal from '@/components/ScrollReveal';
-
-// API 기본 URL 설정
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
-  : 'http://localhost:5001/api';
+import { apiService } from '@/lib/apiService';
 
 interface Objective {
   _id: string;
@@ -100,21 +95,25 @@ const Objectives = () => {
     }
   };
 
-  // MongoDB에서 목표 데이터 가져오기
+  // 목표 데이터 가져오기
   const fetchObjectives = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/objectives`);
+      console.log('MongoDB에서 과정 목표 데이터 로드 시도');
       
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      const data = await apiService.getObjectives();
+      console.log('과정 목표 데이터 로드 완료:', data);
+      
+      if (data && Array.isArray(data) && data.length > 0) {
         // 첫 번째 항목의 sectionTitle을 사용
-        setSectionTitle(response.data[0].sectionTitle || '과정의 목표');
+        setSectionTitle(data[0].sectionTitle || '과정의 목표');
         
         // 활성화된 항목만 필터링하고 정렬
-        const sortedObjectives = response.data
+        const sortedObjectives = data
           .filter((obj: Objective) => obj.isActive)
           .sort((a: Objective, b: Objective) => a.order - b.order);
         
+        console.log('처리된 목표 데이터 (배열):', sortedObjectives);
         setObjectives(sortedObjectives);
         setError(null);
       } else {
