@@ -24,8 +24,10 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' })); // 이미지 Base64 처리를 위해 용량 제한 증가
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// 정적 파일 제공 (개발 환경에서만)
-if (process.env.NODE_ENV === 'development') {
+// 정적 파일 제공
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../dist')));
+} else {
   app.use(express.static(path.join(__dirname, '../build')));
 }
 
@@ -59,7 +61,11 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // 클라이언트 앱 제공 (SPA 지원)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'build', 'index.html'));
+  if (process.env.NODE_ENV === 'production') {
+    res.sendFile(path.join(__dirname, '../dist', 'index.html'));
+  } else {
+    res.sendFile(path.join(__dirname, '../build', 'index.html'));
+  }
 });
 
 // 서버 시작
