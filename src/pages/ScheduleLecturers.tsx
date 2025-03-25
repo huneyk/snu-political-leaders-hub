@@ -59,8 +59,11 @@ const ScheduleLecturers = () => {
       // API 응답 로깅 추가
       console.log('강사진 데이터 응답:', data);
       
-      if (data && Array.isArray(data)) {
+      if (data && Array.isArray(data) && data.length > 0) {
         setLecturers(data);
+        
+        // 데이터 캐싱 (로컬 스토리지 저장)
+        localStorage.setItem('lecturers-data', JSON.stringify(data));
         
         // 기수별, 카테고리별로 강사 그룹화
         const groupByTerm = groupLecturersByTermAndCategory(data);
@@ -68,13 +71,37 @@ const ScheduleLecturers = () => {
         
         setError(null);
       } else {
-        setError('강사진 데이터를 불러올 수 없습니다.');
+        console.error('API 응답에 강사진 데이터가 없습니다:', data);
+        // 로컬 스토리지에서 데이터 로드 시도
+        loadFromLocalStorage();
       }
     } catch (err) {
       console.error('강사진 정보를 불러오는 중 오류가 발생했습니다:', err);
-      setError('데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      // API 오류 시 로컬 스토리지에서 가져오기
+      loadFromLocalStorage();
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // 로컬 스토리지에서 데이터 로드
+  const loadFromLocalStorage = () => {
+    try {
+      const savedData = localStorage.getItem('lecturers-data');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        console.log("로컬 스토리지에서 가져온 강사진 데이터:", parsedData);
+        setLecturers(parsedData);
+        // 기수별, 카테고리별로 강사 그룹화
+        const groupByTerm = groupLecturersByTermAndCategory(parsedData);
+        setTermGroups(groupByTerm);
+        setError(null);
+      } else {
+        setError('강사진 데이터를 찾을 수 없습니다.');
+      }
+    } catch (err) {
+      console.error('로컬 스토리지에서 강사진 데이터를 불러오는 중 오류가 발생했습니다:', err);
+      setError('강사진 데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
     }
   };
 
