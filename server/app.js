@@ -67,20 +67,24 @@ app.get('/api', (req, res) => {
 });
 
 // MongoDB 연결
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('MongoDB 데이터베이스에 연결되었습니다');
-  })
-  .catch(err => {
-    console.error('MongoDB 연결 오류:', err.message);
-    // 연결 세부 정보 로깅 (비밀번호 제외)
-    const sanitizedUri = process.env.MONGODB_URI.replace(
-      /mongodb(\+srv)?:\/\/[^:]+:[^@]+@/, 
-      'mongodb$1://*****:*****@'
-    );
-    console.error('연결 시도한 URI:', sanitizedUri);
-    // 연결이 실패해도 서버는 시작
-  });
+if (process.env.MONGODB_URI) {
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => {
+      console.log('MongoDB 데이터베이스에 연결되었습니다');
+    })
+    .catch(err => {
+      console.error('MongoDB 연결 오류:', err.message);
+      // 연결 세부 정보 로깅 (비밀번호 제외)
+      const sanitizedUri = process.env.MONGODB_URI.replace(
+        /mongodb(\+srv)?:\/\/[^:]+:[^@]+@/, 
+        'mongodb$1://*****:*****@'
+      );
+      console.error('연결 시도한 URI:', sanitizedUri);
+    });
+} else {
+  console.error('MongoDB URI가 환경 변수에 설정되지 않았습니다.');
+  console.error('Render 대시보드에서 MONGODB_URI 환경 변수를 설정해주세요.');
+}
 
 // Render에서 실행 시 정적 파일 제공 및 SPA 라우팅 비활성화
 if (process.env.NODE_ENV !== 'production') {
