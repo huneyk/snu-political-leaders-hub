@@ -27,26 +27,50 @@ const Professors = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    
-    // MongoDB에서 교수진 데이터 가져오기
-    const fetchProfessors = async () => {
-      try {
-        setIsLoading(true);
-        const data = await apiService.getProfessors();
-        if (data && Array.isArray(data)) {
-          setProfessorSections(data);
-        }
-        setError(null);
-      } catch (err) {
-        console.error('교수진 정보를 불러오는 중 오류가 발생했습니다:', err);
-        setError('데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchProfessors();
   }, []);
+
+  const fetchProfessors = async () => {
+    try {
+      setIsLoading(true);
+      // API에서 교수진 데이터 가져오기
+      const data = await apiService.getProfessors();
+      
+      if (data && Array.isArray(data) && data.length > 0) {
+        setProfessorSections(data);
+        
+        // 데이터 캐싱 (로컬 스토리지 저장)
+        localStorage.setItem('professors-data', JSON.stringify(data));
+      } else {
+        // API 데이터가 없으면 로컬 스토리지에서 가져오기
+        loadFromLocalStorage();
+      }
+      
+      setError(null);
+    } catch (err) {
+      console.error('교수진 정보를 불러오는 중 오류가 발생했습니다:', err);
+      // API 오류 시 로컬 스토리지에서 가져오기
+      loadFromLocalStorage();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const loadFromLocalStorage = () => {
+    try {
+      const savedData = localStorage.getItem('professors-data');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        setProfessorSections(parsedData);
+        setError(null);
+      } else {
+        setError('교수진 정보를 불러올 수 없습니다.');
+      }
+    } catch (err) {
+      console.error('로컬 스토리지에서 교수진 데이터를 불러오는 중 오류가 발생했습니다:', err);
+      setError('교수진 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
+    }
+  };
 
   // 애니메이션 변수
   const containerVariants = {
