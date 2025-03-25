@@ -10,17 +10,23 @@ dotenv.config();
 // Express 앱 생성
 const app = express();
 
-// CORS 설정 - 반드시 다른 미들웨어보다 먼저 적용
-app.use(function(req, res, next) {
-  const allowedOrigins = [
+// CORS 설정 옵션
+const corsOptions = {
+  origin: [
     'http://localhost:8080',
     'http://localhost:3000',
     'https://snu-political-leaders-hub.onrender.com',
     'https://snu-political-leaders-hub-1.onrender.com'
-  ];
-  
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+  credentials: true
+};
+
+// CORS 설정 - 반드시 다른 미들웨어보다 먼저 적용
+app.use(function(req, res, next) {
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
+  if (corsOptions.origin.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
   } else {
     // 개발 환경에서는 모든 도메인 허용 (프로덕션에서는 제거)
@@ -28,8 +34,8 @@ app.use(function(req, res, next) {
   }
   
   // CORS 헤더 설정
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', corsOptions.methods.join(', '));
+  res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(', '));
   
   // OPTIONS 요청에 즉시 응답
   if (req.method === 'OPTIONS') {
@@ -46,9 +52,13 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // 정적 파일 제공
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')));
+  const clientBuildPath = path.join(__dirname, '../dist');
+  console.log('정적 파일 경로 설정:', clientBuildPath);
+  app.use(express.static(clientBuildPath));
 } else {
-  app.use(express.static(path.join(__dirname, '../build')));
+  const devBuildPath = path.join(__dirname, '../build');
+  console.log('개발 환경 정적 파일 경로 설정:', devBuildPath);
+  app.use(express.static(devBuildPath));
 }
 
 // 라우트 불러오기
@@ -82,19 +92,28 @@ app.use('/api/schedules', schedulesRoutes);
 app.use('/api/greeting', greetingRoutes);
 
 // 간단한 상태 확인 라우트
-app.get('/', (req, res) => {
-  res.send('서버가 실행 중입니다.');
+app.get('/api/status', (req, res) => {
+  res.json({ status: 'ok', message: '서버가 정상 실행 중입니다. ' + new Date() });
 });
 
-// 기본 API 경로
-app.get('/api', (req, res) => {
-  res.json({ 
-    message: 'API 서버가 실행 중입니다.',
-    timestamp: new Date(),
-    environment: process.env.NODE_ENV,
-    status: 'ok'
+// 클라이언트 라우팅을 위한 설정은 API 라우트 설정 이후에 위치
+// 프로덕션 환경에서는 정적 파일 제공 및 모든 경로를 index.html로 라우팅
+if (process.env.NODE_ENV === 'production') {
+  // 정적 파일 서빙 (배포 환경용)
+  const path = require('path');
+  const clientBuildPath = path.join(__dirname, '../dist');
+  
+  // 정적 파일 제공
+  app.use(express.static(clientBuildPath));
+  
+  // 모든 경로에 대해 index.html 제공 (리액트 라우팅을 위함)
+  app.get('*', (req, res) => {
+    // API 경로는 제외
+    if (!req.path.startsWith('/api/')) {
+      res.sendFile(path.join(clientBuildPath, 'index.html'));
+    }
   });
-});
+}
 
 // MongoDB 연결
 if (process.env.MONGODB_URI) {
@@ -124,22 +143,26 @@ if (process.env.MONGODB_URI) {
   console.error('💡 Render 대시보드에서 MONGODB_URI 환경 변수를 설정해주세요.');
 }
 
-// Render에서 실행 시 정적 파일 제공 및 SPA 라우팅 비활성화
-if (process.env.NODE_ENV !== 'production') {
-  // 정적 파일 제공 (개발 환경에서만)
-  app.use(express.static(path.join(__dirname, '../build')));
-  
-  // 클라이언트 앱 제공 (SPA 지원)
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../build', 'index.html'));
-  });
-}
-
 // 서버 실행 시 로그
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-  console.log(`서버가 포트 ${PORT}에서 시작되었습니다.`);
-  console.log(`환경: ${process.env.NODE_ENV}`);
+  console.log(`\n----------- 서버 시작 -----------`);
+  console.log(`🚀 서버가 포트 ${PORT}에서 시작되었습니다.`);
+  console.log(`🔧 환경: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 CORS 허용 출처: ${JSON.stringify(corsOptions.origin || '*')}`);
+  
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`📂 정적 파일 경로: ${path.join(__dirname, '../dist')}`);
+    // 파일 존재 여부 확인
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    if (require('fs').existsSync(indexPath)) {
+      console.log(`✅ index.html 파일 확인: ${indexPath}`);
+    } else {
+      console.log(`❌ index.html 파일 없음: ${indexPath}`);
+    }
+  }
+  
+  console.log(`-------------------------------\n`);
   
   // 서버 상태 주기적 로깅
   setInterval(() => {
@@ -155,6 +178,20 @@ app.use((err, req, res, next) => {
 
 // 404 처리
 app.use((req, res) => {
+  // API 경로가 아닌 모든 요청은 index.html로 라우팅 (SPA 지원)
+  if (!req.path.startsWith('/api/')) {
+    if (process.env.NODE_ENV === 'production') {
+      console.log(`클라이언트 라우팅 처리: ${req.method} ${req.path}`);
+      return res.sendFile(path.join(__dirname, '../dist/index.html'));
+    } else {
+      console.log(`개발 환경 클라이언트 라우팅 처리: ${req.method} ${req.path}`);
+      return res.sendFile(path.join(__dirname, '../build/index.html'));
+    }
+  }
+  
+  // API 경로지만 찾을 수 없는 경우
   console.log(`404 요청: ${req.method} ${req.url}`);
   res.status(404).json({ message: '요청한 리소스를 찾을 수 없습니다.' });
-}); 
+});
+
+module.exports = app; 
