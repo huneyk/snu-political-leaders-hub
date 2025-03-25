@@ -2,18 +2,14 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
-import axios from 'axios';
-
-// Define API base URL for different environments
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
-  : 'http://localhost:5001/api';
+import { apiService } from '@/lib/apiService';
 
 interface BenefitItem {
   _id?: string;
   sectionTitle: string;
   title: string;
   description: string;
+  iconType?: string;
   order?: number;
   isActive?: boolean;
 }
@@ -25,24 +21,31 @@ const Benefits = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    loadBenefits();
+    fetchBenefits();
   }, []);
 
-  const loadBenefits = async () => {
+  const fetchBenefits = async () => {
     setIsLoading(true);
     try {
       // Try to fetch data from API
-      const response = await axios.get(`${API_BASE_URL}/content/benefits`);
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      const data = await apiService.getBenefits();
+      
+      if (data && Array.isArray(data) && data.length > 0) {
         // Set section title from the first item
-        setSectionTitle(response.data[0].sectionTitle || '과정 특전');
+        setSectionTitle(data[0].sectionTitle || '과정 특전');
+        
         // Filter only active benefits and sort by order
-        const activeBenefits = response.data
+        const activeBenefits = data
           .filter((benefit: BenefitItem) => benefit.isActive !== false)
           .sort((a: BenefitItem, b: BenefitItem) => {
             return (a.order || 0) - (b.order || 0);
           });
+        
         setBenefits(activeBenefits);
+        
+        // 데이터 캐싱 (로컬 스토리지 저장)
+        localStorage.setItem('course-benefits-title', data[0].sectionTitle || '과정 특전');
+        localStorage.setItem('course-benefits', JSON.stringify(activeBenefits));
       } else {
         // If no data from API, try to load from localStorage as fallback
         loadFromLocalStorage();
@@ -75,11 +78,7 @@ const Benefits = () => {
             })));
           } else {
             // Handle new format with title and content
-            setBenefits(parsedBenefits.map(item => ({
-              sectionTitle: savedTitle || '과정 특전',
-              title: item.title || '',
-              description: item.content || item.description || ''
-            })));
+            setBenefits(parsedBenefits);
           }
         }
       } catch (error) {

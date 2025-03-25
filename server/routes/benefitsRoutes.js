@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Content = require('../models/Content');
+const Benefit = require('../models/Benefit');
 const { isAdmin } = require('../middleware/authMiddleware');
 
 // 모든 혜택 정보 가져오기 (공개)
@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
     console.log('혜택 정보 조회 요청 수신');
     
     // MongoDB에서 혜택 데이터 가져오기
-    const benefits = await Content.find({ type: 'benefits' }).sort({ createdAt: -1 });
+    const benefits = await Benefit.find({ isActive: true }).sort({ order: 1 });
     
     // 데이터가 없는 경우 처리
     if (!benefits || benefits.length === 0) {
@@ -28,16 +28,19 @@ router.get('/', async (req, res) => {
 // 혜택 정보 추가 (관리자 전용)
 router.post('/', isAdmin, async (req, res) => {
   try {
-    const { title, content } = req.body;
+    const { sectionTitle, title, description, iconType } = req.body;
     
-    if (!title || !content) {
-      return res.status(400).json({ message: '제목과 내용은 필수 항목입니다.' });
+    if (!title || !description) {
+      return res.status(400).json({ message: '제목과 설명은 필수 항목입니다.' });
     }
     
-    const newBenefit = new Content({
-      type: 'benefits',
+    const newBenefit = new Benefit({
+      sectionTitle,
       title,
-      content,
+      description,
+      iconType,
+      order: req.body.order || 0,
+      isActive: req.body.isActive !== undefined ? req.body.isActive : true,
       ...req.body // 추가 필드
     });
     

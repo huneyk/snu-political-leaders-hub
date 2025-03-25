@@ -1,12 +1,10 @@
 const mongoose = require('mongoose');
 
-const recommendationSchema = new mongoose.Schema({
+const benefitSchema = new mongoose.Schema({
   sectionTitle: String,
   title: String,
-  name: String,
-  position: String,
-  content: String,
-  imageUrl: String,
+  description: String,
+  iconType: String,
   order: {
     type: Number,
     default: 0
@@ -24,9 +22,8 @@ const recommendationSchema = new mongoose.Schema({
     default: Date.now
   }
 }, { 
-  collection: 'recommendations',
+  collection: 'benefits',
   strict: false // 스키마에 정의되지 않은 필드도 허용
 }); 
 
-module.exports = mongoose.model('Recommendation', recommendationSchema);
-
+module.exports = mongoose.model('Benefit', benefitSchema);
