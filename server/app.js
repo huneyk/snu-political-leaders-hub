@@ -11,17 +11,16 @@ dotenv.config();
 const app = express();
 
 // CORS 설정 - 반드시 다른 미들웨어보다 먼저 적용
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-
-// 추가 CORS 헤더 설정
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  
+  // OPTIONS 요청에 즉시 응답
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   next();
 });
 
@@ -54,9 +53,19 @@ app.use('/api/notices', noticeRoutes);
 app.use('/api/footer', footerRoutes);
 app.use('/api/admission', admissionRoutes);
 
-// 기본 경로
+// 간단한 상태 확인 라우트
+app.get('/', (req, res) => {
+  res.send('서버가 실행 중입니다.');
+});
+
+// 기본 API 경로
 app.get('/api', (req, res) => {
-  res.json({ message: 'API 서버가 실행 중입니다.' });
+  res.json({ 
+    message: 'API 서버가 실행 중입니다.',
+    timestamp: new Date(),
+    environment: process.env.NODE_ENV,
+    status: 'ok'
+  });
 });
 
 // MongoDB 연결
@@ -79,8 +88,26 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// 서버 시작
+// 서버 실행 시 로그
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-  console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
+  console.log(`서버가 포트 ${PORT}에서 시작되었습니다.`);
+  console.log(`환경: ${process.env.NODE_ENV}`);
+  
+  // 서버 상태 주기적 로깅
+  setInterval(() => {
+    console.log(`서버가 포트 ${PORT}에서 정상 실행 중입니다. ${new Date()}`);
+  }, 60000); // 1분마다 로그 출력
+});
+
+// 에러 처리
+app.use((err, req, res, next) => {
+  console.error('서버 오류:', err);
+  res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+});
+
+// 404 처리
+app.use((req, res) => {
+  console.log(`404 요청: ${req.method} ${req.url}`);
+  res.status(404).json({ message: '요청한 리소스를 찾을 수 없습니다.' });
 }); 
