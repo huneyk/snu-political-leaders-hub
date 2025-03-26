@@ -24,7 +24,7 @@ export const apiService = {
   // 인사말(Greeting) 관련 API
   getGreeting: async () => {
     try {
-      const response = await axios.get(`${baseURL}/content/greeting`);
+      const response = await axios.get(`${baseURL}/greeting`);
       console.log('Greeting API Response:', response.data);
       return response.data;
     } catch (error) {
