@@ -23,7 +23,8 @@ const PORT = process.env.PORT || 5001;
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:8080',
-  'https://snu-plp.onrender.com'
+  'https://snu-plp.onrender.com',
+  'https://snu-political-leaders-hub-1.onrender.com'
 ];
 
 app.use(cors({
