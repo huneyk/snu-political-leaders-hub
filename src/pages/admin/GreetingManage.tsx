@@ -10,7 +10,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AdminNavTabs from '@/components/admin/AdminNavTabs';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import axios from 'axios';
+import AdminHomeButton from '@/components/admin/AdminHomeButton';
 import AdminLayout from '@/components/admin/AdminLayout';
 
 // API 기본 URL 설정
@@ -49,15 +49,34 @@ const GreetingManage = () => {
   const loadGreeting = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/greeting`);
+      console.log('인사말 데이터 로드 시도 URL:', `${API_BASE_URL}/content/greeting`);
       
-      if (response.data) {
+      // axios 대신 fetch API 사용
+      const response = await fetch(`/api/content/greeting`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      console.log('인사말 API 응답 상태:', response.status, response.statusText);
+      
+      // 응답 확인
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('인사말 API 응답 데이터:', data);
+      
+      if (data) {
         // MongoDB에서 가져온 데이터로 상태 업데이트
         setGreetingData({
-          title: response.data.title || '',
-          content: response.data.content || '',
-          author: response.data.author || '',
-          position: response.data.position || ''
+          title: data.title || '',
+          content: data.content || '',
+          author: data.author || '',
+          position: data.position || ''
         });
       }
     } catch (error) {
@@ -119,12 +138,28 @@ const GreetingManage = () => {
     setIsSaving(true);
     
     try {
-      await axios.post(`${API_BASE_URL}/greeting`, greetingData, {
+      console.log('인사말 저장 시도 URL:', `${API_BASE_URL}/content/greeting`);
+      console.log('저장할 데이터:', greetingData);
+      
+      // axios 대신 fetch API 사용
+      const response = await fetch(`/api/content/greeting`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'Authorization': `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify(greetingData)
       });
+      
+      console.log('인사말 저장 응답 상태:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('인사말 저장 응답 데이터:', data);
       
       // localStorage에도 백업으로 저장
       localStorage.setItem('greeting-data', JSON.stringify(greetingData));
@@ -133,11 +168,18 @@ const GreetingManage = () => {
         title: "인사말 저장 성공",
         description: "인사말이 성공적으로 저장되었습니다.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('인사말 저장 실패:', error);
+      
+      // 오류 메시지 생성
+      let errorMessage = "인사말을 저장하는 중 오류가 발생했습니다.";
+      if (error.message.includes('서버 오류')) {
+        errorMessage = `${error.message}. 서버에 저장하지 못했습니다.`;
+      }
+      
       toast({
         title: "인사말 저장 실패",
-        description: "인사말을 저장하는 중 오류가 발생했습니다.",
+        description: errorMessage,
         variant: "destructive",
       });
       
