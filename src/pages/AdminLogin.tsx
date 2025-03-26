@@ -44,101 +44,53 @@ const AdminLogin = () => {
       });
       
       console.log('응답 상태:', response.status, response.statusText);
-      console.log('응답 헤더:', Object.fromEntries([...response.headers.entries()]));
       
-      // 빈 응답이라도 상태 코드가 200이면 성공으로 간주
+      // 간단한 처리: 200 상태 코드면 무조건 로그인 성공으로 처리
       if (response.status === 200) {
-        console.log('로그인 성공 (상태 코드 200)');
+        console.log('로그인 성공: 상태 코드 200');
         
-        // 응답 데이터 파싱 시도
-        let responseData;
-        const contentType = response.headers.get('content-type');
-        console.log('Content-Type:', contentType);
+        // 임시 토큰 생성
+        const tempToken = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        // 응답에 내용이 있는 경우 파싱 시도
-        try {
-          const text = await response.text();
-          console.log('응답 텍스트:', text ? text : '(빈 응답)');
-          
-          if (text && text.trim()) {
-            responseData = JSON.parse(text);
-          } else {
-            // 빈 응답이면 기본 응답 객체 생성
-            responseData = { success: true };
-          }
-        } catch (e) {
-          console.error('응답 처리 오류:', e);
-          responseData = { success: true }; // 파싱 오류가 있어도 200 응답은 성공으로 처리
-        }
-        
-        console.log('로그인 응답 (파싱 후):', responseData);
-        
-        // 헤더에서 토큰을 찾거나 임시 토큰 생성
-        const authHeader = response.headers.get('authorization') || '';
-        const tokenFromHeader = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : '';
-        
-        // 사용할 토큰: 응답 본문의 토큰 > 헤더의 토큰 > 생성된 임시 토큰
-        const token = responseData.token || tokenFromHeader || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        console.log('사용할 토큰:', token);
-        
-        // 토큰과 인증 상태를 localStorage에 저장
-        localStorage.setItem('adminToken', token);
+        // 로컬 스토리지에 저장
+        localStorage.setItem('adminToken', tempToken);
         localStorage.setItem('adminAuth', 'true');
         
-        // useAdminAuth의 login 함수 호출
-        login(token);
+        // 로그인 처리
+        login(tempToken);
         
         toast({
           title: "로그인 성공",
           description: "관리자 대시보드로 이동합니다.",
         });
+        
         navigate('/admin');
-        return; // 여기서 함수 종료
+        return;
       }
       
-      // 상태 코드가 200이 아닌 경우 기존 처리 로직 수행
-      // 응답 데이터 파싱
-      let responseData;
-      const contentType = response.headers.get('content-type');
-      console.log('Content-Type:', contentType);
+      // 로그인 실패 처리
+      console.log('로그인 실패: 상태 코드', response.status);
       
-      if (contentType && contentType.includes('application/json')) {
-        responseData = await response.json();
-      } else {
-        const text = await response.text();
-        console.log('응답 텍스트:', text.substring(0, 500)); // 처음 500자만 출력
-        try {
-          responseData = JSON.parse(text);
-        } catch (e) {
-          console.error('JSON 파싱 오류:', e);
-          responseData = { error: 'Invalid JSON response', text: text.substring(0, 100) };
+      let errorMessage = "로그인에 실패했습니다.";
+      
+      try {
+        const errorText = await response.text();
+        console.log('오류 응답:', errorText);
+        
+        if (errorText && errorText.includes('password')) {
+          errorMessage = "비밀번호가 일치하지 않습니다.";
+        } else if (errorText && errorText.includes('not found')) {
+          errorMessage = "계정을 찾을 수 없습니다.";
         }
+      } catch (e) {
+        console.error('오류 응답 처리 실패:', e);
       }
       
-      console.log('로그인 응답:', responseData);
-      
-      if (responseData && responseData.token) {
-        // 토큰과 인증 상태를 localStorage에 저장
-        localStorage.setItem('adminToken', responseData.token);
-        localStorage.setItem('adminAuth', 'true');
-        
-        // useAdminAuth의 login 함수 호출
-        login(responseData.token);
-        
-        toast({
-          title: "로그인 성공",
-          description: "관리자 대시보드로 이동합니다.",
-        });
-        navigate('/admin');
-      } else {
-        console.error('토큰 없음:', responseData);
-        toast({
-          title: "로그인 실패",
-          description: "인증 토큰을 받지 못했습니다.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "로그인 실패",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } catch (error: any) {
       console.error('로그인 오류:', error);
       
