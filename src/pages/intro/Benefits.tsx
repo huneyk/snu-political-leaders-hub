@@ -53,10 +53,16 @@ const Benefits = () => {
         return;
       }
       
+      // API 요청 URL
+      const apiEndpoint = `${API_URL}/benefits`;
+      console.log('요청 URL:', apiEndpoint);
+      
       // fetch API로 데이터 가져오기
-      const response = await fetch(`${API_URL}/content/benefits`);
+      const response = await fetch(apiEndpoint);
       
       // 응답 상태 확인
+      console.log('응답 상태:', response.status, response.statusText);
+      
       if (!response.ok) {
         throw new Error(`서버 오류: ${response.status}`);
       }
