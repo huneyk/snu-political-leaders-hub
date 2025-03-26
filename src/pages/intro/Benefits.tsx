@@ -54,7 +54,7 @@ const Benefits = () => {
       }
       
       // fetch API로 데이터 가져오기
-      const response = await fetch(`${API_URL}/content/benefits`);
+      const response = await fetch(`${API_URL}/benefits`);
       
       // 응답 상태 확인
       if (!response.ok) {
