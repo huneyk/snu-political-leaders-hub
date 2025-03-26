@@ -49,10 +49,10 @@ const GreetingManage = () => {
   const loadGreeting = async () => {
     try {
       setIsLoading(true);
-      console.log('인사말 데이터 로드 시도 URL:', `${API_BASE_URL}/content/greeting`);
+      console.log('인사말 데이터 로드 시도 URL:', `${API_BASE_URL}/greeting`);
       
       // axios 대신 fetch API 사용
-      const response = await fetch(`/api/content/greeting`, {
+      const response = await fetch(`/api/greeting`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -138,11 +138,11 @@ const GreetingManage = () => {
     setIsSaving(true);
     
     try {
-      console.log('인사말 저장 시도 URL:', `${API_BASE_URL}/content/greeting`);
+      console.log('인사말 저장 시도 URL:', `${API_BASE_URL}/greeting`);
       console.log('저장할 데이터:', greetingData);
       
       // axios 대신 fetch API 사용
-      const response = await fetch(`/api/content/greeting`, {
+      const response = await fetch(`/api/greeting`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
