@@ -9,7 +9,7 @@ import axios from 'axios';
 
 // 기본 URL 설정 - 서버 URL 직접 지정
 const baseURL = import.meta.env.MODE === 'production' 
-  ? 'https://snu-plp-hub-server.onrender.com' 
+  ? 'https://snu-plp-hub-server.onrender.com/api' 
   : 'http://localhost:5001/api';
 console.log('🔗 API 기본 URL:', baseURL);
 console.log('🔧 현재 환경:', import.meta.env.MODE);
@@ -30,30 +30,19 @@ export const apiService = {
       console.log('요청 URL:', `${baseURL}/greeting`);
       console.log('현재 환경:', import.meta.env.MODE);
       
-      // 서버에 직접 요청
-      const fullUrl = `${baseURL}/greeting`;
-      console.log('최종 요청 URL:', fullUrl);
-      
-      const response = await fetch(fullUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      console.log('인사말 API 응답 상태:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        throw new Error(`서버 오류: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('인사말 API 응답 데이터:', data);
-      return data;
+      const response = await axios.get(`${baseURL}/greeting`);
+      console.log('인사말 API 응답 상태:', response.status);
+      console.log('인사말 API 응답 데이터:', response.data);
+      return response.data;
     } catch (error) {
       console.error('Error fetching greeting data:', error);
-      if (error instanceof Error) {
-        console.error('Error Details:', error.message);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
       }
       throw error;
     }
@@ -66,8 +55,7 @@ export const apiService = {
       console.log('요청 URL:', `${baseURL}/greeting`);
       
       const headers: any = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'application/json'
       };
       
       // 토큰이 제공된 경우에만 Authorization 헤더 추가
@@ -75,24 +63,23 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      // 프록시를 사용하여 CORS 우회
-      const response = await fetch(`${baseURL}/greeting`, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(greetingData)
+      const response = await axios.post(`${baseURL}/greeting`, greetingData, {
+        headers
       });
       
-      console.log('인사말 저장 응답 상태:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        throw new Error(`서버 오류: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('인사말 저장 응답 데이터:', data);
-      return data;
+      console.log('인사말 저장 응답 상태:', response.status);
+      console.log('인사말 저장 응답 데이터:', response.data);
+      return response.data;
     } catch (error) {
       console.error('Error updating greeting data:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
       throw error;
     }
   },
@@ -589,30 +576,19 @@ export const apiService = {
       console.log('요청 URL:', `${baseURL}/footer`);
       console.log('현재 환경:', import.meta.env.MODE);
       
-      // 서버에 직접 요청
-      const fullUrl = `${baseURL}/footer`;
-      console.log('최종 요청 URL:', fullUrl);
-      
-      const response = await fetch(fullUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      console.log('푸터 API 응답 상태:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        throw new Error(`서버 오류: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('푸터 API 응답 데이터:', data);
-      return data;
+      const response = await axios.get(`${baseURL}/footer`);
+      console.log('푸터 API 응답 상태:', response.status);
+      console.log('푸터 API 응답 데이터:', response.data);
+      return response.data;
     } catch (error) {
       console.error('Error fetching footer data:', error);
-      if (error instanceof Error) {
-        console.error('Error Details:', error.message);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
       }
       throw error;
     }
