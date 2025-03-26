@@ -133,10 +133,16 @@ const Benefits = () => {
       try {
         // API 호출 시도 (최대 1회)
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-        console.log('API URL 시도:', API_URL);
+        console.log('API URL 기본:', API_URL);
+        
+        // 다양한 엔드포인트 시도: ['benefits', 'content/benefits', 'api/benefits']
+        const possibleEndpoints = ['benefits', 'content/benefits'];
+        let response = null;
+        let responseData = null;
+        let lastError = null;
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3초 타임아웃
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
         
         // 크로스 도메인 문제를 확인하기 위한 fetch 옵션
         const fetchOptions = {
@@ -147,36 +153,60 @@ const Benefits = () => {
             'Cache-Control': 'no-cache'
           },
           signal: controller.signal,
-          mode: 'cors' as RequestMode
+          mode: 'cors' as RequestMode,
+          credentials: 'omit' as RequestCredentials
         };
         
         console.log('Fetch 옵션:', fetchOptions);
         
-        const response = await fetch(`${API_URL}/benefits`, fetchOptions);
+        // 여러 가능한 엔드포인트 시도
+        for (const endpoint of possibleEndpoints) {
+          try {
+            console.log(`엔드포인트 시도: ${API_URL}/${endpoint}`);
+            response = await fetch(`${API_URL}/${endpoint}`, fetchOptions);
+            
+            console.log(`[${endpoint}] 응답 상태:`, response.status, response.statusText);
+            console.log(`[${endpoint}] 응답 헤더:`, {
+              contentType: response.headers.get('content-type'),
+              server: response.headers.get('server'),
+              cors: response.headers.get('access-control-allow-origin')
+            });
+            
+            if (!response.ok) {
+              console.log(`[${endpoint}] 서버 오류:`, response.status);
+              continue; // 다음 엔드포인트 시도
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+              console.log(`[${endpoint}] JSON이 아닌 응답:`, contentType);
+              continue; // 다음 엔드포인트 시도
+            }
+            
+            // JSON 파싱 시도
+            try {
+              responseData = await response.json();
+              console.log(`[${endpoint}] 데이터 로드 성공:`, responseData);
+              break; // 성공적으로 데이터를 받았으므로 루프 종료
+            } catch (jsonError) {
+              console.error(`[${endpoint}] JSON 파싱 오류:`, jsonError);
+              continue; // 다음 엔드포인트 시도
+            }
+          } catch (endpointError) {
+            console.error(`[${endpoint}] 요청 오류:`, endpointError);
+            lastError = endpointError;
+          }
+        }
         
         clearTimeout(timeoutId);
         
-        console.log('응답 상태:', response.status, response.statusText);
-        console.log('응답 헤더:', {
-          contentType: response.headers.get('content-type'),
-          server: response.headers.get('server'),
-          cors: response.headers.get('access-control-allow-origin')
-        });
-        
-        if (!response.ok) {
-          throw new Error(`서버 오류: ${response.status}`);
+        // 모든 엔드포인트 시도 후 결과 확인
+        if (!responseData) {
+          throw new Error('모든 API 엔드포인트 시도 실패' + (lastError ? `: ${lastError.message}` : ''));
         }
         
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          console.error('서버가 JSON이 아닌 응답을 반환했습니다:', contentType);
-          const text = await response.text();
-          console.log('응답 텍스트 (처음 100자):', text.substring(0, 100));
-          throw new Error('서버가 JSON이 아닌 응답을 반환했습니다.');
-        }
-        
-        const data = await response.json();
-        console.log('API 응답 데이터:', data);
+        const data = responseData;
+        console.log('최종 데이터:', data);
         
         if (data && Array.isArray(data) && data.length > 0) {
           // 첫 번째 항목의 sectionTitle을 사용
