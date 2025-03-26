@@ -42,8 +42,7 @@ const scheduleSchema = new mongoose.Schema({
   // 일정 날짜 (YYYY-MM-DD 형식)
   date: {
     type: Date,
-    required: true,
-    index: true // 날짜별 검색 및 정렬을 위한 인덱스
+    required: true
   },
   
   // 일정 시간 (HH:MM 형식)

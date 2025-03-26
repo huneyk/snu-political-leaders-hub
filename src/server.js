@@ -4,6 +4,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import authRoutes from './routes/authRoutes.js';
+import contentRoutes from './routes/contentRoutes.js';
 
 // 환경 변수 설정
 dotenv.config();
@@ -16,18 +19,25 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// MongoDB 연결
-connectDB();
-
 // CORS 설정
-const corsOptions = {
-  origin: ['http://localhost:8080', 'http://localhost:3000'],
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:8080',
+  'https://snu-plp.onrender.com'
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS 정책에 의해 차단되었습니다'));
+    }
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-};
-app.use(cors(corsOptions));
-console.log('CORS enabled with options:', corsOptions);
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // 미들웨어 설정
 app.use(express.json({ limit: '50mb' }));
@@ -47,9 +57,7 @@ import galleryRoutes from './routes/galleryRoutes.js';
 import noticeRoutes from './routes/noticeRoutes.js';
 import admissionRoutes from './routes/admissionRoutes.js';
 import footerRoutes from './routes/footerRoutes.js';
-import authRoutes from './routes/authRoutes.js';
 import greetingRoutes from './routes/greetingRoutes.js';
-import contentRoutes from './routes/contentRoutes.js';
 
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/notices', noticeRoutes);
@@ -79,4 +87,5 @@ app.use((err, req, res, next) => {
 // 서버 시작
 app.listen(PORT, () => {
   console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+  connectDB();
 }); 
