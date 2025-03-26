@@ -9,7 +9,7 @@ import axios from 'axios';
 
 // 기본 URL 설정 - 서버 URL 직접 지정
 const baseURL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
+  ? 'https://snu-plp-hub-server.onrender.com' 
   : 'http://localhost:5001/api';
 console.log('🔗 API 기본 URL:', baseURL);
 console.log('🔧 환경 변수 VITE_API_URL:', import.meta.env.VITE_API_URL);
@@ -581,10 +581,30 @@ export const apiService = {
   // 푸터(Footer) 관련 API
   getFooter: async () => {
     try {
-      const response = await axios.get(`${baseURL}/footer`);
-      return response.data;
+      console.log('푸터 데이터 가져오기 시작');
+      console.log('요청 URL:', `${baseURL}/footer`);
+      
+      const response = await fetch(`${baseURL}/footer`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      console.log('푸터 API 응답 상태:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('푸터 API 응답 데이터:', data);
+      return data;
     } catch (error) {
       console.error('Error fetching footer data:', error);
+      if (error instanceof Error) {
+        console.error('Error Details:', error.message);
+      }
       throw error;
     }
   },
