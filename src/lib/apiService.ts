@@ -81,18 +81,26 @@ export const apiService = {
   // 혜택(Benefits) 관련 API
   getBenefits: async () => {
     try {
-      const response = await axios.get(`${baseURL}/benefits`);
-      console.log('Benefits API Response:', response.data);
-      return response.data;
+      console.log('Benefits API Request 시작');
+      const response = await fetch(`${baseURL}/benefits`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      console.log('Benefits API 응답 상태:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Benefits API 응답 데이터:', data);
+      return data;
     } catch (error) {
       console.error('Error fetching benefits data:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
-      }
       throw error;
     }
   },

@@ -114,7 +114,7 @@ const Benefits = () => {
     try {
       setIsLoading(true);
       setError(null);
-      console.log('MongoDB에서 과정 특전 데이터 로드 시도');
+      console.log('----------- 과정 특전 데이터 로드 시도 -----------');
       
       // 로컬 스토리지에서 캐시된 데이터 확인
       const cachedData = localStorage.getItem('benefits');
@@ -123,6 +123,7 @@ const Benefits = () => {
       
       // 캐시가 유효한 경우 캐시된 데이터 사용
       if (cachedData && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_DURATION) {
+        console.log('캐시된 데이터 사용');
         const parsedData = JSON.parse(cachedData);
         setBenefits(parsedData);
         setSectionTitle(parsedData[0]?.sectionTitle || '과정 특전');
@@ -130,142 +131,78 @@ const Benefits = () => {
         return;
       }
       
-      try {
-        // API 호출 시도 (최대 1회)
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-        console.log('API URL 기본:', API_URL);
-        
-        // 다양한 엔드포인트 시도: ['benefits', 'content/benefits', 'api/benefits']
-        const possibleEndpoints = ['benefits', 'content/benefits'];
-        let response = null;
-        let responseData = null;
-        let lastError = null;
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
-        
-        // 크로스 도메인 문제를 확인하기 위한 fetch 옵션
-        const fetchOptions = {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache'
-          },
-          signal: controller.signal,
-          mode: 'cors' as RequestMode,
-          credentials: 'omit' as RequestCredentials
-        };
-        
-        console.log('Fetch 옵션:', fetchOptions);
-        
-        // 여러 가능한 엔드포인트 시도
-        for (const endpoint of possibleEndpoints) {
-          try {
-            console.log(`엔드포인트 시도: ${API_URL}/${endpoint}`);
-            response = await fetch(`${API_URL}/${endpoint}`, fetchOptions);
-            
-            console.log(`[${endpoint}] 응답 상태:`, response.status, response.statusText);
-            console.log(`[${endpoint}] 응답 헤더:`, {
-              contentType: response.headers.get('content-type'),
-              server: response.headers.get('server'),
-              cors: response.headers.get('access-control-allow-origin')
-            });
-            
-            if (!response.ok) {
-              console.log(`[${endpoint}] 서버 오류:`, response.status);
-              continue; // 다음 엔드포인트 시도
-            }
-            
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-              console.log(`[${endpoint}] JSON이 아닌 응답:`, contentType);
-              continue; // 다음 엔드포인트 시도
-            }
-            
-            // JSON 파싱 시도
-            try {
-              responseData = await response.json();
-              console.log(`[${endpoint}] 데이터 로드 성공:`, responseData);
-              break; // 성공적으로 데이터를 받았으므로 루프 종료
-            } catch (jsonError) {
-              console.error(`[${endpoint}] JSON 파싱 오류:`, jsonError);
-              continue; // 다음 엔드포인트 시도
-            }
-          } catch (endpointError) {
-            console.error(`[${endpoint}] 요청 오류:`, endpointError);
-            lastError = endpointError;
-          }
+      // Admin 페이지와 동일한 API 엔드포인트 패턴 사용
+      const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api';
+      console.log('API URL:', API_BASE_URL);
+      
+      console.log('API 요청 시도:', `${API_BASE_URL}/content/benefits`);
+      const response = await fetch(`/api/content/benefits`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
-        
-        clearTimeout(timeoutId);
-        
-        // 모든 엔드포인트 시도 후 결과 확인
-        if (!responseData) {
-          throw new Error('모든 API 엔드포인트 시도 실패' + (lastError ? `: ${lastError.message}` : ''));
-        }
-        
-        const data = responseData;
-        console.log('최종 데이터:', data);
-        
-        if (data && Array.isArray(data) && data.length > 0) {
-          // 첫 번째 항목의 sectionTitle을 사용
-          setSectionTitle(data[0].sectionTitle || '과정 특전');
-          
-          // 활성화된 항목만 필터링하고 정렬
-          const activeBenefits = data
-            .filter((benefit: BenefitItem) => benefit.isActive !== false)
-            .sort((a: BenefitItem, b: BenefitItem) => {
-              return (a.order || 0) - (b.order || 0);
-            });
-          
-          setBenefits(activeBenefits);
-          
-          // 데이터 캐싱
-          localStorage.setItem('benefits', JSON.stringify(activeBenefits));
-          localStorage.setItem('benefitsTime', Date.now().toString());
-          
-          // 이전 버전과의 호환성을 위해 레거시 키에도 저장
-          localStorage.setItem('course-benefits-title', data[0].sectionTitle || '과정 특전');
-          localStorage.setItem('course-benefits', JSON.stringify(activeBenefits));
-          
-          setError(null);
-          setIsLoading(false);
-          return;
-        }
-      } catch (apiError) {
-        console.error('API 호출 실패:', apiError);
-        // API 호출 실패 시 바로 다음 단계로 진행 (로컬 데이터 또는 폴백 데이터 사용)
+      });
+      
+      console.log('응답 상태:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
       }
       
-      // API 호출 실패 시 로컬 데이터 확인
-      console.log('API 호출 실패, 로컬 데이터 확인 중...');
-      if (loadFromLocalStorage()) {
-        console.log('로컬 데이터 로드 성공');
-        setIsLoading(false);
-        return;
+      const data = await response.json();
+      console.log('과정 특전 데이터 로드 완료:', data);
+      
+      if (Array.isArray(data) && data.length > 0) {
+        // 첫 번째 항목의 sectionTitle을 사용
+        setSectionTitle(data[0].sectionTitle || '과정 특전');
+        
+        // 활성화된 항목만 필터링하고 정렬
+        const activeBenefits = data
+          .filter((benefit: BenefitItem) => benefit.isActive !== false)
+          .sort((a: BenefitItem, b: BenefitItem) => {
+            return (a.order || 0) - (b.order || 0);
+          });
+        
+        console.log('활성화된 특전 갯수:', activeBenefits.length);
+        setBenefits(activeBenefits);
+        
+        // 데이터 캐싱
+        localStorage.setItem('benefits', JSON.stringify(activeBenefits));
+        localStorage.setItem('benefitsTime', Date.now().toString());
+        localStorage.setItem('course-benefits-title', data[0].sectionTitle || '과정 특전');
+        localStorage.setItem('course-benefits', JSON.stringify(activeBenefits));
+      } else {
+        console.log('데이터가 없거나 배열이 아닙니다.');
+        // 폴백 데이터 사용
+        useFallbackData();
       }
-      
-      // 로컬 데이터도 없으면 폴백 데이터 사용
-      console.log('폴백 데이터 사용');
-      setBenefits(FALLBACK_BENEFITS);
-      setSectionTitle('과정 특전');
-      
-      // 폴백 데이터 캐싱
-      localStorage.setItem('benefits', JSON.stringify(FALLBACK_BENEFITS));
-      localStorage.setItem('benefitsTime', Date.now().toString());
-      localStorage.setItem('course-benefits-title', '과정 특전');
-      localStorage.setItem('course-benefits', JSON.stringify(FALLBACK_BENEFITS));
-      
     } catch (err) {
-      console.error('과정 특전 데이터 로드 중 예상치 못한 오류:', err);
+      console.error('과정 특전 데이터 로드 중 오류 발생:', err);
+      setError('특전 정보를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       
-      // 모든 로직이 실패한 경우 폴백 데이터 사용
-      setBenefits(FALLBACK_BENEFITS);
-      setSectionTitle('과정 특전');
+      // 로컬 스토리지에서 데이터 로드 시도
+      if (!loadFromLocalStorage()) {
+        // 로컬 데이터도 없으면 폴백 데이터 사용
+        useFallbackData();
+      }
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  // 폴백 데이터 사용 함수
+  const useFallbackData = () => {
+    console.log('폴백 데이터 사용 (직접 저장된 MongoDB 데이터)');
+    setBenefits(FALLBACK_BENEFITS);
+    setSectionTitle('과정 특전');
+    
+    // 폴백 데이터 캐싱
+    localStorage.setItem('benefits', JSON.stringify(FALLBACK_BENEFITS));
+    localStorage.setItem('benefitsTime', Date.now().toString());
+    localStorage.setItem('course-benefits-title', '과정 특전');
+    localStorage.setItem('course-benefits', JSON.stringify(FALLBACK_BENEFITS));
   };
 
   // Animation variants

@@ -27,14 +27,59 @@ const CourseBenefits = () => {
     const fetchBenefits = async () => {
       try {
         setIsLoading(true);
-        const data = await apiService.getBenefits();
+        
+        // Admin 페이지와 동일한 API 엔드포인트 패턴 사용
+        const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api';
+        console.log('API URL:', API_BASE_URL);
+        
+        console.log('API 요청 시도:', `${API_BASE_URL}/content/benefits`);
+        const response = await fetch(`/api/content/benefits`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        console.log('응답 상태:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          throw new Error(`서버 오류: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('혜택 데이터 로드 완료:', data);
+        
         if (data && Array.isArray(data)) {
-          setBenefits(data);
+          // 활성화된 항목만 필터링하고 정렬
+          const activeBenefits = data
+            .filter((benefit: Benefit) => benefit.isActive !== false)
+            .sort((a: Benefit, b: Benefit) => {
+              return (a.order || 0) - (b.order || 0);
+            });
+          
+          setBenefits(activeBenefits);
+          if (data[0]?.sectionTitle) {
+            setSectionTitle(data[0].sectionTitle);
+          }
         }
         setError(null);
       } catch (err) {
         console.error('혜택 정보를 불러오는 중 오류가 발생했습니다:', err);
         setError('데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        
+        // 로컬 스토리지에서 데이터 로드 시도
+        const cachedBenefits = localStorage.getItem('benefits');
+        if (cachedBenefits) {
+          try {
+            const parsedData = JSON.parse(cachedBenefits);
+            setBenefits(parsedData);
+            setSectionTitle(parsedData[0]?.sectionTitle || '과정 특전');
+          } catch (cacheErr) {
+            console.error('캐시된 데이터 파싱 오류:', cacheErr);
+          }
+        }
       } finally {
         setIsLoading(false);
       }
