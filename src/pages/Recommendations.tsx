@@ -16,34 +16,88 @@ interface Recommendation {
   isActive: boolean;
 }
 
+// API 서버 URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+// 폴백 데이터
+const FALLBACK_RECOMMENDATIONS: Recommendation[] = [];
+
 const Recommendations = () => {
   const [title, setTitle] = useState('추천의 글');
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
+  // MongoDB에서 추천사 데이터 가져오기 - fetch API 사용
+  const fetchRecommendations = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // 로컬 스토리지에서 캐시된 데이터 확인
+      const cachedData = localStorage.getItem('recommendations');
+      const cachedTime = localStorage.getItem('recommendationsTime');
+      const CACHE_DURATION = 60 * 60 * 1000; // 1시간
+      
+      // 캐시가 유효한 경우 캐시된 데이터 사용
+      if (cachedData && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_DURATION) {
+        setRecommendations(JSON.parse(cachedData));
+        setIsLoading(false);
+        return;
+      }
+      
+      // fetch API로 데이터 가져오기
+      const response = await fetch(`${API_URL}/content/recommendations`);
+      
+      // 응답 상태 확인
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+      
+      // JSON 데이터 파싱
+      const data = await response.json();
+      console.log('Recommendations API Response:', data);
+      
+      if (data && Array.isArray(data)) {
+        // 데이터 설정 및 캐싱
+        setRecommendations(data);
+        localStorage.setItem('recommendations', JSON.stringify(data));
+        localStorage.setItem('recommendationsTime', Date.now().toString());
+      } else {
+        throw new Error('올바른 형식의 데이터가 아닙니다.');
+      }
+    } catch (err) {
+      console.error('추천사를 불러오는 중 오류가 발생했습니다:', err);
+      setError('추천사를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      
+      // 최대 3번까지 재시도
+      if (retryCount < MAX_RETRIES) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          fetchRecommendations();
+        }, 3000);  // 3초 후 재시도
+      } else {
+        // 모든 재시도 실패 시 폴백 데이터 사용
+        setRecommendations(FALLBACK_RECOMMENDATIONS);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 페이지 로드 시 데이터 가져오기
   useEffect(() => {
     window.scrollTo(0, 0);
-    
-    // MongoDB에서 추천사 데이터 가져오기
-    const fetchRecommendations = async () => {
-      try {
-        setIsLoading(true);
-        const data = await apiService.getRecommendations();
-        if (data && Array.isArray(data)) {
-          setRecommendations(data);
-        }
-        setError(null);
-      } catch (err) {
-        console.error('추천사를 불러오는 중 오류가 발생했습니다:', err);
-        setError('데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchRecommendations();
   }, []);
+
+  // 재시도 핸들러
+  const handleRetry = () => {
+    setRetryCount(0);
+    fetchRecommendations();
+  };
 
   // Animation variants
   const containerVariants = {
@@ -75,12 +129,21 @@ const Recommendations = () => {
           <h1 className="section-title text-center mb-12" style={{ wordBreak: 'keep-all' }}>{title}</h1>
           
           {isLoading ? (
-            <div className="flex justify-center items-center h-64">
+            <div className="flex flex-col items-center justify-center h-64 space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
+              <p className="text-gray-600">추천의 글을 불러오는 중...</p>
             </div>
           ) : error ? (
-            <div className="text-center text-red-500 py-12">
-              <p style={{ wordBreak: 'keep-all' }}>{error}</p>
+            <div className="text-center space-y-4 py-12">
+              <p className="text-red-500" style={{ wordBreak: 'keep-all' }}>{error}</p>
+              {retryCount >= MAX_RETRIES && (
+                <button 
+                  onClick={handleRetry}
+                  className="px-4 py-2 bg-mainBlue text-white rounded hover:bg-mainBlue/90 transition-colors"
+                >
+                  다시 시도
+                </button>
+              )}
             </div>
           ) : recommendations.length === 0 ? (
             <div className="text-center text-gray-500 py-12">
