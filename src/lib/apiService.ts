@@ -26,11 +26,12 @@ export const apiService = {
     try {
       console.log('인사말 데이터 가져오기 시작');
       
-      const response = await fetch(`${baseURL}/greeting`, {
+      // 프록시를 사용하여 CORS 우회
+      const response = await fetch('/api/greeting', {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
+          'Accept': 'application/json'
+          // Cache-Control 헤더 제거
         }
       });
       
@@ -67,7 +68,8 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      const response = await fetch(`${baseURL}/greeting`, {
+      // 프록시를 사용하여 CORS 우회
+      const response = await fetch('/api/greeting', {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(greetingData)
