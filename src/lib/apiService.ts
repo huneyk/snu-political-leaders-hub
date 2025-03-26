@@ -7,8 +7,10 @@
 
 import axios from 'axios';
 
-// API 기본 URL 설정
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+// 기본 URL 설정 - 서버 URL 직접 지정
+const baseURL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : 'http://localhost:5001/api';
 console.log('🔗 API 기본 URL:', baseURL);
 console.log('🔧 환경 변수 VITE_API_URL:', import.meta.env.VITE_API_URL);
 
@@ -25,13 +27,13 @@ export const apiService = {
   getGreeting: async () => {
     try {
       console.log('인사말 데이터 가져오기 시작');
+      console.log('요청 URL:', `${baseURL}/greeting`);
       
       // 프록시를 사용하여 CORS 우회
-      const response = await fetch('/api/greeting', {
+      const response = await fetch(`${baseURL}/greeting`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
-          // Cache-Control 헤더 제거
         }
       });
       
@@ -57,6 +59,7 @@ export const apiService = {
   updateGreeting: async (greetingData: any, token?: string) => {
     try {
       console.log('인사말 데이터 저장 시작');
+      console.log('요청 URL:', `${baseURL}/greeting`);
       
       const headers: any = {
         'Content-Type': 'application/json',
@@ -69,7 +72,7 @@ export const apiService = {
       }
       
       // 프록시를 사용하여 CORS 우회
-      const response = await fetch('/api/greeting', {
+      const response = await fetch(`${baseURL}/greeting`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(greetingData)
