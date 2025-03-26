@@ -8,11 +8,11 @@
 import axios from 'axios';
 
 // 기본 URL 설정 - 서버 URL 직접 지정
-const baseURL = process.env.NODE_ENV === 'production' 
+const baseURL = import.meta.env.MODE === 'production' 
   ? 'https://snu-plp-hub-server.onrender.com' 
   : 'http://localhost:5001/api';
 console.log('🔗 API 기본 URL:', baseURL);
-console.log('🔧 환경 변수 VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('🔧 현재 환경:', import.meta.env.MODE);
 
 // API 요청 시 기본 헤더 설정
 const apiConfig = {
@@ -28,9 +28,13 @@ export const apiService = {
     try {
       console.log('인사말 데이터 가져오기 시작');
       console.log('요청 URL:', `${baseURL}/greeting`);
+      console.log('현재 환경:', import.meta.env.MODE);
       
-      // 프록시를 사용하여 CORS 우회
-      const response = await fetch(`${baseURL}/greeting`, {
+      // 서버에 직접 요청
+      const fullUrl = `${baseURL}/greeting`;
+      console.log('최종 요청 URL:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
@@ -583,8 +587,13 @@ export const apiService = {
     try {
       console.log('푸터 데이터 가져오기 시작');
       console.log('요청 URL:', `${baseURL}/footer`);
+      console.log('현재 환경:', import.meta.env.MODE);
       
-      const response = await fetch(`${baseURL}/footer`, {
+      // 서버에 직접 요청
+      const fullUrl = `${baseURL}/footer`;
+      console.log('최종 요청 URL:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
