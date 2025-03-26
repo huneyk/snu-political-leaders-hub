@@ -126,8 +126,8 @@ const GreetingManage = () => {
       console.log('저장할 데이터:', greetingData);
       
       // 임시 테스트를 위해 토큰 검증 우회
-      const token = localStorage.getItem('adminToken') || '';
-      console.log('토큰 확인:', token ? '있음' : '없음');
+      const token = localStorage.getItem('token') || '';
+      console.log('저장 시도 중... 토큰 인증 우회 (테스트용)');
       
       // apiService를 사용하여 인사말 저장
       await apiService.updateGreeting(greetingData, token);

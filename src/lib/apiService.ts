@@ -53,6 +53,7 @@ export const apiService = {
     try {
       console.log('인사말 데이터 저장 시작');
       console.log('요청 URL:', `${baseURL}/greeting`);
+      console.log('토큰 존재 여부:', token ? '있음' : '없음');
       
       const headers: any = {
         'Content-Type': 'application/json'
@@ -61,7 +62,11 @@ export const apiService = {
       // 토큰이 제공된 경우에만 Authorization 헤더 추가
       if (token) {
         headers.Authorization = `Bearer ${token}`;
+        console.log('Authorization 헤더 추가됨');
       }
+      
+      console.log('요청 헤더:', headers);
+      console.log('요청 데이터:', greetingData);
       
       const response = await axios.post(`${baseURL}/greeting`, greetingData, {
         headers
