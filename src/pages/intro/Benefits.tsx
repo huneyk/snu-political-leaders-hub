@@ -121,54 +121,60 @@ const Benefits = () => {
         return;
       }
       
-      try {
-        // apiService를 사용하여 데이터 가져오기
-        const data = await apiService.getBenefits();
-        console.log('과정 특전 데이터 로드 완료:', data);
-        
-        if (data && Array.isArray(data) && data.length > 0) {
-          // 첫 번째 항목의 sectionTitle을 사용
-          setSectionTitle(data[0].sectionTitle || '과정 특전');
-          
-          // 활성화된 항목만 필터링하고 정렬
-          const activeBenefits = data
-            .filter((benefit: BenefitItem) => benefit.isActive !== false)
-            .sort((a: BenefitItem, b: BenefitItem) => {
-              return (a.order || 0) - (b.order || 0);
-            });
-          
-          setBenefits(activeBenefits);
-          
-          // 데이터 캐싱
-          localStorage.setItem('benefits', JSON.stringify(activeBenefits));
-          localStorage.setItem('benefitsTime', Date.now().toString());
-          
-          // 이전 버전과의 호환성을 위해 레거시 키에도 저장
-          localStorage.setItem('course-benefits-title', data[0].sectionTitle || '과정 특전');
-          localStorage.setItem('course-benefits', JSON.stringify(activeBenefits));
-          
-          setError(null);
-        } else {
-          // 데이터가 없는 경우 로컬 스토리지에서 로드
-          console.log('MongoDB에서 데이터를 찾을 수 없습니다.');
-          if (!loadFromLocalStorage()) {
-            // 로컬 데이터도 없으면 폴백 데이터 사용
-            console.log('로컬 스토리지에 데이터가 없습니다. 폴백 데이터를 사용합니다.');
-            setBenefits(FALLBACK_BENEFITS);
-            setSectionTitle('과정 특전');
-          }
+      // API URL 가져오기
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      console.log('API URL:', API_URL);
+      
+      // fetch API로 직접 데이터 가져오기
+      const response = await fetch(`${API_URL}/benefits`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
         }
-      } catch (apiError) {
-        console.error('API 호출 중 오류 발생:', apiError);
+      });
+      
+      console.log('응답 상태:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('과정 특전 데이터 로드 완료:', data);
+      
+      if (data && Array.isArray(data) && data.length > 0) {
+        // 첫 번째 항목의 sectionTitle을 사용
+        setSectionTitle(data[0].sectionTitle || '과정 특전');
         
-        // 로컬 스토리지에서 데이터 로드 시도
-        console.log('로컬 스토리지에서 데이터 로드 시도...');
-        if (!loadFromLocalStorage()) {
-          // 로컬 데이터도 없으면 폴백 데이터 사용
-          console.log('폴백 데이터 사용');
-          setBenefits(FALLBACK_BENEFITS);
-          setSectionTitle('과정 특전');
-        }
+        // 활성화된 항목만 필터링하고 정렬
+        const activeBenefits = data
+          .filter((benefit: BenefitItem) => benefit.isActive !== false)
+          .sort((a: BenefitItem, b: BenefitItem) => {
+            return (a.order || 0) - (b.order || 0);
+          });
+        
+        setBenefits(activeBenefits);
+        
+        // 데이터 캐싱
+        localStorage.setItem('benefits', JSON.stringify(activeBenefits));
+        localStorage.setItem('benefitsTime', Date.now().toString());
+        
+        // 이전 버전과의 호환성을 위해 레거시 키에도 저장
+        localStorage.setItem('course-benefits-title', data[0].sectionTitle || '과정 특전');
+        localStorage.setItem('course-benefits', JSON.stringify(activeBenefits));
+        
+        setError(null);
+      } else {
+        console.log('MongoDB에서 데이터를 찾을 수 없습니다. 폴백 데이터를 사용합니다.');
+        setBenefits(FALLBACK_BENEFITS);
+        setSectionTitle('과정 특전');
+        
+        // 폴백 데이터 캐싱
+        localStorage.setItem('benefits', JSON.stringify(FALLBACK_BENEFITS));
+        localStorage.setItem('benefitsTime', Date.now().toString());
+        localStorage.setItem('course-benefits-title', '과정 특전');
+        localStorage.setItem('course-benefits', JSON.stringify(FALLBACK_BENEFITS));
       }
     } catch (err) {
       console.error('특전 정보를 불러오는 중 오류가 발생했습니다:', err);
