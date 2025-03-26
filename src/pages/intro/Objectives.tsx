@@ -16,12 +16,19 @@ interface Objective {
   isActive: boolean;
 }
 
+// API 서버 URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+// 폴백 데이터
+const FALLBACK_OBJECTIVES: Objective[] = [];
+
 const Objectives = () => {
   const [sectionTitle, setSectionTitle] = useState('과정의 목표');
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
   // 아이콘 타입에 따른 이미지 URL 반환 (iconImage가 없는 경우의 fallback)
   const getIconUrl = (iconType: string) => {
@@ -83,25 +90,37 @@ const Objectives = () => {
     }
   };
 
-  // 자동 다시 시도 함수
-  const retryFetchObjectives = () => {
-    if (retryCount < 3) {  // 최대 3회 재시도
-      const timer = setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-        fetchObjectives();
-      }, 3000);  // 3초 후 재시도
-      
-      return () => clearTimeout(timer);
-    }
-  };
-
-  // 목표 데이터 가져오기
+  // MongoDB에서 목표 데이터 가져오기 - fetch API 사용
   const fetchObjectives = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       console.log('MongoDB에서 과정 목표 데이터 로드 시도');
       
-      const data = await apiService.getObjectives();
+      // 로컬 스토리지에서 캐시된 데이터 확인
+      const cachedData = localStorage.getItem('objectives');
+      const cachedTime = localStorage.getItem('objectivesTime');
+      const CACHE_DURATION = 60 * 60 * 1000; // 1시간
+      
+      // 캐시가 유효한 경우 캐시된 데이터 사용
+      if (cachedData && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_DURATION) {
+        const parsedData = JSON.parse(cachedData);
+        setObjectives(parsedData);
+        setSectionTitle(parsedData[0]?.sectionTitle || '과정의 목표');
+        setIsLoading(false);
+        return;
+      }
+      
+      // fetch API로 데이터 가져오기
+      const response = await fetch(`${API_URL}/content/objectives`);
+      
+      // 응답 상태 확인
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+      
+      // JSON 데이터 파싱
+      const data = await response.json();
       console.log('과정 목표 데이터 로드 완료:', data);
       
       if (data && Array.isArray(data) && data.length > 0) {
@@ -115,6 +134,11 @@ const Objectives = () => {
         
         console.log('처리된 목표 데이터 (배열):', sortedObjectives);
         setObjectives(sortedObjectives);
+        
+        // 데이터 캐싱
+        localStorage.setItem('objectives', JSON.stringify(sortedObjectives));
+        localStorage.setItem('objectivesTime', Date.now().toString());
+        
         setError(null);
       } else {
         // 데이터가 없는 경우 로컬 스토리지에서 로드
@@ -123,18 +147,27 @@ const Objectives = () => {
       }
     } catch (err) {
       console.error('목표 정보를 불러오는 중 오류가 발생했습니다:', err);
-      setError('데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      setError('목표 정보를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       
       // 로컬 스토리지에서 폴백 데이터 로드
       loadFromLocalStorage();
       
-      // 자동 재시도
-      return retryFetchObjectives();
+      // 최대 3번까지 재시도
+      if (retryCount < MAX_RETRIES) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          fetchObjectives();
+        }, 3000);  // 3초 후 재시도
+      } else {
+        // 모든 재시도 실패 시 폴백 데이터 사용
+        setObjectives(FALLBACK_OBJECTIVES);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
+  // 페이지 로드 시 데이터 가져오기
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchObjectives();
@@ -186,18 +219,21 @@ const Objectives = () => {
 
         <div className="main-container py-12">
           {isLoading ? (
-            <div className="flex justify-center items-center h-64">
+            <div className="flex flex-col items-center justify-center h-64 space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
+              <p className="text-gray-600">과정의 목표를 불러오는 중...</p>
             </div>
           ) : error ? (
             <div className="text-center py-12 space-y-4">
               <p className="text-red-500">{error}</p>
-              <button 
-                onClick={handleRetry}
-                className="px-4 py-2 bg-mainBlue text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                다시 시도
-              </button>
+              {retryCount >= MAX_RETRIES && (
+                <button 
+                  onClick={handleRetry}
+                  className="px-4 py-2 bg-mainBlue text-white rounded hover:bg-mainBlue/90 transition-colors"
+                >
+                  다시 시도
+                </button>
+              )}
             </div>
           ) : objectives.length === 0 ? (
             <div className="text-center text-gray-500 py-12">
