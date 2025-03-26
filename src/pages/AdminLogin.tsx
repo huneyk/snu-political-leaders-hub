@@ -27,10 +27,14 @@ const AdminLogin = () => {
 
     try {
       // API를 통한 실제 로그인 처리
-      const response = await axios.post(`${API_BASE_URL}/auth/admin/login`, {
-        email: username,
-        password
-      });
+      const requestData = {
+        username: username,
+        password: password
+      };
+      
+      console.log('요청 데이터:', requestData);
+      
+      const response = await axios.post(`${API_BASE_URL}/auth/admin/login`, requestData);
       
       console.log('로그인 응답:', response.data);
       
