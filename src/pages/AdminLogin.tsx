@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import axios from 'axios';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '/api' 
@@ -29,22 +28,51 @@ const AdminLogin = () => {
       // API를 통한 실제 로그인 처리
       const requestData = {
         username: username,
+        email: username,  // 이메일 필드도 추가
         password: password
       };
       
       console.log('요청 데이터:', requestData);
       
-      const response = await axios.post(`${API_BASE_URL}/auth/admin/login`, requestData);
+      const response = await fetch(`${API_BASE_URL}/auth/admin/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      });
       
-      console.log('로그인 응답:', response.data);
+      console.log('응답 상태:', response.status, response.statusText);
+      console.log('응답 헤더:', Object.fromEntries([...response.headers.entries()]));
       
-      if (response.data && response.data.token) {
+      // 응답 데이터 파싱
+      let responseData;
+      const contentType = response.headers.get('content-type');
+      console.log('Content-Type:', contentType);
+      
+      if (contentType && contentType.includes('application/json')) {
+        responseData = await response.json();
+      } else {
+        const text = await response.text();
+        console.log('응답 텍스트:', text.substring(0, 500)); // 처음 500자만 출력
+        try {
+          responseData = JSON.parse(text);
+        } catch (e) {
+          console.error('JSON 파싱 오류:', e);
+          responseData = { error: 'Invalid JSON response', text: text.substring(0, 100) };
+        }
+      }
+      
+      console.log('로그인 응답:', responseData);
+      
+      if (responseData && responseData.token) {
         // 토큰과 인증 상태를 localStorage에 저장
-        localStorage.setItem('adminToken', response.data.token);
+        localStorage.setItem('adminToken', responseData.token);
         localStorage.setItem('adminAuth', 'true');
         
         // useAdminAuth의 login 함수 호출
-        login(response.data.token);
+        login(responseData.token);
         
         toast({
           title: "로그인 성공",
@@ -52,7 +80,7 @@ const AdminLogin = () => {
         });
         navigate('/admin');
       } else {
-        console.error('토큰 없음:', response.data);
+        console.error('토큰 없음:', responseData);
         toast({
           title: "로그인 실패",
           description: "인증 토큰을 받지 못했습니다.",
@@ -61,10 +89,11 @@ const AdminLogin = () => {
       }
     } catch (error: any) {
       console.error('로그인 오류:', error);
-      console.error('오류 응답:', error.response?.data);
+      
+      // fetch API는 네트워크 오류만 catch로 잡힘
       toast({
         title: "로그인 실패",
-        description: error.response?.data?.message || "아이디 또는 비밀번호가 잘못되었습니다.",
+        description: "서버 연결에 실패했습니다. 네트워크 연결을 확인해주세요.",
         variant: "destructive",
       });
     } finally {
