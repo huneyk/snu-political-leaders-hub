@@ -22,19 +22,18 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     console.log('로그인 시도:', { username });
-    console.log('API 엔드포인트:', `${API_BASE_URL}/auth/admin/login`);
+    console.log('API 엔드포인트:', `${API_BASE_URL}/auth/login`);
 
     try {
       // API를 통한 실제 로그인 처리
       const requestData = {
-        username: username,
-        email: username,  // 이메일 필드도 추가
+        email: username,  // 서버가 기대하는 필드명으로 변경
         password: password
       };
       
       console.log('요청 데이터:', requestData);
       
-      const response = await fetch(`${API_BASE_URL}/auth/admin/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -27,7 +27,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'https://snu-plp.onrender.com',
+        target: 'https://snu-plp-hub-server.onrender.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, '')
