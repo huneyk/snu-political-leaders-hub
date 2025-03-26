@@ -6,8 +6,48 @@ import Benefit from '../models/Benefits.js';
 import ProfessorSection from '../models/Professors.js';
 import Schedule from '../models/Schedule.js';
 import Lecturer from '../models/Lecturers.js';
+import Greeting from '../models/Greeting.js';
 
 const router = express.Router();
+
+// ======================== Greeting Routes ========================
+/**
+ * @route   GET /api/content/greeting
+ * @desc    인사말 정보 가져오기
+ * @access  Public
+ */
+router.get('/greeting', async (req, res) => {
+  try {
+    console.log('📝 인사말 조회 요청 받음');
+    // 활성화된 최신 인사말 가져오기
+    const greeting = await Greeting.findOne({ isActive: true }).sort({ updatedAt: -1 });
+    
+    if (!greeting) {
+      return res.status(404).json({ message: '인사말 정보를 찾을 수 없습니다.' });
+    }
+    
+    console.log('✅ 인사말 데이터 조회 성공');
+    res.json(greeting);
+  } catch (error) {
+    console.error('인사말 정보 조회 실패:', error);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+/**
+ * @route   GET /api/content/greeting/all
+ * @desc    모든 인사말 정보 가져오기
+ * @access  Private
+ */
+router.get('/greeting/all', authenticateToken, async (req, res) => {
+  try {
+    const greetings = await Greeting.find().sort({ updatedAt: -1 });
+    res.json(greetings);
+  } catch (error) {
+    console.error('인사말 정보 조회 실패:', error);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
 
 // ======================== Recommendations Routes ========================
 /**
