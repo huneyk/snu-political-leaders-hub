@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
-import { apiService } from '@/lib/apiService';
 
 interface BenefitItem {
   _id?: string;
@@ -67,7 +66,7 @@ const Benefits = () => {
       }
       
       // API 요청 URL
-      const apiEndpoint = `${API_URL}/content/benefits`;
+      const apiEndpoint = `${API_URL}/benefits`;
       console.log('요청 URL:', apiEndpoint);
       
       // fetch API로 데이터 가져오기
