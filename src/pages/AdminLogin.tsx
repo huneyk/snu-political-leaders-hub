@@ -23,8 +23,26 @@ const AdminLogin = () => {
     
     console.log('로그인 시도:', { username });
     console.log('API 엔드포인트:', `${API_BASE_URL}/auth/login`);
-
+    
+    // 서버 상태 테스트
+    console.log('서버 상태 확인 URL:', 'https://snu-plp-hub-server.onrender.com/health');
+    
     try {
+      // 서버 상태 확인
+      try {
+        const healthCheck = await fetch('https://snu-plp-hub-server.onrender.com/health', {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+        console.log('서버 상태 응답:', healthCheck.status, healthCheck.statusText);
+        if (healthCheck.ok) {
+          const healthData = await healthCheck.text();
+          console.log('서버 상태 데이터:', healthData);
+        }
+      } catch (healthError) {
+        console.error('서버 상태 확인 실패:', healthError);
+      }
+      
       // API를 통한 실제 로그인 처리
       const requestData = {
         email: username,  // 서버가 기대하는 필드명으로 변경
@@ -33,7 +51,11 @@ const AdminLogin = () => {
       
       console.log('요청 데이터:', requestData);
       
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      // 직접 URL 호출 시도 (프록시 우회)
+      const directUrl = 'https://snu-plp-hub-server.onrender.com/auth/login';
+      console.log('직접 URL 시도:', directUrl);
+      
+      const response = await fetch(directUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
