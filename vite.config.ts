@@ -30,7 +30,18 @@ export default defineConfig({
         target: 'https://snu-plp-hub-server.onrender.com',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('프록시 오류:', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('프록시 요청:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('프록시 응답:', req.method, req.url, proxyRes.statusCode);
+          });
+        }
       },
     },
   },
