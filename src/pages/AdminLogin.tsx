@@ -23,11 +23,11 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     console.log('로그인 시도:', { username });
-    console.log('API 엔드포인트:', `${API_BASE_URL}/auth/login`);
+    console.log('API 엔드포인트:', `${API_BASE_URL}/auth/admin/login`);
 
     try {
       // API를 통한 실제 로그인 처리
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+      const response = await axios.post(`${API_BASE_URL}/auth/admin/login`, {
         email: username,
         password
       });
