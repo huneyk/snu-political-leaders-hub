@@ -1,78 +1,97 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ScrollReveal from '@/components/ScrollReveal';
 import { apiService } from '@/lib/apiService';
 
+// 인사말 데이터 인터페이스
 interface GreetingData {
+  _id: string;
   title: string;
   content: string;
   author: string;
   position: string;
   imageUrl: string;
-  isActive: boolean;
 }
 
+// 폴백 데이터
+const FALLBACK_GREETING = {
+  _id: '0',
+  title: '인사말',
+  content: '서울대학교 정치지도자과정 인사말입니다. 현재 데이터를 불러올 수 없습니다.',
+  author: '정치지도자과정 주임교수',
+  position: '',
+  imageUrl: ''
+};
+
 const Greeting = () => {
-  const [greetingData, setGreetingData] = useState<GreetingData | null>(null);
+  const [greeting, setGreeting] = useState<GreetingData>(FALLBACK_GREETING);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
 
-  const loadContent = useCallback(async () => {
+  // 인사말 데이터 가져오기
+  const fetchGreeting = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      // 로컬 스토리지에서 캐시된 데이터 확인
-      const cachedData = localStorage.getItem('greetingData');
-      const cachedTimestamp = localStorage.getItem('greetingDataTimestamp');
-      const CACHE_DURATION = 5 * 60 * 1000; // 5분
-
-      if (cachedData && cachedTimestamp) {
-        const timestamp = parseInt(cachedTimestamp);
-        if (Date.now() - timestamp < CACHE_DURATION) {
-          const parsedData = JSON.parse(cachedData);
-          setGreetingData(parsedData);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // API에서 데이터 가져오기
-      const data = await apiService.getGreeting();
       
-      if (data) {
-        setGreetingData(data);
-        // 데이터 캐싱
-        localStorage.setItem('greetingData', JSON.stringify(data));
-        localStorage.setItem('greetingDataTimestamp', Date.now().toString());
+      // 로컬 스토리지에서 캐시된 데이터 확인
+      const cachedData = localStorage.getItem('greeting');
+      const cachedTime = localStorage.getItem('greetingTime');
+      const CACHE_DURATION = 60 * 60 * 1000; // 1시간
+      
+      // 캐시가 유효한 경우 캐시된 데이터 사용
+      if (cachedData && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_DURATION) {
+        setGreeting(JSON.parse(cachedData));
+        setLoading(false);
+        return;
+      }
+      
+      // API 호출
+      const response = await apiService.getGreeting();
+      
+      if (response) {
+        // 데이터 설정 및 캐싱
+        setGreeting(response);
+        localStorage.setItem('greeting', JSON.stringify(response));
+        localStorage.setItem('greetingTime', Date.now().toString());
+      } else {
+        throw new Error('데이터가 없습니다.');
       }
     } catch (err) {
-      console.error('인사말을 불러오는 중 오류가 발생했습니다:', err);
-      setError('데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      console.error('인사말 정보를 불러오는 중 오류가 발생했습니다:', err);
+      setError('인사말 정보를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       
-      // 재시도 로직
+      // 최대 3번까지 재시도
       if (retryCount < MAX_RETRIES) {
         setTimeout(() => {
           setRetryCount(prev => prev + 1);
-        }, 2000); // 2초 후 재시도
+          fetchGreeting();
+        }, 3000);  // 3초 후 재시도
       }
     } finally {
       setLoading(false);
     }
-  }, [retryCount]);
+  };
 
+  // 페이지 로드 시 데이터 가져오기
   useEffect(() => {
     window.scrollTo(0, 0);
-    loadContent();
-  }, [loadContent]);
+    fetchGreeting();
+  }, []);
 
+  // 재시도 핸들러
   const handleRetry = () => {
     setRetryCount(0);
-    loadContent();
+    fetchGreeting();
   };
+
+  // 콘텐츠를 단락으로 분리
+  const contentParagraphs = greeting.content
+    ? apiService.parseContentToParagraphs(greeting.content)
+    : ['데이터를 불러올 수 없습니다.'];
 
   return (
     <>
@@ -82,7 +101,7 @@ const Greeting = () => {
           <section className="py-16 bg-mainBlue text-white">
             <div className="main-container">
               <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal" style={{ wordBreak: 'keep-all' }}>
-                {greetingData?.title || '인사말'}
+                {greeting.title}
               </h1>
               <p className="text-white/80 max-w-3xl reveal reveal-delay-100" style={{ wordBreak: 'keep-all' }}>
                 서울대학교 정치지도자과정의 인사말입니다.
@@ -96,15 +115,13 @@ const Greeting = () => {
                 {loading ? (
                   <div className="flex flex-col items-center justify-center h-64 space-y-4">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
-                    <p className="text-gray-600">데이터를 불러오는 중...</p>
+                    <p className="text-gray-600">인사말을 불러오는 중...</p>
                   </div>
                 ) : error ? (
                   <div className="text-center space-y-4">
                     <p className="text-red-500">{error}</p>
-                    {retryCount < MAX_RETRIES ? (
-                      <p className="text-gray-600">재시도 중... ({retryCount + 1}/{MAX_RETRIES})</p>
-                    ) : (
-                      <button
+                    {retryCount >= MAX_RETRIES && (
+                      <button 
                         onClick={handleRetry}
                         className="px-4 py-2 bg-mainBlue text-white rounded hover:bg-mainBlue/90 transition-colors"
                       >
@@ -112,21 +129,17 @@ const Greeting = () => {
                       </button>
                     )}
                   </div>
-                ) : greetingData ? (
+                ) : (
                   <div className="prose prose-lg max-w-none" style={{ wordBreak: 'keep-all' }}>
-                    {apiService.parseContentToParagraphs(greetingData.content).map((paragraph, index) => (
+                    {contentParagraphs.map((paragraph, index) => (
                       <p key={index} className="mb-6">{paragraph}</p>
                     ))}
                     
                     <div className="text-right mt-8">
                       <p className="font-medium text-lg" style={{ wordBreak: 'keep-all' }}>
-                        {greetingData.position} {greetingData.author}
+                        {greeting.position} {greeting.author}
                       </p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-600">
-                    데이터가 없습니다.
                   </div>
                 )}
               </div>
