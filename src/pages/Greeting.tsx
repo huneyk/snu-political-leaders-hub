@@ -24,6 +24,9 @@ const FALLBACK_GREETING = {
   imageUrl: ''
 };
 
+// API 서버 URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 const Greeting = () => {
   const [greeting, setGreeting] = useState<GreetingData>(FALLBACK_GREETING);
   const [loading, setLoading] = useState(true);
@@ -31,7 +34,7 @@ const Greeting = () => {
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
 
-  // 인사말 데이터 가져오기
+  // 인사말 데이터 가져오기 - fetch API 사용
   const fetchGreeting = async () => {
     try {
       setLoading(true);
@@ -49,13 +52,22 @@ const Greeting = () => {
         return;
       }
       
-      // API 호출
-      const response = await apiService.getGreeting();
+      // fetch API로 데이터 가져오기
+      const response = await fetch(`${API_URL}/greeting`);
       
-      if (response) {
+      // 응답 상태 확인
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+      
+      // JSON 데이터 파싱
+      const data = await response.json();
+      console.log('Greeting API Response:', data);
+      
+      if (data) {
         // 데이터 설정 및 캐싱
-        setGreeting(response);
-        localStorage.setItem('greeting', JSON.stringify(response));
+        setGreeting(data);
+        localStorage.setItem('greeting', JSON.stringify(data));
         localStorage.setItem('greetingTime', Date.now().toString());
       } else {
         throw new Error('데이터가 없습니다.');
