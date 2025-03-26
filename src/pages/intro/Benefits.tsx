@@ -30,6 +30,19 @@ const Benefits = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    
+    // 페이지 리프레시 시 현재 경로 저장
+    if (window.location.pathname.includes('/intro/benefits')) {
+      sessionStorage.setItem('lastPath', window.location.pathname);
+    } else if (window.location.pathname === '/' && sessionStorage.getItem('lastPath')?.includes('/intro/benefits')) {
+      // 루트 페이지에 있지만 이전에 benefits 페이지에 있었다면
+      console.log('Benefits 페이지 복원 시도');
+      const lastPath = sessionStorage.getItem('lastPath');
+      if (lastPath) {
+        window.history.replaceState(null, '', lastPath);
+      }
+    }
+    
     fetchBenefits();
   }, []);
 
@@ -54,7 +67,7 @@ const Benefits = () => {
       }
       
       // API 요청 URL
-      const apiEndpoint = `${API_URL}/benefits`;
+      const apiEndpoint = `${API_URL}/content/benefits`;
       console.log('요청 URL:', apiEndpoint);
       
       // fetch API로 데이터 가져오기

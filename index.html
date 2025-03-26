@@ -16,10 +16,22 @@
       // 404 페이지에서 저장된 경로가 있는지 확인
       (function() {
         var redirectPath = sessionStorage.getItem('redirectPath');
+        var lastPath = sessionStorage.getItem('lastPath');
+        
+        // 리프레시 후 저장된 경로로 복원
+        if (window.location.pathname === '/' && lastPath) {
+          console.log('새로고침: 이전 경로로 복원', lastPath);
+          window.history.replaceState(null, '', lastPath);
+          sessionStorage.removeItem('lastPath');
+          return;
+        }
+        
+        // 404 리다이렉트 처리
         if (redirectPath) {
           sessionStorage.removeItem('redirectPath');
           if (redirectPath !== '/') {
             console.log('리다이렉트: 저장된 경로로 이동', redirectPath);
+            window.history.replaceState(null, '', redirectPath);
           }
         }
       })();
