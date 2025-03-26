@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
+import ScrollReveal from '@/components/ScrollReveal';
 
 interface BenefitItem {
   _id?: string;
@@ -17,7 +18,16 @@ interface BenefitItem {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 // 폴백 데이터
-const FALLBACK_BENEFITS: BenefitItem[] = [];
+const FALLBACK_BENEFITS: BenefitItem[] = [
+  {
+    _id: '0',
+    sectionTitle: '과정 특전',
+    title: '특전 정보를 불러올 수 없습니다.',
+    description: '서버 연결에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.',
+    order: 0,
+    isActive: true
+  }
+];
 
 const Benefits = () => {
   const [sectionTitle, setSectionTitle] = useState('과정 특전');
@@ -50,6 +60,7 @@ const Benefits = () => {
     try {
       setIsLoading(true);
       setError(null);
+      console.log('MongoDB에서 과정 특전 데이터 로드 시도');
       
       // 로컬 스토리지에서 캐시된 데이터 확인
       const cachedData = localStorage.getItem('benefits');
@@ -65,18 +76,12 @@ const Benefits = () => {
         return;
       }
       
-      // API 요청 URL
-      const apiEndpoint = `${API_URL}/benefits`;
+      // API 요청 URL (Objectives 페이지와 동일한 패턴 사용)
+      const apiEndpoint = `${API_URL}/content/benefits`;
       console.log('요청 URL:', apiEndpoint);
       
       // fetch API로 데이터 가져오기
-      const response = await fetch(apiEndpoint, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await fetch(apiEndpoint);
       
       // 응답 상태 확인
       console.log('응답 상태:', response.status, response.statusText);
@@ -198,9 +203,18 @@ const Benefits = () => {
     <>
       <Header />
       <main className="pt-24 pb-16">
-        <div className="main-container">
-          <h1 className="section-title text-center mb-12" style={{ wordBreak: 'keep-all' }}>{sectionTitle}</h1>
-          
+        <ScrollReveal>
+          <section className="py-16 bg-mainBlue text-white">
+            <div className="main-container">
+              <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal">{sectionTitle}</h1>
+              <p className="text-white/80 max-w-3xl reveal reveal-delay-100">
+                서울대학교 정치지도자과정의 특전입니다.
+              </p>
+            </div>
+          </section>
+        </ScrollReveal>
+
+        <div className="main-container py-12">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-64 space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
