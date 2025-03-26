@@ -66,7 +66,7 @@ const Benefits = () => {
       }
       
       // API 요청 URL
-      const apiEndpoint = `${API_URL}/benefits`;
+      const apiEndpoint = `${API_URL}/content/benefits`;
       console.log('요청 URL:', apiEndpoint);
       
       // fetch API로 데이터 가져오기
