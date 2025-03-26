@@ -138,17 +138,30 @@ const Benefits = () => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000); // 3초 타임아웃
         
-        const response = await fetch(`${API_URL}/benefits`, {
+        // 크로스 도메인 문제를 확인하기 위한 fetch 옵션
+        const fetchOptions = {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache'
           },
-          signal: controller.signal
-        });
+          signal: controller.signal,
+          mode: 'cors' as RequestMode
+        };
+        
+        console.log('Fetch 옵션:', fetchOptions);
+        
+        const response = await fetch(`${API_URL}/benefits`, fetchOptions);
         
         clearTimeout(timeoutId);
+        
+        console.log('응답 상태:', response.status, response.statusText);
+        console.log('응답 헤더:', {
+          contentType: response.headers.get('content-type'),
+          server: response.headers.get('server'),
+          cors: response.headers.get('access-control-allow-origin')
+        });
         
         if (!response.ok) {
           throw new Error(`서버 오류: ${response.status}`);
@@ -156,6 +169,9 @@ const Benefits = () => {
         
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
+          console.error('서버가 JSON이 아닌 응답을 반환했습니다:', contentType);
+          const text = await response.text();
+          console.log('응답 텍스트 (처음 100자):', text.substring(0, 100));
           throw new Error('서버가 JSON이 아닌 응답을 반환했습니다.');
         }
         
