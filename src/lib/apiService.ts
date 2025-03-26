@@ -24,18 +24,66 @@ export const apiService = {
   // 인사말(Greeting) 관련 API
   getGreeting: async () => {
     try {
-      const response = await axios.get(`${baseURL}/greeting`);
-      console.log('Greeting API Response:', response.data);
-      return response.data;
+      console.log('인사말 데이터 가져오기 시작');
+      
+      const response = await fetch(`${baseURL}/greeting`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      console.log('인사말 API 응답 상태:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('인사말 API 응답 데이터:', data);
+      return data;
     } catch (error) {
       console.error('Error fetching greeting data:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
+      if (error instanceof Error) {
+        console.error('Error Details:', error.message);
       }
+      throw error;
+    }
+  },
+
+  // 인사말 저장 API (관리자용)
+  updateGreeting: async (greetingData: any, token?: string) => {
+    try {
+      console.log('인사말 데이터 저장 시작');
+      
+      const headers: any = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      
+      // 토큰이 제공된 경우에만 Authorization 헤더 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${baseURL}/greeting`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(greetingData)
+      });
+      
+      console.log('인사말 저장 응답 상태:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('인사말 저장 응답 데이터:', data);
+      return data;
+    } catch (error) {
+      console.error('Error updating greeting data:', error);
       throw error;
     }
   },

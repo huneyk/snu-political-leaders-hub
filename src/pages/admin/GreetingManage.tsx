@@ -12,6 +12,7 @@ import AdminNavTabs from '@/components/admin/AdminNavTabs';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import AdminHomeButton from '@/components/admin/AdminHomeButton';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { apiService } from '@/lib/apiService';
 
 // API 기본 URL 설정
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -49,26 +50,9 @@ const GreetingManage = () => {
   const loadGreeting = async () => {
     try {
       setIsLoading(true);
-      console.log('인사말 데이터 로드 시도 URL:', `${API_BASE_URL}/greeting`);
-      
-      // axios 대신 fetch API 사용
-      const response = await fetch(`/api/greeting`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
-      
-      console.log('인사말 API 응답 상태:', response.status, response.statusText);
-      
-      // 응답 확인
-      if (!response.ok) {
-        throw new Error(`서버 오류: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('인사말 API 응답 데이터:', data);
+      console.log('인사말 데이터 로드 시작');
+      const data = await apiService.getGreeting();
+      console.log('API 응답:', data);
       
       if (data) {
         // MongoDB에서 가져온 데이터로 상태 업데이트
@@ -138,28 +122,11 @@ const GreetingManage = () => {
     setIsSaving(true);
     
     try {
-      console.log('인사말 저장 시도 URL:', `${API_BASE_URL}/greeting`);
+      console.log('인사말 저장 시작');
       console.log('저장할 데이터:', greetingData);
       
-      // axios 대신 fetch API 사용
-      const response = await fetch(`/api/greeting`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(greetingData)
-      });
-      
-      console.log('인사말 저장 응답 상태:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        throw new Error(`서버 오류: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('인사말 저장 응답 데이터:', data);
+      // apiService를 사용하여 인사말 저장
+      await apiService.updateGreeting(greetingData, token);
       
       // localStorage에도 백업으로 저장
       localStorage.setItem('greeting-data', JSON.stringify(greetingData));
@@ -173,7 +140,7 @@ const GreetingManage = () => {
       
       // 오류 메시지 생성
       let errorMessage = "인사말을 저장하는 중 오류가 발생했습니다.";
-      if (error.message.includes('서버 오류')) {
+      if (error.message && error.message.includes('서버 오류')) {
         errorMessage = `${error.message}. 서버에 저장하지 못했습니다.`;
       }
       

@@ -66,6 +66,7 @@ app.use('/api/admission', admissionRoutes);
 app.use('/api/footer', footerRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/greeting', greetingRoutes);
+app.use('/api/content/greeting', greetingRoutes);
 app.use('/api/content', contentRoutes);
 
 // API 상태 확인 엔드포인트
