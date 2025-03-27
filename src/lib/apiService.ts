@@ -53,64 +53,32 @@ export const apiService = {
     try {
       console.log('인사말 데이터 저장 시작');
       
-      // 입학정보 API와 완전히 동일한 패턴으로 변경
-      // /api/greeting 대신 /api/admin/greeting 사용 (관리자용 API로 변경)
-      const requestUrl = `${baseURL}/admin/greeting`;
+      // 입학정보 API와 완전히 동일한 패턴으로 변경 (updateAdmission 복사)
+      // admin 경로 삭제 - 정확히 updateAdmission과 동일하게 설정
+      const requestUrl = `${baseURL}/greeting`;
       console.log('요청 URL:', requestUrl);
-      console.log('토큰 존재 여부:', token ? '있음' : '없음');
       
-      console.log('토큰 인증 우회 - updateGreeting (최종 테스트)');
+      // 임시로 토큰 인증 제거 (테스트용) - 입학정보와 동일한 메시지
+      console.log('토큰 인증 우회 - updateGreeting (테스트용)');
       const headers: any = {
         'Content-Type': 'application/json'
       };
       
-      // 토큰이 있는 경우에만 헤더에 추가
+      // 토큰이 제공된 경우에만 Authorization 헤더 추가
       if (token) {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      // 요청 데이터 출력
-      console.log('저장할 데이터:', greetingData);
-      
-      // POST 요청으로 데이터 저장 (관리자 API 경로 사용)
-      console.log('POST 요청으로 인사말 데이터 저장 (관리자 API)');
-      const response = await axios.post(requestUrl, greetingData, {
+      // updateAdmission과 동일하게 PUT 메서드 사용
+      console.log('PUT 요청으로 인사말 데이터 저장');
+      const response = await axios.put(requestUrl, greetingData, {
         headers
       });
       
       console.log('인사말 저장 성공:', response.status);
-      
-      // 저장 성공했으면 로컬에도 백업
-      localStorage.setItem('greeting-data-backup', JSON.stringify(greetingData));
-      
       return response.data;
     } catch (error) {
       console.error('Error updating greeting data:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          message: error.message
-        });
-        
-        // 토큰 관련 오류인 경우 (401)
-        if (error.response?.status === 401) {
-          console.log('인증 오류 발생, 토큰 재확인 필요');
-          // 기본 GET 요청으로 데이터 반환하여 UI 유지
-          try {
-            const getResponse = await axios.get(`${baseURL}/greeting`);
-            console.log('GET 요청으로 데이터 확인');
-            
-            // 로컬에 백업 (UI 갱신용)
-            localStorage.setItem('greeting-data-backup', JSON.stringify(greetingData));
-            
-            return getResponse.data;
-          } catch (getError) {
-            console.error('GET 요청도 실패:', getError);
-          }
-        }
-      }
       throw error;
     }
   },
