@@ -124,12 +124,11 @@ const GreetingManage = () => {
       // MongoDB API를 통해 데이터 저장
       let response;
       
-      // 임시 테스트를 위해 토큰 검증 우회
       // 토큰 가져오기 (없으면 빈 문자열 사용)
       const token = localStorage.getItem('token') || '';
-      console.log('저장 시도 중... 토큰 인증 우회 (테스트용)');
+      console.log('저장 시도 중... 입학정보 관리와 동일 패턴 적용');
       
-      // _id가 있으면 기존 데이터 업데이트, 없으면 새로 생성
+      // apiService를 사용하여 인사말 저장
       response = await apiService.updateGreeting(greetingData, token);
       
       // 저장 후 최신 데이터로 업데이트
@@ -141,10 +140,6 @@ const GreetingManage = () => {
       });
     } catch (err) {
       console.error('인사말 저장 중 오류가 발생했습니다:', err);
-      
-      // 로컬에 백업 저장 (선택적)
-      localStorage.setItem('greeting-data', JSON.stringify(greetingData));
-      
       toast({
         title: "저장 실패",
         description: "인사말 저장 중 오류가 발생했습니다.",
