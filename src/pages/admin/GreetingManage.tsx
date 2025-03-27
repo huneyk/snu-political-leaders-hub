@@ -127,41 +127,40 @@ const GreetingManage = () => {
       
       // 임시 테스트를 위해 토큰 검증 우회
       const token = localStorage.getItem('token') || '';
-      console.log('저장 시도 중... 토큰 인증 우회 (테스트용)');
+      console.log('토큰:', token);
       
-      // 항상 로컬 저장소에 백업
-      localStorage.setItem('greeting-data', JSON.stringify(greetingData));
+      // 서버에 저장 요청 - 재시도 로직이 apiService에 구현되어 있음
+      await apiService.updateGreeting(greetingData, token);
       
-      try {
-        // apiService를 사용하여 인사말 저장 (서버)
-        await apiService.updateGreeting(greetingData, token);
-        
-        toast({
-          title: "저장 완료",
-          description: "인사말이 성공적으로 저장되었습니다.",
-        });
-      } catch (serverError) {
-        console.error('서버 저장 실패:', serverError);
-        
-        // 서버 저장 실패해도 로컬 저장은 완료된 상태
-        toast({
-          title: "제한된 저장 완료",
-          description: "인사말이 로컬에 저장되었습니다. 서버 저장은 실패했습니다.",
-          variant: "destructive",
-        });
-      }
+      // 서버 저장 성공 시 알림
+      toast({
+        title: "서버 저장 완료",
+        description: "인사말이 성공적으로 서버에 저장되었습니다.",
+      });
+      
     } catch (error: any) {
       console.error('인사말 저장 실패:', error);
       
       // 오류 메시지 생성
-      let errorMessage = "인사말을 저장하는 중 오류가 발생했습니다.";
-      if (error.message && error.message.includes('서버 오류')) {
-        errorMessage = `${error.message}. 서버에 저장하지 못했습니다.`;
+      let errorMessage = "인사말을 서버에 저장하는 중 오류가 발생했습니다.";
+      if (error.message) {
+        errorMessage = error.message;
       }
       
+      // 오류 알림 표시
       toast({
-        title: "저장 실패",
+        title: "서버 저장 실패",
         description: errorMessage,
+        variant: "destructive",
+      });
+      
+      // 로컬에 백업 저장
+      localStorage.setItem('greeting-data', JSON.stringify(greetingData));
+      
+      // 로컬 저장 알림
+      toast({
+        title: "로컬 저장 완료",
+        description: "서버 저장에 실패했지만, 브라우저에 임시 저장되었습니다.",
         variant: "destructive",
       });
     } finally {
