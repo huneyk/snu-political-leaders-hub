@@ -82,7 +82,7 @@ export const apiService = {
       console.log('PUT 요청으로 데이터 업데이트');
       
       // 토큰 인증 우회: 관리자용 admission API와 동일한 방식 사용
-      const response = await axios.put(`${baseURL}/content/greeting`, greetingData, {
+      const response = await axios.put(`${baseURL}/greeting`, greetingData, {
         headers
       });
       
