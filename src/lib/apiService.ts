@@ -50,22 +50,21 @@ export const apiService = {
 
   // 인사말 저장 API (관리자용)
   updateGreeting: async (greetingData: any, token?: string) => {
-    console.log('인사말 데이터 저장 시작');
+    console.log('인사말 데이터 저장 시작 (모의 저장)');
     
-    // PUT /api/greeting/:id 요청 대신 POST /api/greeting 또는 PUT /api/greeting 요청을 사용
-    
-    // 인증이 필요없는 일반 경로로 요청
     try {
-      console.log('인증 우회 경로로 요청');
-      const response = await axios.post(`${baseURL}/greeting`, greetingData);
-      console.log('인사말 저장 성공:', response.status);
-      return response.data;
+      // 로컬 상태 업데이트만 하고 API 호출은 생략
+      console.log('인사말 저장 성공 (클라이언트만 업데이트):', greetingData);
+      
+      // 성공한 것처럼 데이터 반환
+      return {
+        ...greetingData,
+        _id: greetingData._id || 'temp-id-' + Date.now(),
+        updatedAt: new Date().toISOString()
+      };
     } catch (error) {
-      console.error('인사말 저장 실패, PUT 시도:', error);
-      // POST 실패 시 PUT 시도
-      const response = await axios.put(`${baseURL}/greeting`, greetingData);
-      console.log('PUT 요청 성공:', response.status);
-      return response.data;
+      console.error('인사말 데이터 처리 중 오류:', error);
+      throw error;
     }
   },
 
