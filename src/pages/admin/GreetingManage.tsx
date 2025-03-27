@@ -129,16 +129,27 @@ const GreetingManage = () => {
       const token = localStorage.getItem('token') || '';
       console.log('저장 시도 중... 토큰 인증 우회 (테스트용)');
       
-      // apiService를 사용하여 인사말 저장
-      await apiService.updateGreeting(greetingData, token);
-      
-      // localStorage에도 백업으로 저장
+      // 항상 로컬 저장소에 백업
       localStorage.setItem('greeting-data', JSON.stringify(greetingData));
       
-      toast({
-        title: "저장 완료",
-        description: "인사말이 성공적으로 저장되었습니다.",
-      });
+      try {
+        // apiService를 사용하여 인사말 저장 (서버)
+        await apiService.updateGreeting(greetingData, token);
+        
+        toast({
+          title: "저장 완료",
+          description: "인사말이 성공적으로 저장되었습니다.",
+        });
+      } catch (serverError) {
+        console.error('서버 저장 실패:', serverError);
+        
+        // 서버 저장 실패해도 로컬 저장은 완료된 상태
+        toast({
+          title: "제한된 저장 완료",
+          description: "인사말이 로컬에 저장되었습니다. 서버 저장은 실패했습니다.",
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
       console.error('인사말 저장 실패:', error);
       
@@ -153,9 +164,6 @@ const GreetingManage = () => {
         description: errorMessage,
         variant: "destructive",
       });
-      
-      // 실패해도 localStorage에는 저장
-      localStorage.setItem('greeting-data', JSON.stringify(greetingData));
     } finally {
       setIsSaving(false);
     }

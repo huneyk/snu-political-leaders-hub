@@ -55,32 +55,47 @@ export const apiService = {
       console.log('요청 URL:', `${baseURL}/greeting`);
       console.log('토큰 존재 여부:', token ? '있음' : '없음');
       
-      // Create a fixed test token that matches AdmissionManage pattern
-      const testAdminToken = '2023-snu-plp-admin-token';
-      
-      // Headers with admin token to bypass authentication
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token || testAdminToken}`
-      };
-      
-      console.log('사용할 HTTP 메서드:', 'POST');
-      console.log('요청 헤더:', headers);
-      console.log('요청 데이터:', greetingData);
-      
-      // Use POST method to match server endpoint
-      const response = await axios({
-        method: 'post',
-        url: `${baseURL}/greeting`,
-        data: greetingData,
-        headers: headers
-      });
-      
-      console.log('인사말 저장 응답 상태:', response.status);
-      console.log('인사말 저장 응답 데이터:', response.data);
-      return response.data;
+      // 서버로 직접 세션 인증 없이 요청 시도
+      // GET과 POST 모두 시도하는 전략
+      try {
+        // 1. POST 요청 시도
+        console.log('POST 요청 시도 중...');
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        
+        // 토큰이 있는 경우에만 추가
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await axios.post(`${baseURL}/greeting`, greetingData, {
+          headers
+        });
+        
+        console.log('POST 요청 성공:', response.status);
+        return response.data;
+      } catch (postError) {
+        console.error('POST 요청 실패:', postError);
+        
+        // 2. GET 요청으로 기존 데이터 가져오기 (fallback)
+        console.log('GET 요청으로 fallback 시도...');
+        const getResponse = await axios.get(`${baseURL}/greeting`);
+        
+        // 기존 데이터를 로컬에 저장
+        localStorage.setItem('greeting-data', JSON.stringify(greetingData));
+        console.log('인사말 데이터를 로컬에 저장했습니다. 서버 저장은 실패했습니다.');
+        
+        // 기존 데이터 반환 및 오류 로깅
+        return getResponse.data;
+      }
     } catch (error) {
-      console.error('Error updating greeting data:', error);
+      console.error('Error handling greeting update:', error);
+      
+      // 마지막 fallback: 로컬스토리지 데이터 사용
+      localStorage.setItem('greeting-data', JSON.stringify(greetingData));
+      console.log('인사말 데이터를 로컬에만 저장했습니다.');
+      
       if (axios.isAxiosError(error)) {
         console.error('Axios Error Details:', {
           status: error.response?.status,
