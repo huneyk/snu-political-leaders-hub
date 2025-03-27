@@ -99,44 +99,63 @@ router.post('/', isAdmin, async (req, res) => {
   }
 });
 
-// PUT 메서드 - 인사말 정보 업데이트 (개발용, 인증 우회)
-router.put('/', async (req, res) => {
-  try {
-    console.log('PUT 메서드로 인사말 업데이트 요청 수신');
-    
-    const { title, content } = req.body;
-    
-    if (!title || !content) {
-      return res.status(400).json({ message: '제목과 내용은 필수 항목입니다.' });
-    }
-    
-    // 기존 인사말이 있는지 확인
-    const existingGreeting = await Greeting.findOne();
-    
-    if (existingGreeting) {
-      // 기존 인사말이 있으면 업데이트
-      existingGreeting.title = title;
-      existingGreeting.content = content;
-      existingGreeting.updatedAt = Date.now();
-      
-      // 추가 필드가 있다면 업데이트
-      Object.keys(req.body).forEach(key => {
-        if (!['title', 'content'].includes(key)) {
-          existingGreeting[key] = req.body[key];
+ 
+
+    // ... 기존 코드 ...
+
+    // PUT 메서드 - 인사말 정보 업데이트 (개발용, 인증 우회)
+    router.put('/', async (req, res) => {
+      try {
+        console.log('PUT 메서드로 인사말 업데이트 요청 수신');
+
+        const { title, content } = req.body;
+
+        if (!title || !content) {
+          return res.status(400).json({ message: '제목과 내용은 필수 항목입니다.' });
         }
-      });
-      
-      const updatedGreeting = await existingGreeting.save();
-      console.log('기존 인사말 업데이트 성공:', updatedGreeting);
-      return res.json(updatedGreeting);
-    }
-    
-    // 새 인사말 생성
-    const newGreeting = new Greeting({
-      title,
-      content,
-      ...req.body // 추가 필드
+
+        // 기존 인사말이 있는지 확인
+        const existingGreeting = await Greeting.findOne();
+
+        if (existingGreeting) {
+          // 기존 인사말이 있으면 업데이트
+          existingGreeting.title = title;
+          existingGreeting.content = content;
+          existingGreeting.updatedAt = Date.now();
+
+          // 추가 필드가 있다면 업데이트
+          Object.keys(req.body).forEach(key => {
+            if (!['title', 'content'].includes(key)) {
+              existingGreeting[key] = req.body[key];
+            }
+          });
+
+          const updatedGreeting = await existingGreeting.save();
+          console.log('기존 인사말 업데이트 성공:', updatedGreeting);
+          return res.json(updatedGreeting);
+        }
+
+        // 기존 인사말이 없으면 새 인사말 생성
+        const newGreeting = new Greeting({
+          title,
+          content,
+          ...req.body // 추가 필드
+        });
+
+        const savedGreeting = await newGreeting.save();
+        console.log('새 인사말 생성 성공:', savedGreeting);
+        res.status(201).json(savedGreeting);
+      } catch (error) {
+        console.error('PUT 메서드 - 인사말 정보 생성/업데이트 실패:', error);
+        res.status(500).json({ message: '인사말 정보를 처리하는 중 오류가 발생했습니다.' });
+      }
     });
+
+    // ... 기존 코드 ...
+   
+
+
+
     
     const savedGreeting = await newGreeting.save();
     console.log('새 인사말 생성 성공:', savedGreeting);
