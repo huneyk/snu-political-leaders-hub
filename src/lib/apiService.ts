@@ -65,13 +65,28 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      console.log('PUT 요청 시도 중...');
-      const response = await axios.put(`${baseURL}/greeting`, greetingData, {
-        headers
-      });
-      
-      console.log('인사말 저장 성공:', response.status);
-      return response.data;
+      // PUT 요청 실패 시 대체 요청 시도
+      try {
+        console.log('POST 요청 시도 중... (PUT에서 변경)');
+        // PUT 대신 POST 요청 사용 (서버 설정에 맞춰 변경)
+        const response = await axios.post(`${baseURL}/greeting`, greetingData, {
+          headers
+        });
+        
+        console.log('인사말 저장 성공 (POST):', response.status);
+        return response.data;
+      } catch (postError) {
+        console.error('POST 요청 실패:', postError);
+        
+        // POST 실패 시 다른 메서드/경로 시도
+        console.log('대체 경로 POST 요청 시도 중...');
+        const altResponse = await axios.post(`${baseURL}/content/greeting`, greetingData, {
+          headers
+        });
+        
+        console.log('인사말 저장 성공 (대체 경로):', altResponse.status);
+        return altResponse.data;
+      }
     } catch (error) {
       console.error('Error updating greeting data:', error);
       if (axios.isAxiosError(error)) {
