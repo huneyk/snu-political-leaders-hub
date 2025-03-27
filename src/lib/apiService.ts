@@ -50,36 +50,33 @@ export const apiService = {
 
   // 인사말 저장 API (관리자용)
   updateGreeting: async (greetingData: any, token?: string) => {
-    try {
-      console.log('인사말 데이터 저장 시작');
-      
-      // 입학정보 API와 완전히 동일한 패턴으로 변경 (updateAdmission 복사)
-      // admin 경로 삭제 - 정확히 updateAdmission과 동일하게 설정
-      const requestUrl = `${baseURL}/greeting`;
-      console.log('요청 URL:', requestUrl);
-      
-      // 임시로 토큰 인증 제거 (테스트용) - 입학정보와 동일한 메시지
-      console.log('토큰 인증 우회 - updateGreeting (테스트용)');
-      const headers: any = {
-        'Content-Type': 'application/json'
-      };
-      
-      // 토큰이 제공된 경우에만 Authorization 헤더 추가
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      
-      // updateAdmission과 동일하게 PUT 메서드 사용
-      console.log('PUT 요청으로 인사말 데이터 저장');
-      const response = await axios.put(requestUrl, greetingData, {
-        headers
+    console.log('인사말 데이터 저장 시작');
+    console.log('토큰 존재 여부:', token ? '있음' : '없음');
+
+    const headers: any = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    // _id가 있는지 여부에 따라 PUT 또는 POST
+    if (greetingData._id) {
+      // 이미 존재하는 인사말 -> PUT /api/greeting/:id
+      console.log('PUT 요청으로 인사말 데이터 업데이트');
+      const response = await axios.put(`${baseURL}/greeting/${greetingData._id}`, greetingData, {
+        headers,
       });
-      
-      console.log('인사말 저장 성공:', response.status);
+      console.log('인사말 업데이트 성공:', response.status);
       return response.data;
-    } catch (error) {
-      console.error('Error updating greeting data:', error);
-      throw error;
+    } else {
+      // 새로운 인사말 -> POST /api/greeting
+      console.log('POST 요청으로 새로운 인사말 생성');
+      const response = await axios.post(`${baseURL}/greeting`, greetingData, {
+        headers,
+      });
+      console.log('인사말 생성 성공:', response.status);
+      return response.data;
     }
   },
 
