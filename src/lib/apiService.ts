@@ -55,66 +55,25 @@ export const apiService = {
       console.log('요청 URL:', `${baseURL}/greeting`);
       console.log('토큰 존재 여부:', token ? '있음' : '없음');
       
-      // 다른 admin API와 동일한 방식으로 인증 우회 패턴 적용
-      console.log('POST 요청 시도 중...');
+      // 입학정보 API와 동일한 패턴으로 단순화
       const headers: any = {
         'Content-Type': 'application/json'
       };
       
-      // 토큰이 있는 경우에만 추가
+      // 토큰이 있는 경우에만 헤더에 추가
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers.Authorization = `Bearer ${token}`;
       }
       
-      // 서버에 저장 시도 (최대 3회)
-      let response;
-      let retryCount = 0;
-      const MAX_RETRIES = 3;
+      console.log('PUT 요청 시도 중...');
+      const response = await axios.put(`${baseURL}/greeting`, greetingData, {
+        headers
+      });
       
-      while (retryCount < MAX_RETRIES) {
-        try {
-          console.log(`서버 저장 시도 #${retryCount + 1}`);
-          
-          // 첫 시도에서는 PUT 메서드 시도
-          if (retryCount === 0) {
-            response = await axios.put(`${baseURL}/greeting`, greetingData, { headers });
-          } 
-          // 두 번째 시도에서는 POST 메서드 시도
-          else if (retryCount === 1) {
-            response = await axios.post(`${baseURL}/greeting`, greetingData, { headers });
-          } 
-          // 세 번째 시도에서는 /content/greeting 경로 시도 (다른 admin API와 유사한 패턴)
-          else {
-            response = await axios.post(`${baseURL}/content/greeting`, greetingData, { headers });
-          }
-          
-          console.log('서버 저장 성공:', response.status);
-          
-          // 성공한 경우 로컬에도 백업
-          localStorage.setItem('greeting-data', JSON.stringify(greetingData));
-          console.log('인사말 데이터를 서버와 로컬 모두에 저장했습니다.');
-          
-          // 성공적으로 저장했으므로 루프 종료
-          break;
-        } catch (error) {
-          console.error(`서버 저장 시도 #${retryCount + 1} 실패:`, error);
-          retryCount++;
-          
-          // 마지막 시도에서도 실패한 경우 오류 발생
-          if (retryCount >= MAX_RETRIES) {
-            console.error('모든 서버 저장 시도 실패. 오류 발생');
-            throw new Error('인사말을 서버에 저장하는 데 실패했습니다. 관리자에게 문의하세요.');
-          }
-          
-          // 잠시 대기 후 재시도
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-      
-      return response?.data;
+      console.log('인사말 저장 성공:', response.status);
+      return response.data;
     } catch (error) {
-      console.error('Error handling greeting update:', error);
-      
+      console.error('Error updating greeting data:', error);
       if (axios.isAxiosError(error)) {
         console.error('Axios Error Details:', {
           status: error.response?.status,
@@ -123,11 +82,6 @@ export const apiService = {
           message: error.message
         });
       }
-      
-      // 서버 저장에 실패했지만 로컬 데이터는 보존
-      localStorage.setItem('greeting-data', JSON.stringify(greetingData));
-      console.log('서버 저장 실패, 로컬에만 저장되었습니다.');
-      
       throw error;
     }
   },
