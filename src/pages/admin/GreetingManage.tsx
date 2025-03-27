@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Label } from '@/components/ui/label';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { apiService } from '@/lib/apiService';
+import axios from 'axios';
 
 // API 기본 URL 설정
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -124,9 +125,12 @@ const GreetingManage = () => {
       // MongoDB API를 통해 데이터 저장
       let response;
       
+      // 항상 로컬에 먼저 백업 (실패해도 데이터 보존)
+      localStorage.setItem('greeting-data-backup', JSON.stringify(greetingData));
+      
       // 토큰 가져오기 (없으면 빈 문자열 사용)
       const token = localStorage.getItem('token') || '';
-      console.log('저장 시도 중... 입학정보 관리와 동일 패턴 적용');
+      console.log('저장 시도 중... 관리자 API로 요청');
       
       // apiService를 사용하여 인사말 저장
       response = await apiService.updateGreeting(greetingData, token);
@@ -140,10 +144,23 @@ const GreetingManage = () => {
       });
     } catch (err) {
       console.error('인사말 저장 중 오류가 발생했습니다:', err);
+      
+      let errorMessage = "인사말 저장 중 오류가 발생했습니다.";
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        errorMessage = "인증 오류가 발생했습니다. 로컬에만 저장되었습니다.";
+      }
+      
       toast({
-        title: "저장 실패",
-        description: "인사말 저장 중 오류가 발생했습니다.",
+        title: "서버 저장 실패",
+        description: errorMessage,
         variant: "destructive",
+      });
+      
+      // 백업 데이터 사용
+      toast({
+        title: "로컬 저장됨",
+        description: "로컬 브라우저에 임시 저장되었습니다.",
+        variant: "default",
       });
     } finally {
       setIsSaving(false);
