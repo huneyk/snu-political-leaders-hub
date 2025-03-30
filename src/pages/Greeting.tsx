@@ -142,15 +142,15 @@ const Greeting = () => {
                     )}
                   </div>
                 ) : (
-                  <div className="prose prose-lg max-w-none" style={{ wordBreak: 'keep-all' }}>
-                    {contentParagraphs.map((paragraph, index) => (
-                      <p key={index} className="mb-6">{paragraph}</p>
-                    ))}
-                    
-                    <div className="text-right mt-8">
-                      <p className="font-medium text-lg" style={{ wordBreak: 'keep-all' }}>
-                        {greeting.position} {greeting.author}
-                      </p>
+                  <div className="greeting-container">
+                    <h1>{greeting.title}</h1>
+                    <div className="greeting-content">
+                      {contentParagraphs.map((paragraph, index) => (
+                        <p key={index} className="mb-6">{paragraph}</p>
+                      ))}
+                    </div>
+                    <div className="greeting-author">
+                      <p>{greeting.position} {greeting.author}</p>
                     </div>
                   </div>
                 )}
