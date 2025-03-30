@@ -50,20 +50,41 @@ export const apiService = {
 
   // 인사말 저장 API (관리자용)
   updateGreeting: async (greetingData: any, token?: string) => {
-    console.log('인사말 데이터 저장 시작 (모의 저장)');
+    console.log('인사말 데이터 저장 시작');
+    console.log('토큰 존재 여부:', token ? '있음' : '없음');
+    
+    const headers: any = {
+      'Content-Type': 'application/json',
+    };
+    
+    // 토큰이 있으면 헤더에 추가 (선택사항)
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
     
     try {
-      // 로컬 상태 업데이트만 하고 API 호출은 생략
-      console.log('인사말 저장 성공 (클라이언트만 업데이트):', greetingData);
+      let response;
       
-      // 성공한 것처럼 데이터 반환
-      return {
-        ...greetingData,
-        _id: greetingData._id || 'temp-id-' + Date.now(),
-        updatedAt: new Date().toISOString()
-      };
+      // _id 유무에 따라 요청 방식 분기
+      if (greetingData._id && greetingData._id !== 'default-greeting-id' && greetingData._id !== 'error-greeting-id') {
+        // ID가 있고 유효한 경우 PUT 요청
+        console.log('PUT 요청으로 인사말 업데이트');
+        // 이전: PUT /api/greeting/:id -> 수정: PUT /api/greeting
+        response = await axios.put(`${baseURL}/greeting`, greetingData, {
+          headers
+        });
+      } else {
+        // ID가 없거나 유효하지 않은 경우 POST 요청
+        console.log('POST 요청으로 새 인사말 생성');
+        response = await axios.post(`${baseURL}/greeting`, greetingData, {
+          headers
+        });
+      }
+      
+      console.log('서버 응답 성공:', response.status);
+      return response.data;
     } catch (error) {
-      console.error('인사말 데이터 처리 중 오류:', error);
+      console.error('인사말 저장 중 오류:', error);
       throw error;
     }
   },
