@@ -154,12 +154,22 @@ export const apiService = {
     try {
       let response;
       
-      // _id 유무에 관계없이 PUT 요청으로 통일
-      console.log('PUT 요청으로 목표 업데이트');
-      response = await axios.put(`${baseURL}/content/objectives`, objectiveData, {
-        headers,
-        withCredentials: false // 인증 관련 쿠키 전송 방지
-      });
+      // _id 유무에 따라 요청 방식 분기
+      if (objectiveData._id) {
+        // ID가 있는 경우 PUT 요청
+        console.log('PUT 요청으로 목표 업데이트');
+        response = await axios.put(`${baseURL}/content/objectives/${objectiveData._id}`, objectiveData, {
+          headers,
+          withCredentials: false // 인증 관련 쿠키 전송 방지
+        });
+      } else {
+        // ID가 없는 경우 POST 요청
+        console.log('POST 요청으로 새 목표 생성');
+        response = await axios.post(`${baseURL}/content/objectives`, objectiveData, {
+          headers,
+          withCredentials: false // 인증 관련 쿠키 전송 방지
+        });
+      }
       
       console.log('서버 응답 성공:', response.status);
       return response.data;
