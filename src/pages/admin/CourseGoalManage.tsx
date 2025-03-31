@@ -12,7 +12,7 @@ import Footer from '@/components/Footer';
 import AdminNavTabs from '@/components/admin/AdminNavTabs';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
-import { apiService } from '@/services/apiService';
+import { apiService } from '@/lib/apiService';
 
 // API 기본 URL 설정
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
