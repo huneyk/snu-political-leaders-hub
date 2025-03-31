@@ -58,6 +58,10 @@ const CourseGoalManage = () => {
     setIsLoading(true);
     try {
       console.log('목표 데이터 로드 시작');
+      // 토큰 가져오기
+      const token = localStorage.getItem('token') || '';
+      console.log('토큰 존재 여부:', token ? '있음' : '없음');
+      
       const data = await apiService.getObjectives();
       console.log('목표 데이터 로드 완료:', data);
       
