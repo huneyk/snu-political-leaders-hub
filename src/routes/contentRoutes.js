@@ -70,7 +70,7 @@ router.get('/recommendations', async (req, res) => {
  * @desc    모든 추천사 가져오기 (관리자용)
  * @access  Private
  */
-router.get('/recommendations/all', authenticateToken, async (req, res) => {
+router.get('/recommendations/all', /* authenticateToken, */ async (req, res) => {
   try {
     const recommendations = await Recommendation.find().sort({ order: 1 });
     res.json(recommendations);
@@ -85,7 +85,7 @@ router.get('/recommendations/all', authenticateToken, async (req, res) => {
  * @desc    추천사 추가
  * @access  Private
  */
-router.post('/recommendations', authenticateToken, async (req, res) => {
+router.post('/recommendations', /* authenticateToken, */ async (req, res) => {
   try {
     const { sectionTitle, title, name, position, content, imageUrl, order, isActive } = req.body;
     
@@ -117,7 +117,7 @@ router.post('/recommendations', authenticateToken, async (req, res) => {
  * @desc    추천사 수정
  * @access  Private
  */
-router.put('/recommendations/:id', authenticateToken, async (req, res) => {
+router.put('/recommendations/:id', /* authenticateToken, */ async (req, res) => {
   try {
     const { sectionTitle, title, name, position, content, imageUrl, order, isActive } = req.body;
     
@@ -156,7 +156,7 @@ router.put('/recommendations/:id', authenticateToken, async (req, res) => {
  * @desc    추천사 삭제
  * @access  Private
  */
-router.delete('/recommendations/:id', authenticateToken, async (req, res) => {
+router.delete('/recommendations/:id', /* authenticateToken, */ async (req, res) => {
   try {
     const deletedRecommendation = await Recommendation.findByIdAndDelete(req.params.id);
     

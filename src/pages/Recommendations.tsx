@@ -36,20 +36,8 @@ const Recommendations = () => {
       setIsLoading(true);
       setError(null);
       
-      // 로컬 스토리지에서 캐시된 데이터 확인
-      const cachedData = localStorage.getItem('recommendations');
-      const cachedTime = localStorage.getItem('recommendationsTime');
-      const CACHE_DURATION = 60 * 60 * 1000; // 1시간
-      
-      // 캐시가 유효한 경우 캐시된 데이터 사용
-      if (cachedData && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_DURATION) {
-        setRecommendations(JSON.parse(cachedData));
-        setIsLoading(false);
-        return;
-      }
-      
       // fetch API로 데이터 가져오기
-      const response = await fetch(`${API_URL}/content/recommendations`);
+      const response = await fetch(`${API_URL}/content/recommendations?t=${Date.now()}`); // 캐시 방지 타임스탬프 추가
       
       // 응답 상태 확인
       if (!response.ok) {
@@ -61,10 +49,13 @@ const Recommendations = () => {
       console.log('Recommendations API Response:', data);
       
       if (data && Array.isArray(data)) {
-        // 데이터 설정 및 캐싱
+        // 데이터 설정 (캐싱 제거)
         setRecommendations(data);
-        localStorage.setItem('recommendations', JSON.stringify(data));
-        localStorage.setItem('recommendationsTime', Date.now().toString());
+        
+        // 섹션 제목 설정 (첫 번째 항목에서 가져옴)
+        if (data.length > 0 && data[0].sectionTitle) {
+          setTitle(data[0].sectionTitle);
+        }
       } else {
         throw new Error('올바른 형식의 데이터가 아닙니다.');
       }
