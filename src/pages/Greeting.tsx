@@ -142,15 +142,21 @@ const Greeting = () => {
                     )}
                   </div>
                 ) : (
-                  <div className="greeting-container">
-                    <h1>{greeting.title}</h1>
-                    <div className="greeting-content">
+                  <div className="greeting-container space-y-6">
+                    {/* 제목은 상단 섹션에 이미 표시되므로 여기서 제거 */}
+                    {/* <h1 className="text-2xl font-bold mb-4">{greeting.title}</h1> */}
+                    
+                    <div className="greeting-content space-y-4">
                       {contentParagraphs.map((paragraph, index) => (
-                        <p key={index} className="mb-6">{paragraph}</p>
+                        <p key={index} className="text-gray-700 leading-relaxed">
+                          {paragraph}
+                        </p>
                       ))}
                     </div>
-                    <div className="greeting-author">
-                      <p>{greeting.position} {greeting.author}</p>
+                    
+                    <div className="greeting-author mt-8 text-right">
+                      <p className="font-semibold">{greeting.author}</p>
+                      <p className="text-gray-600">{greeting.position}</p>
                     </div>
                   </div>
                 )}
