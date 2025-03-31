@@ -152,10 +152,9 @@ export const apiService = {
     };
     
     try {
-      // 인사말 관리(Greeting)와 동일한 방식 적용
-      // 삭제 후 생성 방식이 아닌 단일 PUT 요청으로 변경
+      // GET 요청과 동일한 경로 사용 - /api/content/objectives
       console.log('PUT 요청으로 목표 업데이트');
-      const response = await axios.put(`${baseURL}/objectives`, objectiveData, {
+      const response = await axios.put(`${baseURL}/content/objectives`, objectiveData, {
         headers,
         withCredentials: false // 인증 관련 쿠키 전송 방지
       });
