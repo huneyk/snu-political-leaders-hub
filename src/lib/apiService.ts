@@ -152,31 +152,13 @@ export const apiService = {
     };
     
     try {
-      let response;
-      
-      // 추천의 글 관리와 동일한 방식으로 요청
-      if (objectiveData._id) {
-        // ID가 있는 경우 기존 데이터 삭제 후 새로 생성
-        console.log('기존 목표 삭제 후 새로 생성');
-        await axios.delete(`${baseURL}/content/objectives/${objectiveData._id}`, {
-          headers,
-          withCredentials: false
-        });
-        
-        // ID 제거하고 새로 생성
-        const { _id, ...newData } = objectiveData;
-        response = await axios.post(`${baseURL}/content/objectives`, newData, {
-          headers,
-          withCredentials: false
-        });
-      } else {
-        // ID가 없는 경우 POST 요청으로 새로 생성
-        console.log('POST 요청으로 새 목표 생성');
-        response = await axios.post(`${baseURL}/content/objectives`, objectiveData, {
-          headers,
-          withCredentials: false
-        });
-      }
+      // 인사말 관리(Greeting)와 동일한 방식 적용
+      // 삭제 후 생성 방식이 아닌 단일 PUT 요청으로 변경
+      console.log('PUT 요청으로 목표 업데이트');
+      const response = await axios.put(`${baseURL}/objectives`, objectiveData, {
+        headers,
+        withCredentials: false // 인증 관련 쿠키 전송 방지
+      });
       
       console.log('서버 응답 성공:', response.status);
       return response.data;
