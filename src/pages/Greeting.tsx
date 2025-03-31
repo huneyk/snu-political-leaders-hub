@@ -40,20 +40,10 @@ const Greeting = () => {
       setLoading(true);
       setError(null);
       
-      // 로컬 스토리지에서 캐시된 데이터 확인
-      const cachedData = localStorage.getItem('greeting');
-      const cachedTime = localStorage.getItem('greetingTime');
-      const CACHE_DURATION = 60 * 60 * 1000; // 1시간
-      
-      // 캐시가 유효한 경우 캐시된 데이터 사용
-      if (cachedData && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_DURATION) {
-        setGreeting(JSON.parse(cachedData));
-        setLoading(false);
-        return;
-      }
+      // 캐싱 로직 제거 - 항상 최신 데이터 불러오기
       
       // fetch API로 데이터 가져오기
-      const response = await fetch(`${API_URL}/greeting`);
+      const response = await fetch(`${API_URL}/greeting?t=${Date.now()}`); // 캐시 방지를 위한 타임스탬프 추가
       
       // 응답 상태 확인
       if (!response.ok) {
@@ -65,10 +55,11 @@ const Greeting = () => {
       console.log('Greeting API Response:', data);
       
       if (data) {
-        // 데이터 설정 및 캐싱
+        // 데이터 설정
         setGreeting(data);
-        localStorage.setItem('greeting', JSON.stringify(data));
-        localStorage.setItem('greetingTime', Date.now().toString());
+        // 캐싱 로직 제거 (또는 주석 처리)
+        // localStorage.setItem('greeting', JSON.stringify(data));
+        // localStorage.setItem('greetingTime', Date.now().toString());
       } else {
         throw new Error('데이터가 없습니다.');
       }
