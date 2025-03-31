@@ -156,7 +156,7 @@ export const apiService = {
       
       // _id 유무에 관계없이 PUT 요청으로 통일
       console.log('PUT 요청으로 목표 업데이트');
-      response = await axios.put(`${baseURL}/content/objectives`, objectiveData, {
+      response = await axios.put(`${baseURL}/objectives`, objectiveData, {
         headers,
         withCredentials: false // 인증 관련 쿠키 전송 방지
       });
