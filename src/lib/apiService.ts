@@ -152,9 +152,9 @@ export const apiService = {
     };
     
     try {
-      // GET 요청과 동일한 경로 사용 - /api/content/objectives
-      console.log('PUT 요청으로 목표 업데이트');
-      const response = await axios.put(`${baseURL}/content/objectives`, objectiveData, {
+      // PUT 대신 POST 요청으로 변경
+      console.log('POST 요청으로 목표 업데이트');
+      const response = await axios.post(`${baseURL}/content/objectives`, objectiveData, {
         headers,
         withCredentials: false // 인증 관련 쿠키 전송 방지
       });
