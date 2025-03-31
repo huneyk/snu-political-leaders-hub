@@ -143,9 +143,8 @@ export const apiService = {
   // 목표 저장 API (관리자용)
   updateObjective: async (objectiveData: any, token?: string) => {
     try {
-      // createRecommendation 함수와 동일한 형식으로 변경
-      // withCredentials 옵션과 토큰 관련 코드 제거
-      const response = await axios.post(`${baseURL}/content/objectives`, objectiveData, {
+      // /api/content/objectives -> /api/objectives로 변경
+      const response = await axios.post(`${baseURL}/objectives`, objectiveData, {
         headers: {
           'Content-Type': 'application/json'
         }
