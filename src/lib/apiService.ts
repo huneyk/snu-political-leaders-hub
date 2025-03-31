@@ -106,18 +106,82 @@ export const apiService = {
   // 목표(Objectives) 관련 API
   getObjectives: async () => {
     try {
-      const response = await axios.get(`${baseURL}/objectives`);
-      console.log('Objectives API Response:', response.data);
+      console.log('목표 데이터 가져오기 시작');
+      console.log('요청 URL:', `${baseURL}/content/objectives/all`);
+      console.log('현재 환경:', import.meta.env.MODE);
+      
+      const response = await axios.get(`${baseURL}/content/objectives/all`);
+      console.log('목표 API 응답 상태:', response.status);
+      console.log('목표 API 응답 데이터:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching objectives data:', error);
       if (axios.isAxiosError(error)) {
         console.error('Axios Error Details:', {
           status: error.response?.status,
+          statusText: error.response?.statusText,
           data: error.response?.data,
           message: error.message
         });
       }
+      throw error;
+    }
+  },
+
+  // 목표 저장 API (관리자용)
+  updateObjective: async (objectiveData: any, token?: string) => {
+    console.log('목표 데이터 저장 시작');
+    console.log('토큰 존재 여부:', token ? '있음' : '없음');
+    
+    const headers: any = {
+      'Content-Type': 'application/json',
+    };
+    
+    // 토큰이 있으면 헤더에 추가 (선택사항)
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    
+    try {
+      let response;
+      
+      // _id 유무에 따라 요청 방식 분기
+      if (objectiveData._id) {
+        // ID가 있는 경우 PUT 요청
+        console.log('PUT 요청으로 목표 업데이트');
+        response = await axios.put(`${baseURL}/content/objectives/${objectiveData._id}`, objectiveData, {
+          headers
+        });
+      } else {
+        // ID가 없는 경우 POST 요청
+        console.log('POST 요청으로 새 목표 생성');
+        response = await axios.post(`${baseURL}/content/objectives`, objectiveData, {
+          headers
+        });
+      }
+      
+      console.log('서버 응답 성공:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('목표 저장 중 오류:', error);
+      throw error;
+    }
+  },
+
+  // 목표 삭제 API (관리자용)
+  deleteObjective: async (id: string, token?: string) => {
+    try {
+      const headers: any = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await axios.delete(`${baseURL}/content/objectives/${id}`, {
+        headers
+      });
+      return response.data;
+    } catch (error) {
+      console.error('목표 삭제 중 오류:', error);
       throw error;
     }
   },
