@@ -142,19 +142,13 @@ export const apiService = {
 
   // 목표 저장 API (관리자용)
   updateObjective: async (objectiveData: any, token?: string) => {
-    console.log('목표 데이터 저장 시작');
-    console.log('토큰 존재 여부:', token ? '있음' : '없음');
-    
-    console.log('토큰 인증 우회 - updateObjective (테스트용)');
-    
     try {
-      console.log('POST 요청으로 목표 업데이트');
+      // createRecommendation 함수와 동일한 형식으로 변경
+      // withCredentials 옵션과 토큰 관련 코드 제거
       const response = await axios.post(`${baseURL}/content/objectives`, objectiveData, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer bypass-auth-for-testing'  // 테스트용 인증 우회
-        },
-        withCredentials: false
+          'Content-Type': 'application/json'
+        }
       });
       
       console.log('서버 응답 성공:', response.status);
