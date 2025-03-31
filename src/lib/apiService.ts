@@ -107,8 +107,8 @@ export const apiService = {
   getObjectives: async () => {
     try {
       console.log('목표 데이터 가져오기 시작');
-      // 경로 수정: /api/content/objectives/all -> /api/objectives
-      console.log('요청 URL:', `${baseURL}/objectives`);
+      // 경로 수정: /api/objectives -> /api/content/objectives
+      console.log('요청 URL:', `${baseURL}/content/objectives`);
       console.log('현재 환경:', import.meta.env.MODE);
       
       // 인사말 관리와 동일한 방식으로 토큰 인증 우회
@@ -118,7 +118,7 @@ export const apiService = {
       };
       
       // 인사말 관리와 동일한 방식으로 요청
-      const response = await axios.get(`${baseURL}/objectives`, {
+      const response = await axios.get(`${baseURL}/content/objectives`, {
         headers,
         withCredentials: false // 인증 관련 쿠키 전송 방지
       });
