@@ -92,18 +92,13 @@ export const apiService = {
   // 추천의 글 관련 API
   getRecommendations: async () => {
     try {
-      const response = await axios.get(`${baseURL}/recommendations`);
-      console.log('Recommendations API Response:', response.data);
+      console.log('추천의 글 데이터 가져오기 시작');
+      // 경로 수정: /api/recommendations -> /api/content/recommendations/all
+      const response = await axios.get(`${baseURL}/content/recommendations/all`);
+      console.log('추천의 글 데이터 로드 완료:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching recommendations data:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
-      }
+      console.error('추천의 글 로드 실패:', error);
       throw error;
     }
   },
@@ -603,5 +598,31 @@ export const apiService = {
   parseContentToParagraphs: (content: string): string[] => {
     if (!content) return [];
     return content.split(/\n\s*\n/).filter(paragraph => paragraph.trim() !== '');
-  }
+  },
+
+  // 추천의 글 생성/업데이트 함수
+  async createRecommendation(recommendationData: any) {
+    try {
+      const response = await axios.post(`${baseURL}/content/recommendations`, recommendationData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('추천의 글 생성 실패:', error);
+      throw error;
+    }
+  },
+  
+  // 추천의 글 삭제 함수
+  async deleteRecommendation(id: string) {
+    try {
+      const response = await axios.delete(`${baseURL}/content/recommendations/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('추천의 글 삭제 실패:', error);
+      throw error;
+    }
+  },
 }; 

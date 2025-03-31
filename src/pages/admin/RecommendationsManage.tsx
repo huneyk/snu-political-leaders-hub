@@ -219,19 +219,19 @@ const RecommendationsManage = () => {
         rec.author?.trim() && rec.text?.trim() && rec.position?.trim()
       );
       
-      // 1. 기존 데이터를 모두 삭제 (인증 헤더 제거)
-      const deleteResponse = await axios.get(`${API_BASE_URL}/content/recommendations/all`);
+      // 1. 기존 데이터 불러오기
+      const existingRecommendations = await apiService.getRecommendations();
       
-      if (deleteResponse.data && Array.isArray(deleteResponse.data)) {
-        for (const rec of deleteResponse.data) {
+      // 2. 기존 데이터 삭제
+      if (existingRecommendations && Array.isArray(existingRecommendations)) {
+        for (const rec of existingRecommendations) {
           if (rec._id) {
-            // 인증 헤더 제거
-            await axios.delete(`${API_BASE_URL}/content/recommendations/${rec._id}`);
+            await apiService.deleteRecommendation(rec._id);
           }
         }
       }
       
-      // 2. 새 데이터 저장 (인증 헤더 제거)
+      // 3. 새 데이터 저장
       const savedItems = [];
       for (let i = 0; i < validRecommendations.length; i++) {
         const rec = validRecommendations[i];
@@ -247,14 +247,8 @@ const RecommendationsManage = () => {
           order: i
         }, sectionTitle);
         
-        // 인증 헤더 제거
-        const response = await axios.post(`${API_BASE_URL}/content/recommendations`, dbItem, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        savedItems.push(response.data);
+        const savedItem = await apiService.createRecommendation(dbItem);
+        savedItems.push(savedItem);
       }
       
       // localStorage에도 백업으로 저장
