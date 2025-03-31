@@ -110,17 +110,11 @@ export const apiService = {
       console.log('요청 URL:', `${baseURL}/content/objectives/all`);
       console.log('현재 환경:', import.meta.env.MODE);
       
-      // 토큰 가져오기 (없으면 빈 문자열 사용)
-      const token = localStorage.getItem('token') || '';
-      console.log('토큰 존재 여부:', token ? '있음' : '없음');
-      
-      // 토큰이 있으면 헤더에 추가
+      // 임시로 토큰 인증 우회 (테스트용)
+      console.log('토큰 인증 우회 - getObjectives (테스트용)');
       const headers: any = {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       };
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
       
       const response = await axios.get(`${baseURL}/content/objectives/all`, {
         headers
