@@ -13,10 +13,11 @@ import { useNavigate } from 'react-router-dom';
 import AdminHomeButton from '@/components/admin/AdminHomeButton';
 import axios from 'axios';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { apiService } from '@/lib/apiService';
 
-// API 기본 URL 설정
+// apiService에서 사용하는 동일한 기본 URL 사용
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
+  ? 'https://snu-plp-hub-server.onrender.com/api'
   : 'http://localhost:5001/api';
 
 interface Recommendation {
@@ -86,21 +87,20 @@ const RecommendationsManage = () => {
       setIsLoading(true);
       setError(null);
       
-      // 인증 우회를 위해 토큰 검증 없이 데이터 요청
-      // token 헤더 제거 (인증 우회)
-      const response = await axios.get(`${API_BASE_URL}/content/recommendations/all`);
+      // apiService 사용 (더 좋은 방법)
+      const data = await apiService.getRecommendations();
       
-      if (response.data && Array.isArray(response.data)) {
+      if (data && Array.isArray(data)) {
         // MongoDB 형식을 프론트엔드 형식으로 변환
-        const frontendData = response.data.map(convertToFrontendFormat);
+        const frontendData = data.map(convertToFrontendFormat);
         
         // 데이터가 있는 경우 설정
         if (frontendData.length > 0) {
           setRecommendations(frontendData);
           
           // 첫 번째 항목에서 섹션 제목 가져오기
-          if (response.data[0] && response.data[0].sectionTitle) {
-            setSectionTitle(response.data[0].sectionTitle);
+          if (data[0] && data[0].sectionTitle) {
+            setSectionTitle(data[0].sectionTitle);
           }
         } else {
           // 데이터가 없는 경우 기본 빈 항목 하나 설정
