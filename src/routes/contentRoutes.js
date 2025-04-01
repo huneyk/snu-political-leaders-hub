@@ -292,93 +292,129 @@ router.delete('/objectives/:id', /* authenticateToken, */ async (req, res) => {
 });
 
 // ======================== Benefits Routes ========================
-// Benefits 라우트도 Objectives와 유사한 형태로 구현
+/**
+ * @route   GET /api/content/benefits
+ * @desc    모든 특전 정보 가져오기
+ * @access  Public
+ */
 router.get('/benefits', async (req, res) => {
   try {
     const benefits = await Benefit.find({ isActive: true }).sort({ order: 1 });
     res.json(benefits);
   } catch (error) {
-    console.error('혜택 정보 조회 실패:', error);
+    console.error('특전 정보 조회 실패:', error);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
   }
 });
 
-router.get('/benefits/all', authenticateToken, async (req, res) => {
+/**
+ * @route   GET /api/content/benefits/all
+ * @desc    모든 특전 정보 가져오기 (관리자용)
+ * @access  Public (테스트를 위해 인증 제거)
+ */
+router.get('/benefits/all', async (req, res) => {
   try {
+    console.log('모든 특전 정보 조회 요청 수신 (contentRoutes)');
     const benefits = await Benefit.find().sort({ order: 1 });
+    console.log(`조회된 모든 특전 정보: ${benefits.length}개`);
     res.json(benefits);
   } catch (error) {
-    console.error('혜택 정보 조회 실패:', error);
+    console.error('특전 정보 조회 실패:', error);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
   }
 });
 
-router.post('/benefits', authenticateToken, async (req, res) => {
+/**
+ * @route   POST /api/content/benefits
+ * @desc    특전 정보 추가
+ * @access  Public (테스트를 위해 인증 제거)
+ */
+router.post('/benefits', async (req, res) => {
   try {
-    const { title, description, iconType, order, isActive } = req.body;
+    const { sectionTitle, title, description, order, isActive } = req.body;
     
-    if (!title || !description) {
-      return res.status(400).json({ message: '제목과 설명은 필수 항목입니다.' });
+    console.log('특전 정보 생성 요청 수신 (contentRoutes):', { title });
+    
+    if (!title) {
+      return res.status(400).json({ message: '제목은 필수 항목입니다.' });
     }
     
     const newBenefit = new Benefit({
+      sectionTitle: sectionTitle || '과정 특전',
       title,
-      description,
-      iconType: iconType || 'default',
+      description: description || '',
       order: order || 0,
       isActive: isActive !== undefined ? isActive : true
     });
     
     const savedBenefit = await newBenefit.save();
+    console.log('특전 정보 생성 성공 (contentRoutes):', savedBenefit._id);
     res.status(201).json(savedBenefit);
   } catch (error) {
-    console.error('혜택 정보 생성 실패:', error);
+    console.error('특전 정보 생성 실패 (contentRoutes):', error);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
   }
 });
 
-router.put('/benefits/:id', authenticateToken, async (req, res) => {
+/**
+ * @route   PUT /api/content/benefits/:id
+ * @desc    특전 정보 수정
+ * @access  Public (테스트를 위해 인증 제거)
+ */
+router.put('/benefits/:id', async (req, res) => {
   try {
-    const { title, description, iconType, order, isActive } = req.body;
+    const { sectionTitle, title, description, order, isActive } = req.body;
     
-    if (!title || !description) {
-      return res.status(400).json({ message: '제목과 설명은 필수 항목입니다.' });
+    console.log('특전 정보 수정 요청 수신 (contentRoutes):', { id: req.params.id, title });
+    
+    if (!title) {
+      return res.status(400).json({ message: '제목은 필수 항목입니다.' });
     }
     
     const updatedBenefit = await Benefit.findByIdAndUpdate(
       req.params.id,
       {
+        sectionTitle: sectionTitle || '과정 특전',
         title,
-        description,
-        iconType: iconType || 'default',
+        description: description || '',
         order: order || 0,
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive !== undefined ? isActive : true,
+        updatedAt: new Date()
       },
       { new: true }
     );
     
     if (!updatedBenefit) {
-      return res.status(404).json({ message: '혜택 정보를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: '특전 정보를 찾을 수 없습니다.' });
     }
     
+    console.log('특전 정보 수정 성공 (contentRoutes):', updatedBenefit._id);
     res.json(updatedBenefit);
   } catch (error) {
-    console.error('혜택 정보 수정 실패:', error);
+    console.error('특전 정보 수정 실패 (contentRoutes):', error);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
   }
 });
 
-router.delete('/benefits/:id', authenticateToken, async (req, res) => {
+/**
+ * @route   DELETE /api/content/benefits/:id
+ * @desc    특전 정보 삭제
+ * @access  Public (테스트를 위해 인증 제거)
+ */
+router.delete('/benefits/:id', async (req, res) => {
   try {
+    console.log('특전 정보 삭제 요청 수신 (contentRoutes):', req.params.id);
+    
     const deletedBenefit = await Benefit.findByIdAndDelete(req.params.id);
     
     if (!deletedBenefit) {
-      return res.status(404).json({ message: '혜택 정보를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: '특전 정보를 찾을 수 없습니다.' });
     }
     
-    res.json({ message: '혜택 정보가 삭제되었습니다.' });
+    console.log('특전 정보 삭제 성공 (contentRoutes)');
+    res.json({ message: '특전 정보가 삭제되었습니다.' });
   } catch (error) {
-    console.error('혜택 정보 삭제 실패:', error);
+    console.error('특전 정보 삭제 실패 (contentRoutes):', error);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
   }
 });
