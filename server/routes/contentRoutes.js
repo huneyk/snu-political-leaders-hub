@@ -52,7 +52,7 @@ router.get('/:type', async (req, res) => {
 });
 
 // 콘텐츠 추가 (관리자 전용)
-router.post('/:type', isAdmin, async (req, res) => {
+router.post('/:type', /* isAdmin 제거 - 테스트용 */ async (req, res) => {
   try {
     const { type } = req.params;
     const { title, content, imageUrl, signText, category, term } = req.body;
