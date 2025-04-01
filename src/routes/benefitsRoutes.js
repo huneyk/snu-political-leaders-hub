@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/auth.js';
+// import { authenticateToken } from '../middleware/auth.js';
 import Benefit from '../models/Benefits.js';
 
 const router = express.Router();
@@ -24,9 +24,9 @@ router.get('/', async (req, res) => {
 /**
  * @route   GET /api/benefits/all
  * @desc    모든 특전 정보 가져오기 (관리자용)
- * @access  Private
+ * @access  Public (테스트를 위해 인증 제거)
  */
-router.get('/all', /* authenticateToken, */ async (req, res) => {
+router.get('/all', async (req, res) => {
   try {
     console.log('모든 특전 정보 조회 요청 수신 (관리자용)');
     const benefits = await Benefit.find().sort({ order: 1 });
@@ -61,9 +61,9 @@ router.get('/:id', async (req, res) => {
 /**
  * @route   POST /api/benefits
  * @desc    특전 정보 추가
- * @access  Private (테스트를 위해 인증 미들웨어 주석 처리)
+ * @access  Public (테스트를 위해 인증 제거)
  */
-router.post('/', /* authenticateToken, */ async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { sectionTitle, title, description, order, isActive } = req.body;
     
@@ -93,9 +93,9 @@ router.post('/', /* authenticateToken, */ async (req, res) => {
 /**
  * @route   PUT /api/benefits/:id
  * @desc    특전 정보 수정
- * @access  Private (테스트를 위해 인증 미들웨어 주석 처리)
+ * @access  Public (테스트를 위해 인증 제거)
  */
-router.put('/:id', /* authenticateToken, */ async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { sectionTitle, title, description, order, isActive } = req.body;
     
@@ -133,9 +133,9 @@ router.put('/:id', /* authenticateToken, */ async (req, res) => {
 /**
  * @route   DELETE /api/benefits/:id
  * @desc    특전 정보 삭제
- * @access  Private (테스트를 위해 인증 미들웨어 주석 처리)
+ * @access  Public (테스트를 위해 인증 제거)
  */
-router.delete('/:id', /* authenticateToken, */ async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     console.log('특전 정보 삭제 요청 수신:', req.params.id);
     

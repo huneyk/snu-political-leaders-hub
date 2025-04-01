@@ -283,16 +283,15 @@ export const apiService = {
     try {
       console.log('관리자용 특전 데이터 조회 시작');
       console.log('요청 URL:', `${baseURL}/content/benefits/all`);
-      console.log('토큰 유무:', token ? '있음' : '없음');
       
       const headers: any = {
         'Content-Type': 'application/json'
       };
       
-      // 토큰이 있으면 헤더에 추가
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
+      // 테스트를 위해 인증 제거
+      // if (token) {
+      //   headers.Authorization = `Bearer ${token}`;
+      // }
       
       const response = await axios.get(`${baseURL}/content/benefits/all`, { headers });
       console.log('전체 특전 데이터 조회 결과:', response.status);
@@ -308,16 +307,15 @@ export const apiService = {
     try {
       console.log('새 특전 생성 시작');
       console.log('요청 URL:', `${baseURL}/content/benefits`);
-      console.log('토큰 유무:', token ? '있음' : '없음');
       
       const headers: any = {
         'Content-Type': 'application/json'
       };
       
-      // 토큰이 있으면 헤더에 추가
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
+      // 테스트를 위해 인증 제거
+      // if (token) {
+      //   headers.Authorization = `Bearer ${token}`;
+      // }
       
       const response = await axios.post(`${baseURL}/content/benefits`, benefitData, { headers });
       console.log('특전 생성 결과:', response.status);
@@ -333,16 +331,15 @@ export const apiService = {
     try {
       console.log(`ID ${id}를 가진 특전 업데이트 시작`);
       console.log('요청 URL:', `${baseURL}/content/benefits/${id}`);
-      console.log('토큰 유무:', token ? '있음' : '없음');
       
       const headers: any = {
         'Content-Type': 'application/json'
       };
       
-      // 토큰이 있으면 헤더에 추가
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
+      // 테스트를 위해 인증 제거
+      // if (token) {
+      //   headers.Authorization = `Bearer ${token}`;
+      // }
       
       const response = await axios.put(`${baseURL}/content/benefits/${id}`, benefitData, { headers });
       console.log('특전 업데이트 결과:', response.status);
@@ -358,16 +355,15 @@ export const apiService = {
     try {
       console.log(`ID ${id}를 가진 특전 삭제 시작`);
       console.log('요청 URL:', `${baseURL}/content/benefits/${id}`);
-      console.log('토큰 유무:', token ? '있음' : '없음');
       
       const headers: any = {
         'Content-Type': 'application/json'
       };
       
-      // 토큰이 있으면 헤더에 추가
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
+      // 테스트를 위해 인증 제거
+      // if (token) {
+      //   headers.Authorization = `Bearer ${token}`;
+      // }
       
       const response = await axios.delete(`${baseURL}/content/benefits/${id}`, { headers });
       console.log('특전 삭제 결과:', response.status);
