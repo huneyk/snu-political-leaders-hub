@@ -107,17 +107,16 @@ export const apiService = {
   getObjectives: async () => {
     try {
       console.log('목표 데이터 가져오기 시작');
-      console.log('요청 URL:', `${baseURL}/content/objectives`);
+      console.log('요청 URL:', `${baseURL}/objectives`);
       console.log('현재 환경:', import.meta.env.MODE);
       
-      // 인사말 관리와 동일한 방식으로 토큰 인증 우회
-      console.log('토큰 인증 우회 - getObjectives (테스트용)');
+      // 인증 없이 요청
       const headers: any = {
         'Content-Type': 'application/json'
       };
       
       // 서버에서 데이터 가져오기
-      const response = await axios.get(`${baseURL}/content/objectives`, {
+      const response = await axios.get(`${baseURL}/objectives`, {
         headers,
         withCredentials: false // 인증 관련 쿠키 전송 방지
       });
@@ -142,8 +141,8 @@ export const apiService = {
   // 목표 저장 API (관리자용)
   updateObjective: async (objectiveData: any, token?: string) => {
     try {
-      // createRecommendation과 정확히 동일한 패턴 사용
-      const response = await axios.post(`${baseURL}/content/objectives`, objectiveData, {
+      // 새 경로로 요청
+      const response = await axios.post(`${baseURL}/objectives`, objectiveData, {
         headers: {
           'Content-Type': 'application/json'
         }
