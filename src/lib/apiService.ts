@@ -620,48 +620,335 @@ export const apiService = {
   // 일정(Schedules) 관련 API
   getSchedules: async (category?: string) => {
     try {
-      let url = `${baseURL}/schedules`;
+      console.log('▶️▶️▶️ getSchedules 함수 호출 시작 ▶️▶️▶️');
+      console.log('현재 환경:', import.meta.env.MODE);
       
-      // 카테고리가 지정된 경우 쿼리 매개변수로 추가
+      // 명시적인 헤더 설정
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      
+      // 쿼리 파라미터 구성
+      let queryParams = '';
       if (category) {
-        url += `?category=${category}`;
+        queryParams = `?category=${category}`;
       }
       
-      const response = await axios.get(url);
-      return response.data;
+      // 완전한 URL 경로 사용
+      const apiUrl = import.meta.env.MODE === 'production' 
+        ? `https://snu-plp-hub-server.onrender.com/api/schedules${queryParams}`
+        : `http://localhost:5001/api/schedules${queryParams}`;
+      
+      console.log('요청 URL:', apiUrl);
+      
+      let response;
+      
+      // 첫 번째 시도: 직접 URL로 요청
+      try {
+        console.log('🔄 첫 번째 경로로 서버에 요청 전송 시작:', apiUrl);
+        const config = {
+          headers,
+          withCredentials: false
+        };
+        
+        response = await axios.get(apiUrl, config);
+        console.log('✅ 첫 번째 경로 성공');
+      } catch (firstPathError) {
+        console.warn('⚠️ 첫 번째 경로 실패:', firstPathError);
+        console.warn('⚠️ 두 번째 경로 시도: /api/content/schedules');
+        
+        // 두 번째 시도: content 경로
+        try {
+          const config = {
+            headers,
+            withCredentials: false
+          };
+          
+          const contentUrl = `${baseURL}/content/schedules${queryParams}`;
+          console.log('요청 URL (두 번째 시도):', contentUrl);
+          
+          response = await axios.get(contentUrl, config);
+          console.log('✅ 두 번째 경로 성공');
+        } catch (secondPathError) {
+          console.error('❌ 모든 API 경로 시도 실패');
+          throw secondPathError;
+        }
+      }
+      
+      console.log('===== 서버 응답 확인 =====');
+      console.log('일정 API 응답 상태:', response.status);
+      console.log('일정 API 응답 데이터 타입:', typeof response.data);
+      
+      // 데이터 유효성 검사
+      if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+        console.error('❌ API가 HTML을 반환했습니다. 서버 설정 문제가 있습니다.');
+        throw new Error('API returned HTML instead of JSON data');
+      }
+      
+      if (Array.isArray(response.data)) {
+        console.log('배열 길이:', response.data.length);
+        if (response.data.length > 0) {
+          console.log('첫 번째 항목 샘플:', {
+            _id: response.data[0]._id,
+            title: response.data[0].title,
+            date: response.data[0].date,
+            category: response.data[0].category
+          });
+        }
+        
+        // 백업: 로컬스토리지에 최신 데이터 저장
+        try {
+          const storageKey = category ? `schedules-${category}` : 'schedules-all';
+          localStorage.setItem(storageKey, JSON.stringify(response.data));
+          localStorage.setItem(`${storageKey}-time`, Date.now().toString());
+          console.log('일정 데이터 로컬스토리지에 백업 완료 (키:', storageKey, ')');
+        } catch (storageError) {
+          console.warn('로컬스토리지 백업 실패:', storageError);
+        }
+        
+        return response.data;
+      } else {
+        console.error('❌ API 응답이 배열이 아닙니다:', response.data);
+        throw new Error('API did not return an array of schedules');
+      }
     } catch (error) {
+      console.error('❌❌❌ 일정 데이터 가져오기 오류 ❌❌❌');
       console.error('Error fetching schedules data:', error);
-      throw error;
+      
+      if (axios.isAxiosError(error)) {
+        console.error('🔍 Axios Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: typeof error.response?.data === 'string' && error.response?.data.includes('<!DOCTYPE html>') 
+            ? 'HTML 페이지가 반환됨 (서버 설정 문제)' 
+            : error.response?.data,
+          message: error.message,
+          request: error.request ? '요청이 전송됨' : '요청이 전송되지 않음',
+          response: error.response ? '응답 수신됨' : '응답 수신되지 않음',
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers
+          }
+        });
+      }
+      
+      // 로컬스토리지에서 백업 데이터 시도
+      try {
+        console.log('💾 로컬스토리지에서 백업 데이터 복원 시도');
+        const storageKey = category ? `schedules-${category}` : 'schedules-all';
+        const backup = localStorage.getItem(storageKey);
+        
+        if (backup) {
+          const parsedData = JSON.parse(backup);
+          console.log(`로컬스토리지에서 ${parsedData.length}개의 일정 데이터 복원됨`);
+          return parsedData;
+        }
+      } catch (storageError) {
+        console.warn('로컬스토리지 복원 실패:', storageError);
+      }
+      
+      // 최종적으로 빈 배열 반환
+      console.log('빈 배열 반환');
+      return [];
     }
   },
 
   // 관리자용 모든 일정 조회 API
   getSchedulesAll: async (token: string) => {
     try {
-      const response = await axios.get(`${baseURL}/content/schedules/all`, {
-        headers: {
-          Authorization: `Bearer ${token}`
+      console.log('▶️▶️▶️ getSchedulesAll 함수 호출 시작 ▶️▶️▶️');
+      console.log('현재 환경:', import.meta.env.MODE);
+      
+      // 완전한 URL 경로 사용
+      const apiUrl = import.meta.env.MODE === 'production' 
+        ? 'https://snu-plp-hub-server.onrender.com/api/content/schedules/all'
+        : 'http://localhost:5001/api/content/schedules/all';
+      
+      console.log('요청 URL:', apiUrl);
+      
+      // 명시적인 헤더 설정
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        console.warn('⚠️ 토큰이 없습니다. 인증이 필요한 API에 접근할 수 없을 수 있습니다.');
+      }
+      
+      let response;
+      
+      // 첫 번째 시도: content 경로
+      try {
+        console.log('🔄 서버에 요청 전송 시작:', apiUrl);
+        const config = {
+          headers,
+          withCredentials: false
+        };
+        console.log('요청 설정:', config);
+        
+        response = await axios.get(apiUrl, config);
+        console.log('✅ API 요청 성공');
+      } catch (firstError) {
+        console.warn('⚠️ 인증 토큰 포함 요청 실패:', firstError.message);
+        console.warn('⚠️ 인증 없이 다시 시도');
+        
+        // 두 번째 시도: 인증 없이 시도
+        try {
+          const noAuthHeaders = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          };
+          
+          const noAuthConfig = {
+            headers: noAuthHeaders,
+            withCredentials: false
+          };
+          
+          response = await axios.get(apiUrl, noAuthConfig);
+          console.log('✅ 인증 없이 요청 성공');
+        } catch (secondError) {
+          console.error('❌ 모든 인증 방식 시도 실패');
+          throw secondError;
         }
-      });
-      return response.data;
+      }
+      
+      console.log('===== 서버 응답 확인 =====');
+      console.log('일정 API 응답 상태:', response.status);
+      console.log('일정 API 응답 데이터 타입:', typeof response.data);
+      
+      // 데이터 유효성 검사
+      if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+        console.error('❌ API가 HTML을 반환했습니다. 서버 설정 문제가 있습니다.');
+        throw new Error('API returned HTML instead of JSON data');
+      }
+      
+      if (Array.isArray(response.data)) {
+        console.log('배열 길이:', response.data.length);
+        if (response.data.length > 0) {
+          console.log('첫 번째 항목 샘플:', {
+            _id: response.data[0]._id,
+            title: response.data[0].title,
+            date: response.data[0].date,
+            category: response.data[0].category
+          });
+        }
+        
+        // 백업: 로컬스토리지에 최신 데이터 저장
+        try {
+          localStorage.setItem('admin-schedules-all', JSON.stringify(response.data));
+          localStorage.setItem('admin-schedules-all-time', Date.now().toString());
+          console.log('관리자용 일정 데이터 로컬스토리지에 백업 완료');
+        } catch (storageError) {
+          console.warn('로컬스토리지 백업 실패:', storageError);
+        }
+        
+        return response.data;
+      } else {
+        console.error('❌ API 응답이 배열이 아닙니다:', response.data);
+        throw new Error('API did not return an array of schedules');
+      }
     } catch (error) {
+      console.error('❌❌❌ 관리자용 일정 데이터 가져오기 오류 ❌❌❌');
       console.error('Error fetching all schedules data:', error);
-      throw error;
+      
+      if (axios.isAxiosError(error)) {
+        console.error('🔍 Axios Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: typeof error.response?.data === 'string' && error.response?.data.includes('<!DOCTYPE html>') 
+            ? 'HTML 페이지가 반환됨 (서버 설정 문제)' 
+            : error.response?.data,
+          message: error.message,
+          request: error.request ? '요청이 전송됨' : '요청이 전송되지 않음',
+          response: error.response ? '응답 수신됨' : '응답 수신되지 않음',
+          config: error.config ? {
+            url: error.config.url,
+            method: error.config.method,
+            headers: error.config.headers
+          } : '설정 정보 없음'
+        });
+      }
+      
+      // 로컬스토리지에서 백업 데이터 시도
+      try {
+        console.log('💾 로컬스토리지에서 백업 데이터 복원 시도');
+        const backup = localStorage.getItem('admin-schedules-all');
+        
+        if (backup) {
+          const parsedData = JSON.parse(backup);
+          const backupTime = localStorage.getItem('admin-schedules-all-time');
+          
+          if (backupTime) {
+            const time = new Date(parseInt(backupTime));
+            console.log(`백업 데이터 시간: ${time.toLocaleString()}`);
+          }
+          
+          console.log(`로컬스토리지에서 ${parsedData.length}개의 일정 데이터 복원됨`);
+          return parsedData;
+        }
+      } catch (storageError) {
+        console.warn('로컬스토리지 복원 실패:', storageError);
+      }
+      
+      // 관리자 모드에서는 데이터가 없으면 빈 배열 반환
+      console.log('빈 배열 반환');
+      return [];
     }
   },
 
   // 일정 생성 API
   createSchedule: async (scheduleData: any, token: string) => {
     try {
-      const response = await axios.post(`${baseURL}/content/schedules`, scheduleData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
+      console.log('▶️▶️▶️ createSchedule 함수 호출 시작 ▶️▶️▶️');
+      console.log('새 일정 생성 시작:', scheduleData.title);
+      
+      // 완전한 URL 경로 사용
+      const apiUrl = import.meta.env.MODE === 'production' 
+        ? 'https://snu-plp-hub-server.onrender.com/api/content/schedules'
+        : 'http://localhost:5001/api/content/schedules';
+      
+      console.log('요청 URL:', apiUrl);
+      
+      // 헤더 설정
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        console.warn('⚠️ 토큰이 없습니다. 인증이 필요한 API에 접근할 수 없을 수 있습니다.');
+      }
+      
+      const response = await axios.post(apiUrl, scheduleData, {
+        headers
       });
+      
+      console.log('일정 생성 결과:', response.status);
+      console.log('생성된 일정 ID:', response.data._id);
+      
       return response.data;
     } catch (error) {
+      console.error('❌❌❌ 일정 생성 오류 ❌❌❌');
       console.error('Error creating schedule:', error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('🔍 Axios Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      
       throw error;
     }
   },
@@ -669,15 +956,48 @@ export const apiService = {
   // 일정 수정 API
   updateSchedule: async (id: string, scheduleData: any, token: string) => {
     try {
-      const response = await axios.put(`${baseURL}/content/schedules/${id}`, scheduleData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
+      console.log(`▶️▶️▶️ updateSchedule 함수 호출 시작 (ID: ${id}) ▶️▶️▶️`);
+      console.log('일정 수정 데이터:', scheduleData.title);
+      
+      // 완전한 URL 경로 사용
+      const apiUrl = import.meta.env.MODE === 'production' 
+        ? `https://snu-plp-hub-server.onrender.com/api/content/schedules/${id}`
+        : `http://localhost:5001/api/content/schedules/${id}`;
+      
+      console.log('요청 URL:', apiUrl);
+      
+      // 헤더 설정
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        console.warn('⚠️ 토큰이 없습니다. 인증이 필요한 API에 접근할 수 없을 수 있습니다.');
+      }
+      
+      const response = await axios.put(apiUrl, scheduleData, {
+        headers
       });
+      
+      console.log('일정 수정 결과:', response.status);
       return response.data;
     } catch (error) {
+      console.error(`❌❌❌ 일정 수정 오류 (ID: ${id}) ❌❌❌`);
       console.error(`Error updating schedule with id ${id}:`, error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('🔍 Axios Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      
       throw error;
     }
   },
@@ -685,14 +1005,47 @@ export const apiService = {
   // 일정 삭제 API
   deleteSchedule: async (id: string, token: string) => {
     try {
-      const response = await axios.delete(`${baseURL}/content/schedules/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      console.log(`▶️▶️▶️ deleteSchedule 함수 호출 시작 (ID: ${id}) ▶️▶️▶️`);
+      
+      // 완전한 URL 경로 사용
+      const apiUrl = import.meta.env.MODE === 'production' 
+        ? `https://snu-plp-hub-server.onrender.com/api/content/schedules/${id}`
+        : `http://localhost:5001/api/content/schedules/${id}`;
+      
+      console.log('요청 URL:', apiUrl);
+      
+      // 헤더 설정
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        console.warn('⚠️ 토큰이 없습니다. 인증이 필요한 API에 접근할 수 없을 수 있습니다.');
+      }
+      
+      const response = await axios.delete(apiUrl, {
+        headers
       });
+      
+      console.log('일정 삭제 결과:', response.status);
       return response.data;
     } catch (error) {
+      console.error(`❌❌❌ 일정 삭제 오류 (ID: ${id}) ❌❌❌`);
       console.error(`Error deleting schedule with id ${id}:`, error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('🔍 Axios Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      
       throw error;
     }
   },

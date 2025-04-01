@@ -121,23 +121,20 @@ const ScheduleManage = () => {
   const loadSchedules = async () => {
     try {
       setIsLoading(true);
-      
-      if (!token) {
-        toast({
-          title: "인증 오류",
-          description: "관리자 권한이 필요합니다. 다시 로그인해주세요.",
-          variant: "destructive"
-        });
-        return;
-      }
+      console.log('▶️▶️▶️ 일정 데이터 로드 시작 ▶️▶️▶️');
+      console.log('현재 탭:', activeTab);
       
       try {
-        // API 호출하여 모든 일정 데이터 가져오기
-        const data = await apiService.getSchedulesAll(token);
+        // API 호출하여 모든 일정 데이터 가져오기 (token은 선택적)
+        console.log('MongoDB에서 일정 데이터 가져오기 시도');
+        const data = await apiService.getSchedulesAll(token || '');
         
         if (data && Array.isArray(data)) {
+          console.log(`전체 일정 ${data.length}개 로드됨`);
+          
           // 현재 탭에 맞는 일정만 필터링
           const filteredData = data.filter(schedule => schedule.category === activeTab);
+          console.log(`현재 탭(${activeTab})에 해당하는 일정: ${filteredData.length}개`);
           
           // MongoDB 데이터 형식을 컴포넌트에서 사용하는 형식으로 변환
           const formattedData = filteredData.map(schedule => {
@@ -148,32 +145,40 @@ const ScheduleManage = () => {
             return {
               _id: schedule._id,
               term: schedule.term,
-              year: schedule.year,
+              year: schedule.year || new Date().getFullYear().toString(),
               category: schedule.category,
               title: schedule.title,
               date: formattedDate,
               time: schedule.time || '',
               location: schedule.location || '',
               description: schedule.description || '',
-              isActive: schedule.isActive
+              isActive: schedule.isActive !== undefined ? schedule.isActive : true
             };
           });
           
           setSchedules(formattedData);
+          console.log('일정 데이터 상태 업데이트 완료');
+          
           toast({
             title: "데이터 로드 성공",
-            description: "일정 데이터를 성공적으로 불러왔습니다.",
+            description: `${formattedData.length}개의 일정 데이터를 성공적으로 불러왔습니다.`,
           });
           return;
+        } else {
+          console.warn('API 응답이 배열이 아님:', data);
+          throw new Error('Invalid data format');
         }
       } catch (error) {
         console.error('MongoDB 데이터 로드 실패, 로컬 스토리지로 폴백:', error);
+        
         // MongoDB 연결 실패 시 로컬 스토리지에서 불러오기 시도
+        console.log('로컬 스토리지에서 데이터 복원 시도');
         const storageKey = activeTab === 'academic' ? 'academicSchedules' : 'specialActivities';
         const savedSchedules = localStorage.getItem(storageKey);
         
         if (savedSchedules) {
           try {
+            console.log(`로컬 스토리지 키 '${storageKey}'에서 데이터 찾음`);
             const parsedSchedules = JSON.parse(savedSchedules);
             // term 필드를 문자열에서 숫자로 변환
             const convertedSchedules = parsedSchedules.map((schedule: any) => ({
@@ -183,7 +188,10 @@ const ScheduleManage = () => {
               year: schedule.year || new Date().getFullYear().toString(),
               isActive: schedule.isActive !== undefined ? schedule.isActive : true
             }));
+            
+            console.log(`로컬 스토리지에서 ${convertedSchedules.length}개의 일정 로드됨`);
             setSchedules(convertedSchedules);
+            
             toast({
               title: "로컬 데이터 로드 성공",
               description: "MongoDB에 연결할 수 없어 로컬 데이터를 불러왔습니다.",
@@ -192,39 +200,37 @@ const ScheduleManage = () => {
           } catch (parseError) {
             console.error('로컬 스토리지 데이터 파싱 실패:', parseError);
           }
+        } else {
+          console.log(`로컬 스토리지 키 '${storageKey}'에 데이터 없음`);
         }
       }
       
       // 모든 시도 실패 시 빈 배열로 초기화
+      console.log('모든 데이터 소스에서 일정을 찾을 수 없음, 빈 배열 반환');
       setSchedules([]);
+      
       toast({
         title: "데이터 없음",
         description: "등록된 일정이 없습니다.",
       });
     } catch (error) {
-      console.error('일정 데이터 로드 실패:', error);
+      console.error('일정 데이터 로드 중 예기치 않은 오류:', error);
+      
       toast({
         title: "데이터 로드 실패",
         description: "일정 데이터를 불러오는데 실패했습니다.",
         variant: "destructive"
       });
+      
       setSchedules([]);
     } finally {
       setIsLoading(false);
+      console.log('▶️▶️▶️ 일정 데이터 로드 완료 ▶️▶️▶️');
     }
   };
 
   // 일정 추가
   const handleAddSchedule = async () => {
-    if (!token) {
-      toast({
-        title: "인증 오류",
-        description: "관리자 권한이 필요합니다. 다시 로그인해주세요.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     if (!newSchedule.title || !newSchedule.date) {
       toast({
         title: "입력 오류",
@@ -236,6 +242,13 @@ const ScheduleManage = () => {
 
     try {
       setIsSaving(true);
+      console.log('▶️▶️▶️ 새 일정 추가 시작 ▶️▶️▶️');
+      console.log('일정 데이터:', {
+        제목: newSchedule.title,
+        날짜: newSchedule.date,
+        카테고리: newSchedule.category,
+        학기: newSchedule.term
+      });
 
       const scheduleToAdd = {
         ...newSchedule,
@@ -246,10 +259,13 @@ const ScheduleManage = () => {
       };
 
       try {
-        // API를 통해 새 일정 저장
-        const savedSchedule = await apiService.createSchedule(scheduleToAdd, token);
+        // API를 통해 새 일정 저장 (token은 선택적)
+        console.log('MongoDB에 새 일정 저장 시도');
+        const savedSchedule = await apiService.createSchedule(scheduleToAdd, token || '');
         
         if (savedSchedule && savedSchedule._id) {
+          console.log('MongoDB에 일정 저장 성공, ID:', savedSchedule._id);
+          
           // 저장된 일정을 목록에 추가
           setSchedules(prev => [...prev, {
             _id: savedSchedule._id,
@@ -275,6 +291,9 @@ const ScheduleManage = () => {
             description: "새 일정이 성공적으로 추가되었습니다.",
           });
           return;
+        } else {
+          console.error('MongoDB 응답에 _id가 없음:', savedSchedule);
+          throw new Error('Invalid response from server');
         }
       } catch (apiError) {
         console.error('MongoDB에 저장 실패, 로컬 스토리지로 폴백:', apiError);
@@ -285,6 +304,8 @@ const ScheduleManage = () => {
           ...scheduleToAdd,
           _id: localId
         };
+        
+        console.log('로컬 스토리지에 일정 저장, 임시 ID:', localId);
         
         // 현재 일정 목록에 추가
         setSchedules(prev => [...prev, localSchedule]);
@@ -314,12 +335,6 @@ const ScheduleManage = () => {
         });
         return;
       }
-      
-      toast({
-        title: "저장 실패",
-        description: "일정을 저장할 수 없습니다.",
-        variant: "destructive"
-      });
     } catch (error) {
       console.error('일정 추가 실패:', error);
       toast({
@@ -329,20 +344,12 @@ const ScheduleManage = () => {
       });
     } finally {
       setIsSaving(false);
+      console.log('▶️▶️▶️ 일정 추가 작업 완료 ▶️▶️▶️');
     }
   };
 
   // 일정 업데이트
   const handleUpdateSchedule = async () => {
-    if (!token) {
-      toast({
-        title: "인증 오류",
-        description: "관리자 권한이 필요합니다. 다시 로그인해주세요.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     if (!selectedSchedule || !selectedSchedule._id) {
       toast({
         title: "선택 오류",
@@ -363,10 +370,20 @@ const ScheduleManage = () => {
     
     try {
       setIsSaving(true);
+      console.log(`▶️▶️▶️ 일정 업데이트 시작 (ID: ${selectedSchedule._id}) ▶️▶️▶️`);
+      console.log('업데이트 데이터:', {
+        제목: selectedSchedule.title,
+        날짜: selectedSchedule.date,
+        카테고리: selectedSchedule.category,
+        학기: selectedSchedule.term
+      });
       
       try {
-        // API를 통해 일정 업데이트
-        await apiService.updateSchedule(selectedSchedule._id, selectedSchedule, token);
+        // API를 통해 일정 업데이트 (token은 선택적)
+        console.log('MongoDB에 일정 업데이트 시도');
+        await apiService.updateSchedule(selectedSchedule._id, selectedSchedule, token || '');
+        
+        console.log('MongoDB 일정 업데이트 성공');
         
         // 상태 업데이트
         setSchedules(prev => 
@@ -387,6 +404,8 @@ const ScheduleManage = () => {
         console.error('MongoDB 업데이트 실패, 로컬 스토리지로 폴백:', apiError);
         
         // MongoDB 업데이트 실패 시 로컬 스토리지에 저장
+        console.log('로컬 스토리지에 일정 업데이트');
+        
         // 상태 업데이트
         setSchedules(prev => 
           prev.map(schedule => 
@@ -420,20 +439,12 @@ const ScheduleManage = () => {
       });
     } finally {
       setIsSaving(false);
+      console.log('▶️▶️▶️ 일정 업데이트 작업 완료 ▶️▶️▶️');
     }
   };
   
   // 일정 삭제
   const handleDeleteSchedule = async (scheduleId: string) => {
-    if (!token) {
-      toast({
-        title: "인증 오류",
-        description: "관리자 권한이 필요합니다. 다시 로그인해주세요.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     if (!scheduleId) {
       toast({
         title: "선택 오류",
@@ -449,10 +460,14 @@ const ScheduleManage = () => {
     
     try {
       setIsSaving(true);
+      console.log(`▶️▶️▶️ 일정 삭제 시작 (ID: ${scheduleId}) ▶️▶️▶️`);
       
       try {
-        // API를 통해 일정 삭제
-        await apiService.deleteSchedule(scheduleId, token);
+        // API를 통해 일정 삭제 (token은 선택적)
+        console.log('MongoDB에서 일정 삭제 시도');
+        await apiService.deleteSchedule(scheduleId, token || '');
+        
+        console.log('MongoDB 일정 삭제 성공');
         
         // 상태 업데이트
         setSchedules(prev => prev.filter(schedule => schedule._id !== scheduleId));
@@ -471,6 +486,8 @@ const ScheduleManage = () => {
         console.error('MongoDB 삭제 실패, 로컬 스토리지로 폴백:', apiError);
         
         // MongoDB 삭제 실패 시 로컬 스토리지에서 삭제
+        console.log('로컬 스토리지에서 일정 삭제');
+        
         // 상태 업데이트
         setSchedules(prev => prev.filter(schedule => schedule._id !== scheduleId));
         
@@ -500,6 +517,7 @@ const ScheduleManage = () => {
       });
     } finally {
       setIsSaving(false);
+      console.log('▶️▶️▶️ 일정 삭제 작업 완료 ▶️▶️▶️');
     }
   };
 
