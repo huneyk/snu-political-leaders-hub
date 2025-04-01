@@ -7,6 +7,7 @@ import ProfessorSection from '../models/Professors.js';
 import Schedule from '../models/Schedule.js';
 import Lecturer from '../models/Lecturers.js';
 import Greeting from '../models/Greeting.js';
+import apiService from '../services/apiService.js';
 
 const router = express.Router();
 
