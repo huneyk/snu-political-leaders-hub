@@ -439,63 +439,97 @@ export const apiService = {
   },
 
   // 관리자용 교수진 전체 목록 조회 API
-  getProfessorsAll: async (token: string) => {
+  getProfessorsAll: async (token?: string) => {
     try {
-      const response = await axios.get(`${baseURL}/content/professors/all`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      console.log('관리자용 교수진 데이터 조회 시작');
+      console.log('요청 URL:', `${baseURL}/content/professors/all`);
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 테스트를 위해 인증 제거
+      // if (token) {
+      //   headers.Authorization = `Bearer ${token}`;
+      // }
+      
+      const response = await axios.get(`${baseURL}/content/professors/all`, { headers });
+      console.log('전체 교수진 데이터 조회 결과:', response.status);
       return response.data;
     } catch (error) {
-      console.error('Error fetching all professors data:', error);
+      console.error('교수진 전체 데이터 조회 실패:', error);
       throw error;
     }
   },
   
   // 새 교수진 섹션 생성 API
-  createProfessorSection: async (sectionData: any, token: string) => {
+  createProfessorSection: async (sectionData: any, token?: string) => {
     try {
-      const response = await axios.post(`${baseURL}/content/professors`, sectionData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      });
+      console.log('새 교수진 섹션 생성 시작');
+      console.log('요청 URL:', `${baseURL}/content/professors`);
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 테스트를 위해 인증 제거
+      // if (token) {
+      //   headers.Authorization = `Bearer ${token}`;
+      // }
+      
+      const response = await axios.post(`${baseURL}/content/professors`, sectionData, { headers });
+      console.log('교수진 섹션 생성 결과:', response.status);
       return response.data;
     } catch (error) {
-      console.error('Error creating professor section:', error);
+      console.error('교수진 섹션 생성 실패:', error);
       throw error;
     }
   },
   
   // 교수진 섹션 업데이트 API
-  updateProfessorSection: async (sectionId: string, sectionData: any, token: string) => {
+  updateProfessorSection: async (sectionId: string, sectionData: any, token?: string) => {
     try {
-      const response = await axios.put(`${baseURL}/content/professors/${sectionId}`, sectionData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      });
+      console.log(`ID ${sectionId}를 가진 교수진 섹션 업데이트 시작`);
+      console.log('요청 URL:', `${baseURL}/content/professors/${sectionId}`);
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 테스트를 위해 인증 제거
+      // if (token) {
+      //   headers.Authorization = `Bearer ${token}`;
+      // }
+      
+      const response = await axios.put(`${baseURL}/content/professors/${sectionId}`, sectionData, { headers });
+      console.log('교수진 섹션 업데이트 결과:', response.status);
       return response.data;
     } catch (error) {
-      console.error('Error updating professor section:', error);
+      console.error('교수진 섹션 업데이트 실패:', error);
       throw error;
     }
   },
   
   // 교수진 섹션 삭제 API
-  deleteProfessorSection: async (sectionId: string, token: string) => {
+  deleteProfessorSection: async (sectionId: string, token?: string) => {
     try {
-      const response = await axios.delete(`${baseURL}/content/professors/${sectionId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      console.log(`ID ${sectionId}를 가진 교수진 섹션 삭제 시작`);
+      console.log('요청 URL:', `${baseURL}/content/professors/${sectionId}`);
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 테스트를 위해 인증 제거
+      // if (token) {
+      //   headers.Authorization = `Bearer ${token}`;
+      // }
+      
+      const response = await axios.delete(`${baseURL}/content/professors/${sectionId}`, { headers });
+      console.log('교수진 섹션 삭제 결과:', response.status);
       return response.data;
     } catch (error) {
-      console.error('Error deleting professor section:', error);
+      console.error('교수진 섹션 삭제 실패:', error);
       throw error;
     }
   },

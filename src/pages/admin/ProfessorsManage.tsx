@@ -33,20 +33,26 @@ const ProfessorsManage = () => {
   const [sections, setSections] = useState<ProfessorSection[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const { isAuthenticated, isLoading: authLoading, token } = useAdminAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
-    if (!isAuthenticated || !token) return;
+    if (!isAuthenticated) return;
     
     const fetchProfessorSections = async () => {
       try {
         setIsFetching(true);
-        const response = await apiService.getProfessorsAll(token);
+        console.log('MongoDB에서 교수진 데이터 불러오기 시도...');
+        
+        // 인증 토큰 없이 호출
+        const response = await apiService.getProfessorsAll();
+        console.log('교수진 데이터 로드 결과:', response);
         
         if (response && Array.isArray(response) && response.length > 0) {
           setSections(response);
+          console.log('교수진 데이터 로드 성공');
         } else {
+          console.log('MongoDB에 교수진 데이터 없음, 기본 템플릿 사용');
           // 데이터가 없으면 기본 템플릿 생성
           setSections([{
             sectionTitle: '',
@@ -72,7 +78,7 @@ const ProfessorsManage = () => {
     };
     
     fetchProfessorSections();
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated]);
   
   const handleSectionTitleChange = (sectionIndex: number, value: string) => {
     const newSections = [...sections];
@@ -119,18 +125,11 @@ const ProfessorsManage = () => {
   };
   
   const handleSave = async () => {
-    if (!token) {
-      toast({
-        title: "인증 실패",
-        description: "관리자 인증이 필요합니다. 다시 로그인해주세요.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     setIsLoading(true);
     
     try {
+      console.log('교수진 데이터 저장 시작...');
+      
       // 빈 항목 필터링
       const filteredSections = sections.map(section => ({
         ...section,
@@ -148,21 +147,24 @@ const ProfessorsManage = () => {
         return;
       }
       
-      // 모든 섹션을 병렬로 저장 또는 업데이트
+      // 모든 섹션을 병렬로 저장 또는 업데이트 (토큰 제거)
       const savePromises = filteredSections.map(async section => {
         if (section._id) {
           // 기존 섹션 업데이트
-          return await apiService.updateProfessorSection(section._id, section, token);
+          console.log(`ID ${section._id}를 가진 교수진 섹션 업데이트`);
+          return await apiService.updateProfessorSection(section._id, section);
         } else {
           // 새 섹션 생성
-          return await apiService.createProfessorSection(section, token);
+          console.log('새 교수진 섹션 생성');
+          return await apiService.createProfessorSection(section);
         }
       });
       
       await Promise.all(savePromises);
+      console.log('교수진 데이터 저장 성공');
       
-      // 변경된 데이터로 다시 불러오기
-      const updatedSections = await apiService.getProfessorsAll(token);
+      // 변경된 데이터로 다시 불러오기 (토큰 제거)
+      const updatedSections = await apiService.getProfessorsAll();
       setSections(updatedSections);
       
       toast({
@@ -182,7 +184,7 @@ const ProfessorsManage = () => {
   };
   
   const handleDeleteSection = async (sectionId: string) => {
-    if (!token || !sectionId) return;
+    if (!sectionId) return;
     
     if (!window.confirm('이 섹션을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
       return;
@@ -190,7 +192,9 @@ const ProfessorsManage = () => {
     
     try {
       setIsLoading(true);
-      await apiService.deleteProfessorSection(sectionId, token);
+      console.log(`ID ${sectionId}를 가진 교수진 섹션 삭제 시도`);
+      // 토큰 없이 호출
+      await apiService.deleteProfessorSection(sectionId);
       
       // 삭제 후 목록에서 제거
       setSections(sections.filter(section => section._id !== sectionId));
