@@ -141,12 +141,27 @@ export const apiService = {
   // 목표 저장 API (관리자용)
   updateObjective: async (objectiveData: any, token?: string) => {
     try {
-      // 새 경로로 요청
-      const response = await axios.post(`${baseURL}/objectives`, objectiveData, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      let response;
+      
+      // ID가 있으면 PUT 요청으로 업데이트
+      if (objectiveData._id) {
+        console.log(`ID ${objectiveData._id}를 가진 목표 업데이트 시도 - PUT 사용`);
+        response = await axios.put(
+          `${baseURL}/objectives/${objectiveData._id}`, 
+          objectiveData, 
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      } 
+      // ID가 없으면 POST 요청으로 새로 생성
+      else {
+        console.log('새 목표 생성 시도 - POST 사용');
+        response = await axios.post(
+          `${baseURL}/objectives`, 
+          objectiveData, 
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return response.data;
     } catch (error) {
       console.error('목표 저장 중 오류:', error);
@@ -154,16 +169,14 @@ export const apiService = {
     }
   },
 
-  // 목표 삭제 API (관리자용)
+  // 목표 삭제 API
   deleteObjective: async (id: string, token?: string) => {
     try {
-      const headers: any = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      
-      const response = await axios.delete(`${baseURL}/content/objectives/${id}`, {
-        headers
+      console.log(`ID ${id}를 가진 목표 삭제 시도`);
+      const response = await axios.delete(`${baseURL}/objectives/${id}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       return response.data;
     } catch (error) {
