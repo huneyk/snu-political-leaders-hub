@@ -143,8 +143,8 @@ export const apiService = {
   // 목표 저장 API (관리자용)
   updateObjective: async (objectiveData: any, token?: string) => {
     try {
-      // baseURL을 제거하고 상대 경로만 사용
-      const response = await axios.post('/api/content/objectives', objectiveData, {
+      // 절대 경로로 수정
+      const response = await axios.post(`${baseURL}/content/objectives`, objectiveData, {
         headers: {
           'Content-Type': 'application/json'
         }
