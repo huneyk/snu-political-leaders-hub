@@ -33,23 +33,47 @@ const Professors = () => {
   const fetchProfessors = async () => {
     try {
       setIsLoading(true);
+      console.log('교수진 데이터 가져오기 시작 - Professors.tsx');
+      
       // API에서 교수진 데이터 가져오기
+      console.log('apiService.getProfessors() 호출 시작');
       const data = await apiService.getProfessors();
+      console.log('apiService.getProfessors() 호출 완료', {
+        받은데이터유형: typeof data,
+        배열여부: Array.isArray(data),
+        데이터길이: Array.isArray(data) ? data.length : 'N/A',
+        데이터샘플: Array.isArray(data) && data.length > 0 ? {
+          섹션제목: data[0].sectionTitle,
+          교수수: data[0].professors?.length
+        } : 'No Data'
+      });
       
       if (data && Array.isArray(data) && data.length > 0) {
+        console.log(`${data.length}개 교수진 섹션 로드 완료`);
         setProfessorSections(data);
         
         // 데이터 캐싱 (로컬 스토리지 저장)
-        localStorage.setItem('professors-data', JSON.stringify(data));
+        try {
+          localStorage.setItem('professors-data', JSON.stringify(data));
+          localStorage.setItem('professors-data-time', Date.now().toString());
+          console.log('교수진 데이터 로컬 스토리지에 캐싱 완료');
+        } catch (storageError) {
+          console.warn('로컬 스토리지 캐싱 실패:', storageError);
+        }
       } else {
+        console.warn('API에서 유효한 교수진 데이터를 받지 못함, 로컬 스토리지 시도');
         // API 데이터가 없으면 로컬 스토리지에서 가져오기
         loadFromLocalStorage();
       }
       
       setError(null);
     } catch (err) {
-      console.error('교수진 정보를 불러오는 중 오류가 발생했습니다:', err);
+      console.error('교수진 정보를 불러오는 중 오류 발생:', err);
+      console.error('오류 유형:', err instanceof Error ? err.name : typeof err);
+      console.error('오류 메시지:', err instanceof Error ? err.message : '알 수 없는 오류');
+      
       // API 오류 시 로컬 스토리지에서 가져오기
+      console.log('로컬 스토리지에서 백업 데이터 불러오기 시도');
       loadFromLocalStorage();
     } finally {
       setIsLoading(false);
@@ -58,16 +82,20 @@ const Professors = () => {
   
   const loadFromLocalStorage = () => {
     try {
+      console.log('교수진 데이터 로컬 스토리지 로드 시도');
       const savedData = localStorage.getItem('professors-data');
+      
       if (savedData) {
         const parsedData = JSON.parse(savedData);
+        console.log(`로컬 스토리지에서 ${parsedData.length}개 교수진 섹션 복원 성공`);
         setProfessorSections(parsedData);
         setError(null);
       } else {
+        console.warn('로컬 스토리지에 교수진 데이터 없음');
         setError('교수진 정보를 불러올 수 없습니다.');
       }
     } catch (err) {
-      console.error('로컬 스토리지에서 교수진 데이터를 불러오는 중 오류가 발생했습니다:', err);
+      console.error('로컬 스토리지에서 교수진 데이터를 불러오는 중 오류 발생:', err);
       setError('교수진 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
     }
   };
