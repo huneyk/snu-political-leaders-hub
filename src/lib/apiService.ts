@@ -756,7 +756,7 @@ export const apiService = {
   },
 
   // 관리자용 모든 일정 조회 API
-  getSchedulesAll: async (token: string) => {
+  getSchedulesAll: async (token?: string) => {
     try {
       console.log('▶️▶️▶️ getSchedulesAll 함수 호출 시작 ▶️▶️▶️');
       console.log('현재 환경:', import.meta.env.MODE);
@@ -777,103 +777,43 @@ export const apiService = {
       // 토큰이 있으면 헤더에 추가
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-      } else {
-        console.warn('⚠️ 토큰이 없습니다. 인증이 필요한 API에 접근할 수 없을 수 있습니다.');
       }
       
-      let response;
-      
-      // 첫 번째 시도: content 경로
+      // 단순화된 요청 방식 - 직접 인증 없이 요청
       try {
-        console.log('🔄 서버에 요청 전송 시작:', apiUrl);
+        console.log('🔄 서버에 일정 데이터 요청 전송');
         const config = {
           headers,
           withCredentials: false
         };
-        console.log('요청 설정:', config);
         
-        response = await axios.get(apiUrl, config);
-        console.log('✅ API 요청 성공');
-      } catch (firstError) {
-        console.warn('⚠️ 인증 토큰 포함 요청 실패:', firstError.message);
-        console.warn('⚠️ 인증 없이 다시 시도');
+        const response = await axios.get(apiUrl, config);
+        console.log('✅ 일정 데이터 요청 성공');
         
-        // 두 번째 시도: 인증 없이 시도
-        try {
-          const noAuthHeaders = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          };
+        // 데이터 유효성 검사
+        if (Array.isArray(response.data)) {
+          console.log(`총 ${response.data.length}개의 일정 로드됨`);
           
-          const noAuthConfig = {
-            headers: noAuthHeaders,
-            withCredentials: false
-          };
+          // 백업: 로컬스토리지에 최신 데이터 저장
+          try {
+            localStorage.setItem('admin-schedules-all', JSON.stringify(response.data));
+            localStorage.setItem('admin-schedules-all-time', Date.now().toString());
+            console.log('일정 데이터 로컬스토리지에 백업 완료');
+          } catch (storageError) {
+            console.warn('로컬스토리지 백업 실패:', storageError);
+          }
           
-          response = await axios.get(apiUrl, noAuthConfig);
-          console.log('✅ 인증 없이 요청 성공');
-        } catch (secondError) {
-          console.error('❌ 모든 인증 방식 시도 실패');
-          throw secondError;
+          return response.data;
+        } else {
+          throw new Error('API did not return an array of schedules');
         }
-      }
-      
-      console.log('===== 서버 응답 확인 =====');
-      console.log('일정 API 응답 상태:', response.status);
-      console.log('일정 API 응답 데이터 타입:', typeof response.data);
-      
-      // 데이터 유효성 검사
-      if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
-        console.error('❌ API가 HTML을 반환했습니다. 서버 설정 문제가 있습니다.');
-        throw new Error('API returned HTML instead of JSON data');
-      }
-      
-      if (Array.isArray(response.data)) {
-        console.log('배열 길이:', response.data.length);
-        if (response.data.length > 0) {
-          console.log('첫 번째 항목 샘플:', {
-            _id: response.data[0]._id,
-            title: response.data[0].title,
-            date: response.data[0].date,
-            category: response.data[0].category
-          });
-        }
-        
-        // 백업: 로컬스토리지에 최신 데이터 저장
-        try {
-          localStorage.setItem('admin-schedules-all', JSON.stringify(response.data));
-          localStorage.setItem('admin-schedules-all-time', Date.now().toString());
-          console.log('관리자용 일정 데이터 로컬스토리지에 백업 완료');
-        } catch (storageError) {
-          console.warn('로컬스토리지 백업 실패:', storageError);
-        }
-        
-        return response.data;
-      } else {
-        console.error('❌ API 응답이 배열이 아닙니다:', response.data);
-        throw new Error('API did not return an array of schedules');
+      } catch (error) {
+        console.error('❌ 일정 데이터 요청 실패');
+        throw error;
       }
     } catch (error) {
-      console.error('❌❌❌ 관리자용 일정 데이터 가져오기 오류 ❌❌❌');
-      console.error('Error fetching all schedules data:', error);
-      
-      if (axios.isAxiosError(error)) {
-        console.error('🔍 Axios Error Details:', {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: typeof error.response?.data === 'string' && error.response?.data.includes('<!DOCTYPE html>') 
-            ? 'HTML 페이지가 반환됨 (서버 설정 문제)' 
-            : error.response?.data,
-          message: error.message,
-          request: error.request ? '요청이 전송됨' : '요청이 전송되지 않음',
-          response: error.response ? '응답 수신됨' : '응답 수신되지 않음',
-          config: error.config ? {
-            url: error.config.url,
-            method: error.config.method,
-            headers: error.config.headers
-          } : '설정 정보 없음'
-        });
-      }
+      console.error('❌❌❌ 일정 데이터 가져오기 오류 ❌❌❌');
+      console.error('Error fetching schedules data:', error);
       
       // 로컬스토리지에서 백업 데이터 시도
       try {
@@ -882,13 +822,6 @@ export const apiService = {
         
         if (backup) {
           const parsedData = JSON.parse(backup);
-          const backupTime = localStorage.getItem('admin-schedules-all-time');
-          
-          if (backupTime) {
-            const time = new Date(parseInt(backupTime));
-            console.log(`백업 데이터 시간: ${time.toLocaleString()}`);
-          }
-          
           console.log(`로컬스토리지에서 ${parsedData.length}개의 일정 데이터 복원됨`);
           return parsedData;
         }
@@ -896,7 +829,7 @@ export const apiService = {
         console.warn('로컬스토리지 복원 실패:', storageError);
       }
       
-      // 관리자 모드에서는 데이터가 없으면 빈 배열 반환
+      // 데이터가 없으면 빈 배열 반환
       console.log('빈 배열 반환');
       return [];
     }

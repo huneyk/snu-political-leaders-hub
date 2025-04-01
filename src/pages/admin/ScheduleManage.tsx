@@ -127,7 +127,7 @@ const ScheduleManage = () => {
       try {
         // API 호출하여 모든 일정 데이터 가져오기 (token은 선택적)
         console.log('MongoDB에서 일정 데이터 가져오기 시도');
-        const data = await apiService.getSchedulesAll(token || '');
+        const data = await apiService.getSchedulesAll();
         
         if (data && Array.isArray(data)) {
           console.log(`전체 일정 ${data.length}개 로드됨`);
