@@ -709,6 +709,40 @@ export const apiService = {
     }
   },
 
+  // 관리자용 모든 강사진 조회 API
+  getLecturersAll: async () => {
+    try {
+      console.log('관리자용 모든 강사진 데이터 조회 시작');
+      console.log('요청 URL:', `${baseURL}/content/lecturers/all`);
+      
+      const response = await axios.get(`${baseURL}/content/lecturers/all`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('전체 강사진 데이터 조회 결과:', response.status);
+      console.log('조회된 강사 수:', response.data?.length || 0);
+      
+      return response.data;
+    } catch (error) {
+      console.error('관리자용 강사진 데이터 조회 실패:', error);
+      
+      // 로컬 스토리지에서 백업 데이터 시도
+      try {
+        const backup = localStorage.getItem('faculty-data');
+        if (backup) {
+          console.log('로컬 스토리지에서 강사진 백업 데이터 복원 시도');
+          return JSON.parse(backup);
+        }
+      } catch (storageError) {
+        console.warn('로컬 스토리지 복원 실패:', storageError);
+      }
+      
+      throw error;
+    }
+  },
+
   // 갤러리(Gallery) 관련 API
   getGallery: async () => {
     try {
@@ -1009,6 +1043,67 @@ export const apiService = {
       return response.data;
     } catch (error) {
       console.error('추천의 글 삭제 실패:', error);
+      throw error;
+    }
+  },
+
+  // 강사 생성 API
+  createLecturer: async (lecturerData) => {
+    try {
+      console.log('새 강사 정보 생성 시작');
+      console.log('요청 URL:', `${baseURL}/content/lecturers`);
+      console.log('강사 정보:', lecturerData.name);
+      
+      const response = await axios.post(`${baseURL}/content/lecturers`, lecturerData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('강사 정보 생성 결과:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('강사 정보 생성 실패:', error);
+      throw error;
+    }
+  },
+  
+  // 강사 정보 수정 API
+  updateLecturer: async (id, lecturerData) => {
+    try {
+      console.log(`ID ${id}를 가진 강사 정보 수정 시작`);
+      console.log('요청 URL:', `${baseURL}/content/lecturers/${id}`);
+      
+      const response = await axios.put(`${baseURL}/content/lecturers/${id}`, lecturerData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('강사 정보 수정 결과:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('강사 정보 수정 실패:', error);
+      throw error;
+    }
+  },
+  
+  // 강사 정보 삭제 API
+  deleteLecturer: async (id) => {
+    try {
+      console.log(`ID ${id}를 가진 강사 정보 삭제 시작`);
+      console.log('요청 URL:', `${baseURL}/content/lecturers/${id}`);
+      
+      const response = await axios.delete(`${baseURL}/content/lecturers/${id}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('강사 정보 삭제 결과:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('강사 정보 삭제 실패:', error);
       throw error;
     }
   },

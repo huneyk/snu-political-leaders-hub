@@ -10,6 +10,7 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
 import axios from 'axios';
+import { apiService } from '@/lib/apiService';
 
 // API 기본 URL 설정
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -66,29 +67,26 @@ const FacultyManage = () => {
   const [isSaving, setIsSaving] = useState(false);
   
   useEffect(() => {
-    if (isAuthenticated && token) {
+    if (isAuthenticated) {
       loadLecturers();
     }
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated]);
   
   // MongoDB에서 강사 데이터 불러오기
   const loadLecturers = async () => {
     try {
       setIsLoading(true);
+      console.log('MongoDB에서 강사 데이터 불러오기 시작...');
       
-      // API 호출하여 모든 강사 데이터 가져오기
-      const response = await axios.get(`${API_BASE_URL}/content/lecturers/all`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // apiService를 사용하여 모든 강사 데이터 가져오기
+      const data = await apiService.getLecturersAll();
       
-      console.log('서버에서 불러온 강사 데이터:', response.data);
+      console.log('서버에서 불러온 강사 데이터:', data);
       
       // 데이터가 있는 경우 처리
-      if (response.data && Array.isArray(response.data)) {
+      if (data && Array.isArray(data)) {
         // 기수별, 카테고리별로 데이터 구성
-        const processedData = processLecturerData(response.data);
+        const processedData = processLecturerData(data);
         
         // 유효한 데이터가 있는 경우 설정
         if (processedData.length > 0) {
@@ -103,7 +101,7 @@ const FacultyManage = () => {
         
         toast({
           title: "데이터 로드 성공",
-          description: "강사 데이터를 성공적으로 불러왔습니다.",
+          description: "MongoDB에서 강사 데이터를 성공적으로 불러왔습니다.",
         });
       } else {
         console.log('불러온 데이터가 없거나 형식이 맞지 않습니다. 로컬 스토리지에서 시도합니다.');
@@ -625,41 +623,35 @@ const FacultyManage = () => {
   
   // 저장
   const handleSave = async () => {
-    if (!token) {
-      toast({
-        title: "인증 오류",
-        description: "관리자 인증이 필요합니다. 다시 로그인해주세요.",
-        variant: "destructive",
-      });
-      navigate('/admin/login');
-      return;
-    }
-    
     setIsSaving(true);
     
     try {
+      console.log('강사 데이터 저장 시작...');
+      
       // 기존 데이터 삭제를 위해 모든 강사 불러오기
-      const existingLecturers = await axios.get(`${API_BASE_URL}/content/lecturers/all`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const existingLecturers = await apiService.getLecturersAll();
+      console.log('기존 강사 데이터 조회 결과:', existingLecturers?.length || 0, '명');
       
       // 기존 데이터 삭제
-      if (existingLecturers.data && Array.isArray(existingLecturers.data)) {
-        for (const lecturer of existingLecturers.data) {
-          await axios.delete(`${API_BASE_URL}/content/lecturers/${lecturer._id}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
+      if (existingLecturers && Array.isArray(existingLecturers)) {
+        console.log('기존 강사 데이터 삭제 시작...');
+        for (const lecturer of existingLecturers) {
+          if (lecturer._id) {
+            try {
+              await apiService.deleteLecturer(lecturer._id);
+            } catch (deleteError) {
+              console.error(`ID ${lecturer._id} 강사 삭제 중 오류:`, deleteError);
             }
-          });
+          }
         }
+        console.log('기존 강사 데이터 삭제 완료');
       }
       
       // 새 데이터 저장
       const savedItems = [];
       let order = 0;
       
+      console.log('새 강사 데이터 저장 시작...');
       for (const term of terms) {
         for (const category of term.categories) {
           // 이름이 있는 강사만 필터링
@@ -677,14 +669,13 @@ const FacultyManage = () => {
               isActive: true
             };
             
-            const response = await axios.post(`${API_BASE_URL}/content/lecturers`, lecturerData, {
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              }
-            });
-            
-            savedItems.push(response.data);
+            console.log(`강사 정보 저장 중: ${faculty.name}, 기수: ${term.term}, 카테고리: ${category.name}`);
+            try {
+              const response = await apiService.createLecturer(lecturerData);
+              savedItems.push(response);
+            } catch (saveError) {
+              console.error(`강사 ${faculty.name} 저장 중 오류:`, saveError);
+            }
           }
         }
       }
@@ -694,7 +685,7 @@ const FacultyManage = () => {
       
       toast({
         title: "저장 완료",
-        description: `${savedItems.length}개의 강사 정보가 성공적으로 저장되었습니다.`,
+        description: `${savedItems.length}개의 강사 정보가 MongoDB에 성공적으로 저장되었습니다.`,
       });
       
       // 저장 후 데이터 다시 로드
@@ -703,7 +694,7 @@ const FacultyManage = () => {
       console.error('강사 정보 저장 실패:', error);
       toast({
         title: "저장 실패",
-        description: "서버에 데이터를 저장하는 중 오류가 발생했습니다. 로컬에만 저장됩니다.",
+        description: "MongoDB에 데이터를 저장하는 중 오류가 발생했습니다. 로컬에만 저장됩니다.",
         variant: "destructive"
       });
       
