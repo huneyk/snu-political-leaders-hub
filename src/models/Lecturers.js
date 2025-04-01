@@ -6,11 +6,31 @@ const lecturerSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  title: {
+    type: String,
+    trim: true
+  },
+  organization: {
+    type: String,
+    trim: true
+  },
+  position: {
+    type: String,
+    trim: true
+  },
   imageUrl: {
     type: String
   },
   biography: {
     type: String
+  },
+  specialization: {
+    type: String,
+    trim: true
+  },
+  lectures: {
+    type: [String],
+    default: []
   },
   term: {
     type: String,
@@ -19,7 +39,6 @@ const lecturerSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['특별강사진', '서울대 정치외교학부 교수진'],
     default: '특별강사진'
   },
   order: {
@@ -33,5 +52,8 @@ const lecturerSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// 기수별, 카테고리별 그룹화를 위한 인덱스 설정
+lecturerSchema.index({ term: 1, category: 1, order: 1 });
 
 export default mongoose.model('Lecturer', lecturerSchema); 

@@ -54,29 +54,44 @@ const ScheduleLecturers = () => {
   const fetchLecturers = async () => {
     try {
       setLoading(true);
+      console.log('MongoDB에서 강사진 데이터 가져오기 시작...');
+      
       const data = await apiService.getLecturers();
       
       // API 응답 로깅 추가
-      console.log('강사진 데이터 응답:', data);
+      console.log('MongoDB 강사진 데이터 응답:', data);
+      console.log('데이터 타입:', typeof data);
+      console.log('배열 여부:', Array.isArray(data));
       
       if (data && Array.isArray(data) && data.length > 0) {
+        console.log(`${data.length}명의 강사 데이터 로드 성공`);
         setLecturers(data);
         
         // 데이터 캐싱 (로컬 스토리지 저장)
-        localStorage.setItem('lecturers-data', JSON.stringify(data));
+        try {
+          localStorage.setItem('lecturers-data', JSON.stringify(data));
+          localStorage.setItem('lecturers-data-time', Date.now().toString());
+          console.log('강사진 데이터 로컬 스토리지에 캐싱 완료');
+        } catch (storageError) {
+          console.warn('로컬 스토리지 캐싱 실패:', storageError);
+        }
         
         // 기수별, 카테고리별로 강사 그룹화
         const groupByTerm = groupLecturersByTermAndCategory(data);
+        console.log(`${groupByTerm.length}개 기수로 그룹화됨`);
         setTermGroups(groupByTerm);
         
         setError(null);
       } else {
-        console.error('API 응답에 강사진 데이터가 없습니다:', data);
+        console.error('API 응답에 강사진 데이터가 없거나 비어 있습니다:', data);
         // 로컬 스토리지에서 데이터 로드 시도
         loadFromLocalStorage();
       }
     } catch (err) {
       console.error('강사진 정보를 불러오는 중 오류가 발생했습니다:', err);
+      console.error('오류 유형:', err instanceof Error ? err.name : typeof err);
+      console.error('오류 메시지:', err instanceof Error ? err.message : '알 수 없는 오류');
+      
       // API 오류 시 로컬 스토리지에서 가져오기
       loadFromLocalStorage();
     } finally {
@@ -87,20 +102,32 @@ const ScheduleLecturers = () => {
   // 로컬 스토리지에서 데이터 로드
   const loadFromLocalStorage = () => {
     try {
+      console.log('강사진 데이터 로컬 스토리지 로드 시도');
       const savedData = localStorage.getItem('lecturers-data');
+      
       if (savedData) {
         const parsedData = JSON.parse(savedData);
-        console.log("로컬 스토리지에서 가져온 강사진 데이터:", parsedData);
+        console.log(`로컬 스토리지에서 ${parsedData.length}명의 강사 데이터 복원 성공`);
+        
+        // 백업 시간 확인
+        const backupTime = localStorage.getItem('lecturers-data-time');
+        if (backupTime) {
+          const timeDiff = Date.now() - parseInt(backupTime);
+          const minutesAgo = Math.floor(timeDiff / (1000 * 60));
+          console.log(`백업 데이터 시간: ${minutesAgo}분 전 저장됨`);
+        }
+        
         setLecturers(parsedData);
         // 기수별, 카테고리별로 강사 그룹화
         const groupByTerm = groupLecturersByTermAndCategory(parsedData);
         setTermGroups(groupByTerm);
         setError(null);
       } else {
+        console.warn('로컬 스토리지에 강사진 데이터 없음');
         setError('강사진 데이터를 찾을 수 없습니다.');
       }
     } catch (err) {
-      console.error('로컬 스토리지에서 강사진 데이터를 불러오는 중 오류가 발생했습니다:', err);
+      console.error('로컬 스토리지에서 강사진 데이터를 불러오는 중 오류 발생:', err);
       setError('강사진 데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
     }
   };

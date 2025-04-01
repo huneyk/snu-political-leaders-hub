@@ -10,6 +10,7 @@ import contentRoutes from './routes/contentRoutes.js';
 import objectivesRoutes from './routes/objectivesRoutes.js';
 import benefitsRoutes from './routes/benefitsRoutes.js';
 import professorsRoutes from './routes/professorsRoutes.js';
+import lecturersRoutes from './routes/lecturersRoutes.js';
 
 // 환경 변수 설정
 dotenv.config();
@@ -77,6 +78,8 @@ app.use('/api/benefits', benefitsRoutes);
 app.use('/api/content/benefits', benefitsRoutes);
 app.use('/api/professors', professorsRoutes);
 app.use('/api/content/professors', professorsRoutes);
+app.use('/api/lecturers', lecturersRoutes);
+app.use('/api/content/lecturers', lecturersRoutes);
 
 // API 상태 확인 엔드포인트
 app.get('/api/status', (req, res) => {
