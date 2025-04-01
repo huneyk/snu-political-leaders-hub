@@ -116,67 +116,86 @@ const Benefits = () => {
       setError(null);
       console.log('----------- 과정 특전 데이터 로드 시도 -----------');
       
-      // 로컬 스토리지에서 캐시된 데이터 확인
-      const cachedData = localStorage.getItem('benefits');
-      const cachedTime = localStorage.getItem('benefitsTime');
-      const CACHE_DURATION = 60 * 60 * 1000; // 1시간
+      // 캐시 체크 제거하고 항상 서버에서 최신 데이터 가져오기
+      console.log('MongoDB에서 최신 데이터 가져오기 시도');
       
-      // 캐시가 유효한 경우 캐시된 데이터 사용
-      if (cachedData && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_DURATION) {
-        console.log('캐시된 데이터 사용');
-        const parsedData = JSON.parse(cachedData);
-        setBenefits(parsedData);
-        setSectionTitle(parsedData[0]?.sectionTitle || '과정 특전');
-        setIsLoading(false);
-        return;
-      }
-      
-      // Admin 페이지와 동일한 API 엔드포인트 패턴 사용
-      const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api';
-      console.log('API URL:', API_BASE_URL);
-      
-      console.log('API 요청 시도:', `${API_BASE_URL}/content/benefits`);
-      const response = await fetch(`/api/content/benefits`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+      try {
+        // apiService 사용하여 데이터 가져오기
+        console.log('apiService.getBenefits() 호출 시작');
+        const data = await apiService.getBenefits();
+        console.log('과정 특전 데이터 로드 결과:', data);
+        
+        if (Array.isArray(data) && data.length > 0) {
+          // 첫 번째 항목의 sectionTitle을 사용
+          setSectionTitle(data[0].sectionTitle || '과정 특전');
+          
+          // 활성화된 항목만 필터링하고 정렬
+          const activeBenefits = data
+            .filter((benefit: BenefitItem) => benefit.isActive !== false)
+            .sort((a: BenefitItem, b: BenefitItem) => {
+              return (a.order || 0) - (b.order || 0);
+            });
+          
+          console.log('활성화된 특전 갯수:', activeBenefits.length);
+          setBenefits(activeBenefits);
+          
+          // 데이터 캐싱
+          localStorage.setItem('benefits', JSON.stringify(activeBenefits));
+          localStorage.setItem('benefitsTime', Date.now().toString());
+          localStorage.setItem('course-benefits-title', data[0].sectionTitle || '과정 특전');
+          localStorage.setItem('course-benefits', JSON.stringify(activeBenefits));
+          
+          console.log('MongoDB에서 데이터 로드 성공 및 캐싱 완료');
+        } else {
+          console.log('데이터가 없거나 배열이 아닙니다.');
+          throw new Error('데이터 형식 오류');
         }
-      });
-      
-      console.log('응답 상태:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        throw new Error(`서버 오류: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('과정 특전 데이터 로드 완료:', data);
-      
-      if (Array.isArray(data) && data.length > 0) {
-        // 첫 번째 항목의 sectionTitle을 사용
-        setSectionTitle(data[0].sectionTitle || '과정 특전');
+      } catch (apiError) {
+        console.error('apiService.getBenefits() 호출 중 오류:', apiError);
         
-        // 활성화된 항목만 필터링하고 정렬
-        const activeBenefits = data
-          .filter((benefit: BenefitItem) => benefit.isActive !== false)
-          .sort((a: BenefitItem, b: BenefitItem) => {
-            return (a.order || 0) - (b.order || 0);
-          });
+        // 여러 경로로 시도
+        console.log('직접 API 호출 시도 (fetch)');
+        const response = await fetch(`/api/benefits`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         
-        console.log('활성화된 특전 갯수:', activeBenefits.length);
-        setBenefits(activeBenefits);
+        console.log('응답 상태:', response.status, response.statusText);
         
-        // 데이터 캐싱
-        localStorage.setItem('benefits', JSON.stringify(activeBenefits));
-        localStorage.setItem('benefitsTime', Date.now().toString());
-        localStorage.setItem('course-benefits-title', data[0].sectionTitle || '과정 특전');
-        localStorage.setItem('course-benefits', JSON.stringify(activeBenefits));
-      } else {
-        console.log('데이터가 없거나 배열이 아닙니다.');
-        // 폴백 데이터 사용
-        useFallbackData();
+        if (!response.ok) {
+          throw new Error(`서버 오류: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('과정 특전 데이터 로드 완료 (fetch 방식):', data);
+        
+        if (Array.isArray(data) && data.length > 0) {
+          // 첫 번째 항목의 sectionTitle을 사용
+          setSectionTitle(data[0].sectionTitle || '과정 특전');
+          
+          // 활성화된 항목만 필터링하고 정렬
+          const activeBenefits = data
+            .filter((benefit: BenefitItem) => benefit.isActive !== false)
+            .sort((a: BenefitItem, b: BenefitItem) => {
+              return (a.order || 0) - (b.order || 0);
+            });
+          
+          console.log('활성화된 특전 갯수:', activeBenefits.length);
+          setBenefits(activeBenefits);
+          
+          // 데이터 캐싱
+          localStorage.setItem('benefits', JSON.stringify(activeBenefits));
+          localStorage.setItem('benefitsTime', Date.now().toString());
+          localStorage.setItem('course-benefits-title', data[0].sectionTitle || '과정 특전');
+          localStorage.setItem('course-benefits', JSON.stringify(activeBenefits));
+        } else {
+          console.log('데이터가 없거나 배열이 아닙니다.');
+          throw new Error('데이터 형식 오류');
+        }
       }
     } catch (err) {
       console.error('과정 특전 데이터 로드 중 오류 발생:', err);

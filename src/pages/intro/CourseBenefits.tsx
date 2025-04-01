@@ -7,9 +7,9 @@ import { apiService } from '@/lib/apiService';
 
 interface Benefit {
   _id: string;
+  sectionTitle: string;
   title: string;
   description: string;
-  iconType: string;
   order: number;
   isActive: boolean;
 }
@@ -22,18 +22,48 @@ const CourseBenefits = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    
-    // MongoDB에서 혜택 데이터 가져오기
-    const fetchBenefits = async () => {
+    fetchBenefits();
+  }, []);
+  
+  // MongoDB에서 혜택 데이터 가져오기
+  const fetchBenefits = async () => {
+    try {
+      setIsLoading(true);
+      console.log('----------- CourseBenefits: 과정 특전 데이터 로드 시도 -----------');
+      
       try {
-        setIsLoading(true);
+        // apiService 사용하여 데이터 가져오기
+        console.log('apiService.getBenefits() 호출 시작');
+        const data = await apiService.getBenefits();
+        console.log('과정 특전 데이터 로드 결과:', data);
         
-        // Admin 페이지와 동일한 API 엔드포인트 패턴 사용
-        const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api';
-        console.log('API URL:', API_BASE_URL);
+        if (Array.isArray(data) && data.length > 0) {
+          // 활성화된 항목만 필터링하고 정렬
+          const activeBenefits = data
+            .filter((benefit: Benefit) => benefit.isActive !== false)
+            .sort((a: Benefit, b: Benefit) => {
+              return (a.order || 0) - (b.order || 0);
+            });
+          
+          console.log('활성화된 특전 갯수:', activeBenefits.length);
+          setBenefits(activeBenefits);
+          
+          // 섹션 제목 설정
+          if (data[0]?.sectionTitle) {
+            setSectionTitle(data[0].sectionTitle);
+          }
+          
+          setError(null);
+        } else {
+          console.log('데이터가 없거나 배열이 아닙니다.');
+          throw new Error('데이터 형식 오류');
+        }
+      } catch (apiError) {
+        console.error('apiService.getBenefits() 호출 중 오류:', apiError);
         
-        console.log('API 요청 시도:', `${API_BASE_URL}/content/benefits`);
-        const response = await fetch(`/api/content/benefits`, {
+        // 여러 경로로 시도
+        console.log('직접 API 호출 시도 (fetch)');
+        const response = await fetch(`/api/benefits`, {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
@@ -49,7 +79,7 @@ const CourseBenefits = () => {
         }
         
         const data = await response.json();
-        console.log('혜택 데이터 로드 완료:', data);
+        console.log('과정 특전 데이터 로드 완료 (fetch 방식):', data);
         
         if (data && Array.isArray(data)) {
           // 활성화된 항목만 필터링하고 정렬
@@ -63,30 +93,32 @@ const CourseBenefits = () => {
           if (data[0]?.sectionTitle) {
             setSectionTitle(data[0].sectionTitle);
           }
+          
+          setError(null);
+        } else {
+          console.log('데이터가 없거나 배열이 아닙니다.');
+          throw new Error('데이터 형식 오류');
         }
-        setError(null);
-      } catch (err) {
-        console.error('혜택 정보를 불러오는 중 오류가 발생했습니다:', err);
-        setError('데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-        
-        // 로컬 스토리지에서 데이터 로드 시도
-        const cachedBenefits = localStorage.getItem('benefits');
-        if (cachedBenefits) {
-          try {
-            const parsedData = JSON.parse(cachedBenefits);
-            setBenefits(parsedData);
-            setSectionTitle(parsedData[0]?.sectionTitle || '과정 특전');
-          } catch (cacheErr) {
-            console.error('캐시된 데이터 파싱 오류:', cacheErr);
-          }
-        }
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    fetchBenefits();
-  }, []);
+    } catch (err) {
+      console.error('특전 정보를 불러오는 중 오류가 발생했습니다:', err);
+      setError('데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      
+      // 로컬 스토리지에서 데이터 로드 시도
+      const cachedBenefits = localStorage.getItem('benefits');
+      if (cachedBenefits) {
+        try {
+          const parsedData = JSON.parse(cachedBenefits);
+          setBenefits(parsedData);
+          setSectionTitle(parsedData[0]?.sectionTitle || '과정 특전');
+        } catch (cacheErr) {
+          console.error('캐시된 데이터 파싱 오류:', cacheErr);
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Animation variants
   const containerVariants = {

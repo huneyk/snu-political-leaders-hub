@@ -268,12 +268,57 @@ export const apiService = {
       console.log('Benefits API Request 시작');
       console.log('요청 URL:', `${baseURL}/benefits`);
       
-      const response = await axios.get(`${baseURL}/benefits`);
+      // 여러 API 경로를 시도
+      let response;
+      let error;
+      
+      // 첫 번째 시도: /benefits
+      try {
+        console.log('첫 번째 경로 시도: /benefits');
+        response = await axios.get(`${baseURL}/benefits`);
+        console.log('첫 번째 경로 성공');
+      } catch (err) {
+        console.warn('첫 번째 경로 실패, 두 번째 경로 시도');
+        error = err;
+        
+        // 두 번째 시도: /content/benefits
+        try {
+          console.log('두 번째 경로 시도: /content/benefits');
+          response = await axios.get(`${baseURL}/content/benefits`);
+          console.log('두 번째 경로 성공');
+        } catch (err2) {
+          console.error('두 번째 경로도 실패');
+          throw err2;
+        }
+      }
+      
       console.log('Benefits API 응답 상태:', response.status);
-      console.log('Benefits API 응답 데이터:', response.data);
+      console.log('Benefits API 응답 데이터 타입:', typeof response.data);
+      console.log('Benefits API 응답 데이터 길이:', Array.isArray(response.data) ? response.data.length : 'Not an array');
+      
       return response.data;
     } catch (error) {
-      console.error('Error fetching benefits data:', error);
+      console.error('특전 데이터 가져오기 오류:', error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data
+        });
+      }
+      
+      // 로컬 스토리지에서 백업 데이터 시도
+      try {
+        const backup = localStorage.getItem('benefits');
+        if (backup) {
+          console.log('로컬 스토리지에서 백업 데이터 복원 시도');
+          return JSON.parse(backup);
+        }
+      } catch (storageError) {
+        console.warn('로컬 스토리지 복원 실패:', storageError);
+      }
+      
       throw error;
     }
   },
