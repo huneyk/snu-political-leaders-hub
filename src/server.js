@@ -70,6 +70,7 @@ app.use('/api/greeting', greetingRoutes);
 app.use('/api/content/greeting', greetingRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/objectives', objectivesRoutes);
+app.use('/api/content/objectives', objectivesRoutes);
 
 // API 상태 확인 엔드포인트
 app.get('/api/status', (req, res) => {
