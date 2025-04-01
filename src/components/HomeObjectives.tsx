@@ -39,17 +39,18 @@ const HomeObjectives = ({ onStatusChange }: ObjectivesProps) => {
       const data = await apiService.getObjectives();
       console.log('과정 목표 데이터 로드 완료:', data);
       
-      // 섹션 제목 설정 - MongoDB에서 sectionTitle 필드가 있으면 사용, 없으면 기본값 유지
-      if (data.sectionTitle) {
-        setSectionTitle(data.sectionTitle);
-      }
-      
-      if (Array.isArray(data.objectives) && data.objectives.length > 0) {
-        // MongoDB 데이터 구조에 맞게 필드 매핑
-        const mappedGoals = data.objectives.map((item: any) => ({
+      // 데이터 처리
+      if (Array.isArray(data) && data.length > 0) {
+        // 첫 번째 항목에서 sectionTitle 가져오기 (모든 항목이 같은 sectionTitle을 가짐)
+        if (data[0]?.sectionTitle) {
+          setSectionTitle(data[0].sectionTitle);
+        }
+        
+        // 데이터 매핑
+        const mappedGoals = data.map((item: any) => ({
           _id: item._id,
           title: item.title || '',
-          content: item.content || item.description || '',
+          content: item.description || item.content || '',  // description 필드를 먼저 확인
           imageUrl: item.iconImage || item.imageUrl || item.image || item.iconUrl || '',
           order: item.order || 0,
           isActive: item.isActive !== false
@@ -63,9 +64,13 @@ const HomeObjectives = ({ onStatusChange }: ObjectivesProps) => {
         // 홈페이지에는 최대 3개만 표시
         setGoals(activeGoals.slice(0, 3));
         console.log('처리된 목표 데이터:', activeGoals);
-      } else if (Array.isArray(data) && data.length > 0) {
-        // 배열 형태로 직접 반환되는 경우
-        const mappedGoals = data.map((item: any) => ({
+      } else if (data && typeof data === 'object' && Array.isArray(data.objectives)) {
+        // 이전 형식: data.objectives 배열이 있는 경우 (하위 호환성 유지)
+        if (data.sectionTitle) {
+          setSectionTitle(data.sectionTitle);
+        }
+        
+        const mappedGoals = data.objectives.map((item: any) => ({
           _id: item._id,
           title: item.title || '',
           content: item.content || item.description || '',
@@ -74,14 +79,12 @@ const HomeObjectives = ({ onStatusChange }: ObjectivesProps) => {
           isActive: item.isActive !== false
         }));
         
-        // 활성화된 목표만 필터링하고 순서대로 정렬
         const activeGoals = mappedGoals
           .filter(goal => goal.isActive !== false)
           .sort((a, b) => (a.order || 0) - (b.order || 0));
         
-        // 홈페이지에는 최대 3개만 표시
         setGoals(activeGoals.slice(0, 3));
-        console.log('처리된 목표 데이터 (배열):', activeGoals);
+        console.log('처리된 목표 데이터 (이전 형식):', activeGoals);
       } else {
         setGoals([]);
         console.log('목표 데이터가 없거나 형식이 올바르지 않습니다.');

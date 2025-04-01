@@ -90,7 +90,7 @@ const Objectives = () => {
     }
   };
 
-  // MongoDB에서 목표 데이터 가져오기 - fetch API 사용
+  // MongoDB에서 목표 데이터 가져오기
   const fetchObjectives = async () => {
     try {
       setIsLoading(true);
@@ -111,16 +111,8 @@ const Objectives = () => {
         return;
       }
       
-      // fetch API로 데이터 가져오기
-      const response = await fetch(`${API_URL}/content/objectives`);
-      
-      // 응답 상태 확인
-      if (!response.ok) {
-        throw new Error(`서버 오류: ${response.status}`);
-      }
-      
-      // JSON 데이터 파싱
-      const data = await response.json();
+      // apiService 사용하여 데이터 가져오기
+      const data = await apiService.getObjectives();
       console.log('과정 목표 데이터 로드 완료:', data);
       
       if (data && Array.isArray(data) && data.length > 0) {
@@ -132,7 +124,7 @@ const Objectives = () => {
           .filter((obj: Objective) => obj.isActive)
           .sort((a: Objective, b: Objective) => a.order - b.order);
         
-        console.log('처리된 목표 데이터 (배열):', sortedObjectives);
+        console.log('처리된 목표 데이터:', sortedObjectives);
         setObjectives(sortedObjectives);
         
         // 데이터 캐싱
