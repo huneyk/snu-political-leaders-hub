@@ -10,6 +10,7 @@ import ScrollReveal from '@/components/ScrollReveal';
 import { apiService } from '@/lib/apiService';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { toast } from '@/components/ui/use-toast';
 
 // 일정 인터페이스 정의
 interface Schedule {
@@ -47,50 +48,81 @@ const ScheduleActivities: React.FC = () => {
   
   // 일정 데이터 가져오기 함수
   const fetchSchedules = async () => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      setIsLoading(true);
       console.log('특별활동 일정 데이터 가져오기 시작...');
-      const data = await apiService.getSchedulesAll();
       
-      if (data && Array.isArray(data)) {
-        console.log(`일정 데이터 로드 완료: ${data.length}개 일정`);
+      // MongoDB에서 데이터 가져오기 시도
+      console.log('MongoDB에서 데이터 가져오기 시도...');
+      const response = await apiService.getSchedulesAll();
+      
+      if (response && Array.isArray(response) && response.length > 0) {
+        console.log(`일정 데이터 로드 완료: ${response.length}개 일정`);
         
-        // 특별활동 일정만 필터링 (category 필드가 academic이 아닌 일정)
-        const activities = data.filter(schedule => 
-          schedule.category && 
-          schedule.category !== 'academic' && 
-          schedule.isActive
+        // 유효한 데이터인지 확인
+        const isValidData = response.every(item => 
+          item && typeof item === 'object' && 
+          item._id && item.title && item.date && item.category
         );
         
-        console.log(`특별활동 필터링 완료: ${activities.length}개 특별활동`);
-        setSpecialActivities(activities);
-        
-        // 데이터 캐싱 (로컬 스토리지 저장)
-        localStorage.setItem('special-activities-data', JSON.stringify(activities));
-        localStorage.setItem('special-activities-timestamp', Date.now().toString());
-        
-        // 사용 가능한 기수 목록 추출
-        const terms = new Set<number>();
-        activities.forEach(activity => {
-          if (activity.term) {
-            terms.add(activity.term);
+        if (isValidData) {
+          // 특별활동 일정만 필터링 (category 필드가 academic이 아닌 일정)
+          const activities = response.filter(schedule => 
+            schedule.category && 
+            schedule.category !== 'academic' && 
+            schedule.isActive
+          );
+          
+          console.log(`특별활동 필터링 완료: ${activities.length}개 특별활동`);
+          setSpecialActivities(activities);
+          
+          // 데이터 캐싱 (로컬 스토리지 저장)
+          try {
+            localStorage.setItem('special-activities-data', JSON.stringify(activities));
+            localStorage.setItem('special-activities-timestamp', Date.now().toString());
+            console.log('특별활동 데이터 로컬스토리지에 백업 완료');
+          } catch (storageError) {
+            console.warn('로컬스토리지 백업 실패:', storageError);
           }
-        });
-        
-        const sortedTerms = Array.from(terms).sort((a, b) => b - a); // 내림차순 정렬
-        
-        console.log('사용 가능한 기수:', sortedTerms);
-        setAvailableTerms(sortedTerms);
-        
-        // 가장 최근 기수를 기본값으로 설정
-        if (sortedTerms.length > 0) {
-          setSelectedTerm(sortedTerms[0]);
+          
+          // 사용 가능한 기수 목록 추출
+          const terms = new Set<number>();
+          activities.forEach(activity => {
+            if (activity.term) {
+              terms.add(typeof activity.term === 'number' ? activity.term : Number(activity.term));
+            }
+          });
+          
+          const sortedTerms = Array.from(terms).sort((a, b) => b - a); // 내림차순 정렬
+          
+          console.log('사용 가능한 기수:', sortedTerms);
+          setAvailableTerms(sortedTerms);
+          
+          // 가장 최근 기수를 기본값으로 설정
+          if (sortedTerms.length > 0) {
+            setSelectedTerm(sortedTerms[0]);
+          }
+          
+          return;
+        } else {
+          console.error('API에서 유효하지 않은 데이터 형식 반환:', response);
+          throw new Error('Invalid data format from API');
         }
+      } else {
+        console.error('API 응답이 비어있거나 배열이 아닙니다');
+        throw new Error('Empty or invalid response from API');
       }
-      
-      setError(null);
     } catch (err) {
       console.error('특별활동 정보를 불러오는 중 오류가 발생했습니다:', err);
+      
+      // 에러 메시지 표시
+      toast({
+        title: "데이터 로드 오류",
+        description: "서버에서 특별활동 데이터를 가져오는 중 문제가 발생했습니다. 로컬 데이터를 사용합니다.",
+        variant: "destructive"
+      });
       
       // 로컬 스토리지에서 백업 데이터 복원 시도
       try {
@@ -104,6 +136,17 @@ const ScheduleActivities: React.FC = () => {
           if (timestamp) {
             const saveTime = new Date(parseInt(timestamp));
             console.log(`마지막 저장 시간: ${saveTime.toLocaleString()}`);
+            
+            // 백업 데이터가 24시간 이상 지난 경우 경고
+            const now = new Date();
+            const hoursDiff = (now.getTime() - saveTime.getTime()) / (1000 * 60 * 60);
+            if (hoursDiff > 24) {
+              toast({
+                title: "오래된 데이터",
+                description: `현재 표시되는 데이터는 ${Math.floor(hoursDiff)}시간 전의 데이터입니다.`,
+                variant: "default"
+              });
+            }
           }
           
           setSpecialActivities(activities);
@@ -112,7 +155,7 @@ const ScheduleActivities: React.FC = () => {
           const terms = new Set<number>();
           activities.forEach((activity: Schedule) => {
             if (activity.term) {
-              terms.add(activity.term);
+              terms.add(typeof activity.term === 'number' ? activity.term : Number(activity.term));
             }
           });
           
@@ -122,13 +165,12 @@ const ScheduleActivities: React.FC = () => {
           if (sortedTerms.length > 0) {
             setSelectedTerm(sortedTerms[0]);
           }
-          
-          setError(null);
         } else {
           setError('일정 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         }
       } catch (storageErr) {
-        setError('일정 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        console.error('로컬 스토리지 데이터 복원 실패:', storageErr);
+        setError('일정 데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
       }
     } finally {
       setIsLoading(false);

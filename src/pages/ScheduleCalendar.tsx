@@ -10,7 +10,7 @@ import Footer from '@/components/Footer';
 import { useNavigate } from 'react-router-dom';
 import ScrollReveal from '@/components/ScrollReveal';
 import { apiService } from '@/lib/apiService';
-import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
 
 // 일정 인터페이스 정의
 interface Schedule {
@@ -46,19 +46,29 @@ const ScheduleCalendar: React.FC = () => {
     setIsLoading(true);
     try {
       // 모든 일정 데이터 가져오기 (학사 일정 + 특별활동)
-      console.log('일정 데이터 가져오기 시작...');
-      const data = await apiService.getSchedulesAll();
+      const data = await apiService.getSchedules();
       if (Array.isArray(data)) {
-        console.log(`일정 데이터 로드 완료: ${data.length}개 일정`);
+        console.log("API에서 가져온 일정 데이터:", data); // 데이터 로깅 추가
         setSchedules(data);
         
         // 데이터 캐싱 (로컬 스토리지 저장)
         localStorage.setItem('schedules-data', JSON.stringify(data));
-        localStorage.setItem('schedules-timestamp', Date.now().toString());
         
         // 사용 가능한 학기 목록 추출
         loadAvailableTerms(data);
         setError(null);
+        
+        // 백업 데이터가 24시간 이상 지난 경우 경고
+        const now = new Date();
+        const saveTime = new Date(localStorage.getItem('schedules-data-saveTime') || '0');
+        const hoursDiff = (now.getTime() - saveTime.getTime()) / (1000 * 60 * 60);
+        if (hoursDiff > 24) {
+          toast({
+            title: "오래된 데이터",
+            description: `현재 표시되는 데이터는 ${Math.floor(hoursDiff)}시간 전의 데이터입니다.`,
+            variant: "default"
+          });
+        }
       } else {
         console.error('API 응답이 배열 형태가 아닙니다:', data);
         // API 데이터가 올바르지 않은 경우 로컬 스토리지에서 가져오기
@@ -77,17 +87,9 @@ const ScheduleCalendar: React.FC = () => {
   const loadFromLocalStorage = () => {
     try {
       const savedData = localStorage.getItem('schedules-data');
-      const timestamp = localStorage.getItem('schedules-timestamp');
-      
       if (savedData) {
         const parsedData = JSON.parse(savedData);
-        console.log(`로컬 스토리지에서 일정 데이터 복원: ${parsedData.length}개`);
-        
-        if (timestamp) {
-          const saveTime = new Date(parseInt(timestamp));
-          console.log(`마지막 저장 시간: ${saveTime.toLocaleString()}`);
-        }
-        
+        console.log("로컬 스토리지에서 가져온 일정 데이터:", parsedData);
         setSchedules(parsedData);
         // 사용 가능한 학기 목록 추출
         loadAvailableTerms(parsedData);
@@ -268,27 +270,6 @@ const ScheduleCalendar: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={fetchSchedules}
-                  disabled={isLoading}
-                  className="flex items-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div>
-                      <span>로딩 중...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      <span>새로고침</span>
-                    </>
-                  )}
-                </Button>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

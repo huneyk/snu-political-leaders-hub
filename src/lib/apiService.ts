@@ -779,12 +779,15 @@ export const apiService = {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      // 단순화된 요청 방식 - 직접 인증 없이 요청
+      // API 요청 시도
+      console.log('🔄 서버에 일정 데이터 요청 전송');
+      
       try {
-        console.log('🔄 서버에 일정 데이터 요청 전송');
+        // 첫 번째 시도 - 기본 URL로 요청
         const config = {
           headers,
-          withCredentials: false
+          withCredentials: false,
+          timeout: 10000 // 10초 타임아웃
         };
         
         const response = await axios.get(apiUrl, config);
@@ -805,15 +808,67 @@ export const apiService = {
           
           return response.data;
         } else {
+          console.error('API 응답이 배열이 아닙니다:', response.data);
           throw new Error('API did not return an array of schedules');
         }
       } catch (error) {
-        console.error('❌ 일정 데이터 요청 실패');
-        throw error;
+        // 첫 번째 시도 실패 시 다른 경로로 시도
+        console.warn('⚠️ 첫 번째 경로 실패, 대체 경로 시도');
+        
+        try {
+          // 대체 URL - /api/schedules/all 경로 시도
+          const altUrl = import.meta.env.MODE === 'production' 
+            ? 'https://snu-plp-hub-server.onrender.com/api/schedules/all'
+            : 'http://localhost:5001/api/schedules/all';
+          
+          console.log('🔄 대체 URL로 다시 시도:', altUrl);
+          
+          const config = {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            withCredentials: false,
+            timeout: 10000
+          };
+          
+          const response = await axios.get(altUrl, config);
+          console.log('✅ 대체 경로 요청 성공');
+          
+          // 데이터 유효성 검사
+          if (Array.isArray(response.data)) {
+            console.log(`총 ${response.data.length}개의 일정 로드됨 (대체 경로)`);
+            
+            // 백업: 로컬스토리지에 최신 데이터 저장
+            try {
+              localStorage.setItem('admin-schedules-all', JSON.stringify(response.data));
+              localStorage.setItem('admin-schedules-all-time', Date.now().toString());
+              console.log('일정 데이터 로컬스토리지에 백업 완료 (대체 경로)');
+            } catch (storageError) {
+              console.warn('로컬스토리지 백업 실패:', storageError);
+            }
+            
+            return response.data;
+          } else {
+            throw new Error('Alternative path API did not return an array');
+          }
+        } catch (altError) {
+          console.error('❌ 모든 API 경로 시도 실패');
+          throw altError;
+        }
       }
     } catch (error) {
       console.error('❌❌❌ 일정 데이터 가져오기 오류 ❌❌❌');
       console.error('Error fetching schedules data:', error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('🔍 API 오류 세부정보:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
       
       // 로컬스토리지에서 백업 데이터 시도
       try {
@@ -822,6 +877,20 @@ export const apiService = {
         
         if (backup) {
           const parsedData = JSON.parse(backup);
+          const backupTime = localStorage.getItem('admin-schedules-all-time');
+          
+          if (backupTime) {
+            const time = new Date(parseInt(backupTime));
+            console.log(`백업 데이터 시간: ${time.toLocaleString()}`);
+            
+            // 백업 데이터가 24시간 이상 지난 경우 경고
+            const now = new Date();
+            const hoursDiff = (now.getTime() - time.getTime()) / (1000 * 60 * 60);
+            if (hoursDiff > 24) {
+              console.warn(`⚠️ 백업 데이터가 ${Math.floor(hoursDiff)}시간 전의 데이터입니다`);
+            }
+          }
+          
           console.log(`로컬스토리지에서 ${parsedData.length}개의 일정 데이터 복원됨`);
           return parsedData;
         }
@@ -925,7 +994,6 @@ export const apiService = {
       if (axios.isAxiosError(error)) {
         console.error('🔍 Axios Error Details:', {
           status: error.response?.status,
-          statusText: error.response?.statusText,
           data: error.response?.data,
           message: error.message
         });
@@ -973,7 +1041,6 @@ export const apiService = {
       if (axios.isAxiosError(error)) {
         console.error('🔍 Axios Error Details:', {
           status: error.response?.status,
-          statusText: error.response?.statusText,
           data: error.response?.data,
           message: error.message
         });
@@ -1267,10 +1334,8 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      const response = await axios.delete(`${baseURL}/gallery/${id}`, {
-        headers
-      });
-      console.log('Delete Gallery Item Response:', response.data);
+      const response = await axios.delete(`${baseURL}/gallery/${id}`, { headers });
+      console.log('Delete Gallery Item Response:', response.status);
       return response.data;
     } catch (error) {
       console.error(`Error deleting gallery item with id ${id}:`, error);
