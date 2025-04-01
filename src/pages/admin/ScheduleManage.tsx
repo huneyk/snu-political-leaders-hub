@@ -95,7 +95,7 @@ const ScheduleManage = () => {
         _id: '',
         term: selectedTerm,
         year: new Date().getFullYear().toString(),
-        category: activeTab,
+        category: activeTab === 'academic' ? 'academic' : 'social',
         title: '',
         date: '',
         time: '',
@@ -277,7 +277,7 @@ const ScheduleManage = () => {
             _id: '',
             term: selectedTerm,
             year: new Date().getFullYear().toString(),
-            category: activeTab === 'academic' ? 'academic' : 'field', // 특별활동의 경우 기본값을 'field'로 설정
+            category: activeTab === 'academic' ? 'academic' : 'social',
             title: '',
             date: '',
             time: '',
@@ -320,7 +320,7 @@ const ScheduleManage = () => {
           _id: '',
           term: selectedTerm,
           year: new Date().getFullYear().toString(),
-          category: activeTab === 'academic' ? 'academic' : 'field', // 특별활동의 경우 기본값을 'field'로 설정
+          category: activeTab === 'academic' ? 'academic' : 'social',
           title: '',
           date: '',
           time: '',
@@ -814,13 +814,13 @@ const ScheduleManage = () => {
                               value={newSchedule.category} 
                               onValueChange={(value) => setNewSchedule({...newSchedule, category: value})}
                             >
-                              <SelectTrigger>
-                                <SelectValue placeholder="활동 유형 선택" />
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="카테고리" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="field">현장 탐방</SelectItem>
-                                <SelectItem value="overseas">해외 연수</SelectItem>
                                 <SelectItem value="social">친교 활동</SelectItem>
+                                <SelectItem value="overseas">해외 연수</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -903,13 +903,13 @@ const ScheduleManage = () => {
                                 value={selectedSchedule.category} 
                                 onValueChange={(value) => setSelectedSchedule({...selectedSchedule, category: value})}
                               >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="활동 유형 선택" />
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="카테고리" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="field">현장 탐방</SelectItem>
-                                  <SelectItem value="overseas">해외 연수</SelectItem>
                                   <SelectItem value="social">친교 활동</SelectItem>
+                                  <SelectItem value="overseas">해외 연수</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>

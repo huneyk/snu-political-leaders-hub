@@ -165,7 +165,7 @@ const ScheduleActivities: React.FC = () => {
       case 'field': return '현장 탐방';
       case 'overseas': return '해외 연수';
       case 'social': return '친교 활동';
-      case 'special': return '특별 활동';
+      case 'special': return '친교 활동';
       default: return '기타 활동';
     }
   };
@@ -263,7 +263,6 @@ const ScheduleActivities: React.FC = () => {
                 <TabsTrigger value="field">현장 탐방</TabsTrigger>
                 <TabsTrigger value="overseas">해외 연수</TabsTrigger>
                 <TabsTrigger value="social">친교 활동</TabsTrigger>
-                <TabsTrigger value="special">특별 활동</TabsTrigger>
               </TabsList>
               
               <TabsContent value={activeTab}>
