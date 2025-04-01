@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,11 +10,7 @@ import AdminNavTabs from '@/components/admin/AdminNavTabs';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
 import AdminHomeButton from '@/components/admin/AdminHomeButton';
-
-// API 기본 URL 설정
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
-  : 'http://localhost:5001/api';
+import { apiService } from '@/lib/apiService';
 
 interface BenefitItem {
   _id?: string;
@@ -54,18 +49,18 @@ const CourseBenefitsManage = () => {
   const loadBenefits = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/content/benefits/all`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      console.log('MongoDB에서 특전 데이터 로드 시도...');
       
-      if (response.data && response.data.length > 0) {
+      // API 서비스를 사용하여 benefits 데이터 가져오기
+      const response = await apiService.getBenefitsAll(token || '');
+      console.log('특전 데이터 로드 결과:', response);
+      
+      if (response && response.length > 0) {
         // 첫 번째 항목에서 sectionTitle 가져오기
-        setSectionTitle(response.data[0].sectionTitle || '과정 특전');
+        setSectionTitle(response[0].sectionTitle || '과정 특전');
         
         // Benefits 배열 설정
-        setBenefits(response.data.map((obj: any) => ({
+        setBenefits(response.map((obj: any) => ({
           _id: obj._id,
           sectionTitle: obj.sectionTitle || '과정 특전',
           title: obj.title || '',
@@ -73,12 +68,15 @@ const CourseBenefitsManage = () => {
           order: obj.order || 0,
           isActive: obj.isActive !== undefined ? obj.isActive : true
         })));
+        
+        console.log('MongoDB에서 특전 데이터 로드 성공');
       } else {
+        console.log('MongoDB에 특전 데이터가 없음, 로컬 데이터 사용');
         // MongoDB에 데이터가 없는 경우 로컬 스토리지에서 초기 데이터 로드 시도
         loadFromLocalStorage();
       }
     } catch (error) {
-      console.error('Failed to load benefits:', error);
+      console.error('특전 데이터 로드 실패:', error);
       toast({
         title: "데이터 로딩 실패",
         description: "특전 데이터를 불러오는데 실패했습니다. 로컬 데이터를 사용합니다.",
@@ -124,7 +122,7 @@ const CourseBenefitsManage = () => {
           }
         }
       } catch (error) {
-        console.error('Failed to parse benefits from localStorage:', error);
+        console.error('로컬 스토리지에서 특전 데이터 파싱 실패:', error);
       }
     }
   };
@@ -161,18 +159,14 @@ const CourseBenefitsManage = () => {
     // If the benefit has an ID, it exists in the database and needs to be deleted
     if (benefitToRemove._id && !benefitToRemove._id.startsWith('local-')) {
       try {
-        await axios.delete(`${API_BASE_URL}/content/benefits/${benefitToRemove._id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        await apiService.deleteBenefit(benefitToRemove._id, token);
         
         toast({
           title: "삭제 완료",
           description: "특전이 성공적으로 삭제되었습니다.",
         });
       } catch (error) {
-        console.error('Failed to delete benefit:', error);
+        console.error('특전 삭제 실패:', error);
         toast({
           title: "삭제 실패",
           description: "서버에서 특전을 삭제하는데 실패했습니다.",
@@ -222,6 +216,8 @@ const CourseBenefitsManage = () => {
     setIsSaving(true);
     
     try {
+      console.log('특전 데이터 저장 시작...');
+      
       // 모든 Benefit에 동일한 sectionTitle 적용
       const benefitsToSave = benefits.map(obj => ({
         ...obj,
@@ -230,24 +226,19 @@ const CourseBenefitsManage = () => {
       
       // 기존 데이터 ID가 있는 경우 업데이트, 없는 경우 새로 생성
       const savePromises = benefitsToSave.map(async (obj) => {
-        if (obj._id) {
+        if (obj._id && !obj._id.startsWith('local-')) {
           // 기존 항목 업데이트
-          return axios.put(`${API_BASE_URL}/content/benefits/${obj._id}`, obj, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
+          console.log(`ID ${obj._id}를 가진 특전 업데이트`);
+          return apiService.updateBenefit(obj._id, obj, token);
         } else {
           // 새 항목 생성
-          return axios.post(`${API_BASE_URL}/content/benefits`, obj, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
+          console.log('새 특전 항목 생성');
+          return apiService.createBenefit(obj, token);
         }
       });
       
       await Promise.all(savePromises);
+      console.log('특전 데이터 저장 성공');
       
       // 로컬 스토리지에도 백업 저장
       localStorage.setItem('course-benefits-title', sectionTitle);
@@ -266,7 +257,7 @@ const CourseBenefitsManage = () => {
       // 데이터 다시 로드
       loadBenefits();
     } catch (error) {
-      console.error('Failed to save benefits:', error);
+      console.error('특전 저장 실패:', error);
       toast({
         title: "저장 실패",
         description: "서버에 데이터를 저장하는데 실패했습니다. 로컬에만 저장되었습니다.",

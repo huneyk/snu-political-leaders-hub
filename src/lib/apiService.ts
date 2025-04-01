@@ -266,25 +266,114 @@ export const apiService = {
   getBenefits: async () => {
     try {
       console.log('Benefits API Request 시작');
-      const response = await fetch(`${baseURL}/benefits`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
+      console.log('요청 URL:', `${baseURL}/benefits`);
       
-      console.log('Benefits API 응답 상태:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        throw new Error(`서버 오류: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Benefits API 응답 데이터:', data);
-      return data;
+      const response = await axios.get(`${baseURL}/benefits`);
+      console.log('Benefits API 응답 상태:', response.status);
+      console.log('Benefits API 응답 데이터:', response.data);
+      return response.data;
     } catch (error) {
       console.error('Error fetching benefits data:', error);
+      throw error;
+    }
+  },
+  
+  // 관리자용 모든 혜택 조회 API
+  getBenefitsAll: async (token: string) => {
+    try {
+      console.log('관리자용 특전 데이터 조회 시작');
+      console.log('요청 URL:', `${baseURL}/content/benefits/all`);
+      console.log('토큰 유무:', token ? '있음' : '없음');
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await axios.get(`${baseURL}/content/benefits/all`, { headers });
+      console.log('전체 특전 데이터 조회 결과:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('관리자용 특전 데이터 조회 실패:', error);
+      throw error;
+    }
+  },
+  
+  // 특전 생성 API (관리자용)
+  createBenefit: async (benefitData: any, token?: string) => {
+    try {
+      console.log('새 특전 생성 시작');
+      console.log('요청 URL:', `${baseURL}/content/benefits`);
+      console.log('토큰 유무:', token ? '있음' : '없음');
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await axios.post(`${baseURL}/content/benefits`, benefitData, { headers });
+      console.log('특전 생성 결과:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('특전 생성 실패:', error);
+      throw error;
+    }
+  },
+  
+  // 특전 업데이트 API (관리자용)
+  updateBenefit: async (id: string, benefitData: any, token?: string) => {
+    try {
+      console.log(`ID ${id}를 가진 특전 업데이트 시작`);
+      console.log('요청 URL:', `${baseURL}/content/benefits/${id}`);
+      console.log('토큰 유무:', token ? '있음' : '없음');
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await axios.put(`${baseURL}/content/benefits/${id}`, benefitData, { headers });
+      console.log('특전 업데이트 결과:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('특전 업데이트 실패:', error);
+      throw error;
+    }
+  },
+  
+  // 특전 삭제 API (관리자용)
+  deleteBenefit: async (id: string, token?: string) => {
+    try {
+      console.log(`ID ${id}를 가진 특전 삭제 시작`);
+      console.log('요청 URL:', `${baseURL}/content/benefits/${id}`);
+      console.log('토큰 유무:', token ? '있음' : '없음');
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await axios.delete(`${baseURL}/content/benefits/${id}`, { headers });
+      console.log('특전 삭제 결과:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('특전 삭제 실패:', error);
       throw error;
     }
   },
