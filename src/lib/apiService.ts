@@ -107,7 +107,6 @@ export const apiService = {
   getObjectives: async () => {
     try {
       console.log('목표 데이터 가져오기 시작');
-      // 경로 수정: /api/objectives -> /api/content/objectives
       console.log('요청 URL:', `${baseURL}/content/objectives`);
       console.log('현재 환경:', import.meta.env.MODE);
       
@@ -117,7 +116,7 @@ export const apiService = {
         'Content-Type': 'application/json'
       };
       
-      // 인사말 관리와 동일한 방식으로 요청
+      // 서버에서 데이터 가져오기
       const response = await axios.get(`${baseURL}/content/objectives`, {
         headers,
         withCredentials: false // 인증 관련 쿠키 전송 방지
@@ -136,14 +135,14 @@ export const apiService = {
           message: error.message
         });
       }
-      throw error;
+      return []; // 오류 발생 시 빈 배열 반환
     }
   },
 
   // 목표 저장 API (관리자용)
   updateObjective: async (objectiveData: any, token?: string) => {
     try {
-      console.log('목표 데이터 저장 시작 - createRecommendation 패턴 그대로 적용');
+      // createRecommendation과 정확히 동일한 패턴 사용
       const response = await axios.post(`${baseURL}/content/objectives`, objectiveData, {
         headers: {
           'Content-Type': 'application/json'

@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import authRoutes from './routes/authRoutes.js';
 import contentRoutes from './routes/contentRoutes.js';
+import objectivesRoutes from './routes/objectivesRoutes.js';
 
 // 환경 변수 설정
 dotenv.config();
@@ -68,6 +69,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/greeting', greetingRoutes);
 app.use('/api/content/greeting', greetingRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/objectives', objectivesRoutes);
 
 // API 상태 확인 엔드포인트
 app.get('/api/status', (req, res) => {
