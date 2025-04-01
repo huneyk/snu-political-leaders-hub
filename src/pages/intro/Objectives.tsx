@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 import ScrollReveal from '@/components/ScrollReveal';
 import { apiService } from '@/lib/apiService';
+import axios from 'axios';
 
 interface Objective {
   _id: string;
@@ -95,7 +96,7 @@ const Objectives = () => {
     try {
       setIsLoading(true);
       setError(null);
-      console.log('MongoDB에서 과정 목표 데이터 로드 시도');
+      console.log('===== Objectives.tsx: MongoDB에서 과정 목표 데이터 로드 시도 =====');
       
       // 로컬 스토리지에서 캐시된 데이터 확인
       const cachedData = localStorage.getItem('objectives');
@@ -104,6 +105,7 @@ const Objectives = () => {
       
       // 캐시가 유효한 경우 캐시된 데이터 사용
       if (cachedData && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_DURATION) {
+        console.log('캐시된 데이터 사용 중...');
         const parsedData = JSON.parse(cachedData);
         setObjectives(parsedData);
         setSectionTitle(parsedData[0]?.sectionTitle || '과정의 목표');
@@ -111,25 +113,41 @@ const Objectives = () => {
         return;
       }
       
+      console.log('apiService.getObjectives() 호출 시작...');
       // apiService 사용하여 데이터 가져오기
       const data = await apiService.getObjectives();
-      console.log('과정 목표 데이터 로드 완료:', data);
+      console.log('===== Objectives.tsx: 과정 목표 데이터 로드 완료 =====');
+      console.log('데이터:', data);
+      console.log('데이터 타입:', typeof data);
+      console.log('데이터가 배열인가?', Array.isArray(data));
+      if (Array.isArray(data)) {
+        console.log('배열 길이:', data.length);
+      }
       
       if (data && Array.isArray(data) && data.length > 0) {
         // 첫 번째 항목의 sectionTitle을 사용
-        setSectionTitle(data[0].sectionTitle || '과정의 목표');
+        const newSectionTitle = data[0].sectionTitle || '과정의 목표';
+        console.log('섹션 제목 설정:', newSectionTitle);
+        setSectionTitle(newSectionTitle);
         
         // 활성화된 항목만 필터링하고 정렬
         const sortedObjectives = data
-          .filter((obj: Objective) => obj.isActive)
+          .filter((obj: Objective) => {
+            const isActive = obj.isActive !== false;
+            if (!isActive) console.log('비활성화된 목표 필터링:', obj.title);
+            return isActive;
+          })
           .sort((a: Objective, b: Objective) => a.order - b.order);
         
         console.log('처리된 목표 데이터:', sortedObjectives);
+        console.log('목표 개수:', sortedObjectives.length);
+        
         setObjectives(sortedObjectives);
         
         // 데이터 캐싱
         localStorage.setItem('objectives', JSON.stringify(sortedObjectives));
         localStorage.setItem('objectivesTime', Date.now().toString());
+        console.log('데이터 캐싱 완료');
         
         setError(null);
       } else {
@@ -138,8 +156,33 @@ const Objectives = () => {
         loadFromLocalStorage();
       }
     } catch (err) {
-      console.error('목표 정보를 불러오는 중 오류가 발생했습니다:', err);
+      console.error('===== Objectives.tsx: 목표 정보를 불러오는 중 오류 발생 =====');
+      console.error('오류 세부 정보:', err);
+      
+      if (axios?.isAxiosError && axios.isAxiosError(err)) {
+        console.error('Axios 오류 세부 정보:', {
+          status: err.response?.status,
+          statusText: err.response?.statusText,
+          data: err.response?.data,
+          message: err.message
+        });
+      }
+      
       setError('목표 정보를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      
+      // objectives_backup 확인
+      try {
+        const backup = localStorage.getItem('objectives_backup');
+        if (backup) {
+          console.log('objectives_backup에서 데이터 복원 시도');
+          const backupData = JSON.parse(backup);
+          setObjectives(backupData);
+          setSectionTitle(backupData[0]?.sectionTitle || '과정의 목표');
+          return;
+        }
+      } catch (storageError) {
+        console.warn('백업 복원 실패:', storageError);
+      }
       
       // 로컬 스토리지에서 폴백 데이터 로드
       loadFromLocalStorage();

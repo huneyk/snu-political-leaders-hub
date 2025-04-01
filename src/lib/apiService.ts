@@ -106,7 +106,7 @@ export const apiService = {
   // 목표(Objectives) 관련 API
   getObjectives: async () => {
     try {
-      console.log('목표 데이터 가져오기 시작');
+      console.log('===== 목표 데이터 가져오기 시작 =====');
       console.log('요청 URL:', `${baseURL}/objectives`);
       console.log('현재 환경:', import.meta.env.MODE);
       
@@ -115,26 +115,82 @@ export const apiService = {
         'Content-Type': 'application/json'
       };
       
-      // 서버에서 데이터 가져오기
-      const response = await axios.get(`${baseURL}/objectives`, {
-        headers,
-        withCredentials: false // 인증 관련 쿠키 전송 방지
-      });
+      let response;
       
+      // 먼저 /api/objectives 경로로 시도
+      try {
+        console.log('첫 번째 경로로 서버에 요청 전송 시작: /api/objectives');
+        response = await axios.get(`${baseURL}/objectives`, {
+          headers,
+          withCredentials: false // 인증 관련 쿠키 전송 방지
+        });
+        console.log('첫 번째 경로 성공 (/api/objectives)');
+      } catch (firstPathError) {
+        console.warn('첫 번째 경로 실패, 두 번째 경로 시도: /api/content/objectives');
+        // 첫 번째 경로 실패 시 두 번째 경로 시도
+        response = await axios.get(`${baseURL}/content/objectives`, {
+          headers,
+          withCredentials: false
+        });
+        console.log('두 번째 경로 성공 (/api/content/objectives)');
+      }
+      
+      console.log('===== 서버 응답 확인 =====');
       console.log('목표 API 응답 상태:', response.status);
       console.log('목표 API 응답 데이터:', response.data);
+      console.log('데이터 타입:', typeof response.data);
+      console.log('데이터가 배열인가?', Array.isArray(response.data));
+      
+      if (Array.isArray(response.data)) {
+        console.log('배열 길이:', response.data.length);
+        if (response.data.length > 0) {
+          console.log('첫 번째 항목 샘플:', {
+            _id: response.data[0]._id,
+            title: response.data[0].title,
+            description: response.data[0].description,
+            sectionTitle: response.data[0].sectionTitle
+          });
+        }
+      }
+      
+      // 백업: 로컬스토리지에 최신 데이터 저장
+      try {
+        localStorage.setItem('objectives_backup', JSON.stringify(response.data));
+        localStorage.setItem('objectives_backup_time', Date.now().toString());
+        console.log('목표 데이터 로컬스토리지에 백업 완료');
+      } catch (storageError) {
+        console.warn('로컬스토리지 백업 실패:', storageError);
+      }
+      
       return response.data;
     } catch (error) {
+      console.error('===== 목표 데이터 가져오기 오류 =====');
       console.error('Error fetching objectives data:', error);
+      
       if (axios.isAxiosError(error)) {
         console.error('Axios Error Details:', {
           status: error.response?.status,
           statusText: error.response?.statusText,
           data: error.response?.data,
-          message: error.message
+          message: error.message,
+          request: error.request ? 'Request was made' : 'No request was made',
+          response: error.response ? 'Response received' : 'No response'
         });
       }
-      return []; // 오류 발생 시 빈 배열 반환
+      
+      // 로컬스토리지에서 백업 데이터 시도
+      try {
+        const backup = localStorage.getItem('objectives_backup');
+        if (backup) {
+          console.log('로컬스토리지에서 백업 데이터 복원 시도');
+          return JSON.parse(backup);
+        }
+      } catch (storageError) {
+        console.warn('로컬스토리지 복원 실패:', storageError);
+      }
+      
+      // 최종적으로 빈 배열 반환
+      return [];
     }
   },
 
