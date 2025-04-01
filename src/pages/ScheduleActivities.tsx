@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useNavigate } from 'react-router-dom';
@@ -41,52 +42,98 @@ const ScheduleActivities: React.FC = () => {
   
   // MongoDB에서 특별활동 일정 데이터 가져오기
   useEffect(() => {
-    const fetchSchedules = async () => {
-      try {
-        setIsLoading(true);
-        const data = await apiService.getSchedules();
+    fetchSchedules();
+  }, []);
+  
+  // 일정 데이터 가져오기 함수
+  const fetchSchedules = async () => {
+    try {
+      setIsLoading(true);
+      console.log('특별활동 일정 데이터 가져오기 시작...');
+      const data = await apiService.getSchedulesAll();
+      
+      if (data && Array.isArray(data)) {
+        console.log(`일정 데이터 로드 완료: ${data.length}개 일정`);
         
-        if (data && Array.isArray(data)) {
-          // 특별활동 일정만 필터링 (category 필드가 academic이 아닌 일정)
-          const activities = data.filter(schedule => 
-            schedule.category && 
-            schedule.category !== 'academic' && 
-            schedule.isActive
-          );
+        // 특별활동 일정만 필터링 (category 필드가 academic이 아닌 일정)
+        const activities = data.filter(schedule => 
+          schedule.category && 
+          schedule.category !== 'academic' && 
+          schedule.isActive
+        );
+        
+        console.log(`특별활동 필터링 완료: ${activities.length}개 특별활동`);
+        setSpecialActivities(activities);
+        
+        // 데이터 캐싱 (로컬 스토리지 저장)
+        localStorage.setItem('special-activities-data', JSON.stringify(activities));
+        localStorage.setItem('special-activities-timestamp', Date.now().toString());
+        
+        // 사용 가능한 기수 목록 추출
+        const terms = new Set<number>();
+        activities.forEach(activity => {
+          if (activity.term) {
+            terms.add(activity.term);
+          }
+        });
+        
+        const sortedTerms = Array.from(terms).sort((a, b) => b - a); // 내림차순 정렬
+        
+        console.log('사용 가능한 기수:', sortedTerms);
+        setAvailableTerms(sortedTerms);
+        
+        // 가장 최근 기수를 기본값으로 설정
+        if (sortedTerms.length > 0) {
+          setSelectedTerm(sortedTerms[0]);
+        }
+      }
+      
+      setError(null);
+    } catch (err) {
+      console.error('특별활동 정보를 불러오는 중 오류가 발생했습니다:', err);
+      
+      // 로컬 스토리지에서 백업 데이터 복원 시도
+      try {
+        const savedData = localStorage.getItem('special-activities-data');
+        const timestamp = localStorage.getItem('special-activities-timestamp');
+        
+        if (savedData) {
+          const activities = JSON.parse(savedData);
+          console.log(`로컬 스토리지에서 특별활동 데이터 복원: ${activities.length}개`);
           
-          console.log('Filtered activities:', activities);
+          if (timestamp) {
+            const saveTime = new Date(parseInt(timestamp));
+            console.log(`마지막 저장 시간: ${saveTime.toLocaleString()}`);
+          }
+          
           setSpecialActivities(activities);
           
           // 사용 가능한 기수 목록 추출
           const terms = new Set<number>();
-          activities.forEach(activity => {
+          activities.forEach((activity: Schedule) => {
             if (activity.term) {
               terms.add(activity.term);
             }
           });
           
-          const sortedTerms = Array.from(terms).sort((a, b) => b - a); // 내림차순 정렬
-          
-          console.log('Available terms:', sortedTerms);
+          const sortedTerms = Array.from(terms).sort((a, b) => b - a);
           setAvailableTerms(sortedTerms);
           
-          // 가장 최근 기수를 기본값으로 설정
           if (sortedTerms.length > 0) {
             setSelectedTerm(sortedTerms[0]);
           }
+          
+          setError(null);
+        } else {
+          setError('일정 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         }
-        
-        setError(null);
-      } catch (err) {
-        console.error('특별활동 정보를 불러오는 중 오류가 발생했습니다:', err);
+      } catch (storageErr) {
         setError('일정 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-      } finally {
-        setIsLoading(false);
       }
-    };
-    
-    fetchSchedules();
-  }, []);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   // 선택된 기수의 활동만 필터링
   const termActivities = selectedTerm !== null 
@@ -187,6 +234,27 @@ const ScheduleActivities: React.FC = () => {
                   <p className="text-gray-500">등록된 기수 정보가 없습니다.</p>
                 )}
               </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={fetchSchedules}
+                disabled={isLoading}
+                className="flex items-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div>
+                    <span>로딩 중...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>새로고침</span>
+                  </>
+                )}
+              </Button>
             </div>
             
             <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
