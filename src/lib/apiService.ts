@@ -701,51 +701,66 @@ export const apiService = {
   getLecturers: async () => {
     try {
       console.log('▶️▶️▶️ getLecturers 함수 호출 시작 ▶️▶️▶️');
-      console.log('요청 URL:', `${baseURL}/lecturers`);
+      // 완전한 URL 경로 사용
+      const apiUrl = import.meta.env.MODE === 'production' 
+        ? 'https://snu-plp-hub-server.onrender.com/api/lecturers'
+        : 'http://localhost:5001/api/lecturers';
+      
+      console.log('요청 URL (수정됨):', apiUrl);
       console.log('현재 환경:', import.meta.env.MODE);
       
-      // 인증 없이 요청
-      const headers: any = {
-        'Content-Type': 'application/json'
+      // 명시적인 헤더 설정
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       };
       
       let response;
       
-      // 먼저 /api/lecturers 경로로 시도
+      // 첫 번째 시도: 직접 URL로 요청
       try {
-        console.log('🔄 첫 번째 경로로 서버에 요청 전송 시작: /api/lecturers');
-        const config = {
-          headers,
-          withCredentials: false // 인증 관련 쿠키 전송 방지
-        };
-        console.log('요청 설정:', config);
-        
-        response = await axios.get(`${baseURL}/lecturers`, config);
-        console.log('✅ 첫 번째 경로 성공 (/api/lecturers)');
-        console.log('응답 상태:', response.status);
-        console.log('응답 헤더:', response.headers);
-      } catch (firstPathError) {
-        console.warn('⚠️ 첫 번째 경로 실패:', firstPathError);
-        console.warn('⚠️ 두 번째 경로 시도: /api/content/lecturers');
-        
-        // 첫 번째 경로 실패 시 두 번째 경로 시도
+        console.log('🔄 서버에 직접 요청 전송 시작:', apiUrl);
         const config = {
           headers,
           withCredentials: false
         };
-        console.log('두 번째 요청 설정:', config);
+        console.log('요청 설정:', config);
         
-        response = await axios.get(`${baseURL}/content/lecturers`, config);
-        console.log('✅ 두 번째 경로 성공 (/api/content/lecturers)');
+        response = await axios.get(apiUrl, config);
+        console.log('✅ API 요청 성공');
         console.log('응답 상태:', response.status);
-        console.log('응답 헤더:', response.headers);
+      } catch (firstError) {
+        console.warn('⚠️ 첫 번째 요청 실패:', firstError.message);
+        console.warn('⚠️ baseURL + 경로 조합으로 다시 시도');
+        
+        try {
+          // 두 번째 시도: 기존 방식으로 시도
+          response = await axios.get(`${baseURL}/lecturers`, {
+            headers,
+            withCredentials: false
+          });
+          console.log('✅ 두 번째 시도 성공');
+        } catch (secondError) {
+          console.warn('⚠️ 두 번째 시도도 실패, content 경로 시도');
+          
+          // 세 번째 시도: content 경로
+          response = await axios.get(`${baseURL}/content/lecturers`, {
+            headers,
+            withCredentials: false
+          });
+          console.log('✅ 세 번째 시도 성공');
+        }
       }
       
       console.log('===== 서버 응답 확인 =====');
       console.log('강사진 API 응답 상태:', response.status);
-      console.log('강사진 API 응답 데이터:', response.data);
-      console.log('데이터 타입:', typeof response.data);
-      console.log('데이터가 배열인가?', Array.isArray(response.data));
+      console.log('강사진 API 응답 데이터 타입:', typeof response.data);
+      
+      // 데이터 유효성 검사: HTML이 반환된 경우
+      if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+        console.error('❌ API가 HTML을 반환했습니다. 서버 설정 문제가 있습니다.');
+        throw new Error('API returned HTML instead of JSON data');
+      }
       
       if (Array.isArray(response.data)) {
         console.log('배열 길이:', response.data.length);
@@ -757,18 +772,21 @@ export const apiService = {
             category: response.data[0].category
           });
         }
+        
+        // 백업: 로컬스토리지에 최신 데이터 저장
+        try {
+          localStorage.setItem('lecturers-data', JSON.stringify(response.data));
+          localStorage.setItem('lecturers-data-time', Date.now().toString());
+          console.log('강사진 데이터 로컬스토리지에 백업 완료');
+        } catch (storageError) {
+          console.warn('로컬스토리지 백업 실패:', storageError);
+        }
+        
+        return response.data;
+      } else {
+        console.error('❌ API 응답이 배열이 아닙니다:', response.data);
+        throw new Error('API did not return an array of lecturers');
       }
-      
-      // 백업: 로컬스토리지에 최신 데이터 저장
-      try {
-        localStorage.setItem('lecturers-data', JSON.stringify(response.data));
-        localStorage.setItem('lecturers-data-time', Date.now().toString());
-        console.log('강사진 데이터 로컬스토리지에 백업 완료');
-      } catch (storageError) {
-        console.warn('로컬스토리지 백업 실패:', storageError);
-      }
-      
-      return response.data;
     } catch (error) {
       console.error('❌❌❌ 강사진 데이터 가져오기 오류 ❌❌❌');
       console.error('Error fetching lecturers data:', error);
@@ -777,25 +795,35 @@ export const apiService = {
         console.error('🔍 Axios Error Details:', {
           status: error.response?.status,
           statusText: error.response?.statusText,
-          data: error.response?.data,
+          data: typeof error.response?.data === 'string' && error.response?.data.includes('<!DOCTYPE html>') 
+            ? 'HTML 페이지가 반환됨 (서버 설정 문제)' 
+            : error.response?.data,
           message: error.message,
           request: error.request ? '요청이 전송됨' : '요청이 전송되지 않음',
           response: error.response ? '응답 수신됨' : '응답 수신되지 않음',
-          config: error.config
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers
+          }
         });
       }
       
       // 로컬스토리지에서 백업 데이터 시도
       try {
+        console.log('💾 로컬스토리지에서 백업 데이터 복원 시도');
         const backup = localStorage.getItem('lecturers-data');
         if (backup) {
-          console.log('로컬스토리지에서 백업 데이터 복원 시도');
-          return JSON.parse(backup);
+          const parsedData = JSON.parse(backup);
+          console.log(`로컬스토리지에서 ${parsedData.length}명의 강사 데이터 복원됨`);
+          return parsedData;
         }
       } catch (storageError) {
         console.warn('로컬스토리지 복원 실패:', storageError);
       }
       
+      // 최종적으로 빈 배열 반환
+      console.log('빈 배열 반환');
       return [];
     }
   },

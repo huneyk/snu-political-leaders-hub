@@ -12,12 +12,21 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     console.log('활성화된 강사진 정보 조회 요청 수신 (lecturersRoutes)');
+    console.log('요청 헤더:', req.headers);
+    
+    // 응답 헤더 설정
+    res.setHeader('Content-Type', 'application/json');
+    
     const lecturers = await Lecturer.find({ isActive: true }).sort({ order: 1 });
     console.log(`조회된 활성화된 강사진 정보: ${lecturers.length}명`);
-    res.json(lecturers);
+    
+    // 직접 JSON 문자열로 변환하여 반환
+    return res.status(200).send(JSON.stringify(lecturers));
   } catch (error) {
     console.error('강사진 정보 조회 실패:', error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    // 오류 응답도 JSON 형식으로
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(500).json({ message: '서버 오류가 발생했습니다.', error: error.message });
   }
 });
 
@@ -29,12 +38,18 @@ router.get('/', async (req, res) => {
 router.get('/all', async (req, res) => {
   try {
     console.log('모든 강사진 정보 조회 요청 수신 (lecturersRoutes)');
+    
+    // 응답 헤더 설정
+    res.setHeader('Content-Type', 'application/json');
+    
     const lecturers = await Lecturer.find().sort({ order: 1 });
     console.log(`조회된 모든 강사진 정보: ${lecturers.length}명`);
-    res.json(lecturers);
+    
+    return res.status(200).json(lecturers);
   } catch (error) {
     console.error('강사진 정보 조회 실패:', error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(500).json({ message: '서버 오류가 발생했습니다.', error: error.message });
   }
 });
 
@@ -50,6 +65,7 @@ router.post('/', async (req, res) => {
     console.log('강사 생성 요청 수신 (lecturersRoutes):', { name, term, category });
     
     if (!name) {
+      res.setHeader('Content-Type', 'application/json');
       return res.status(400).json({ message: '강사 이름은 필수 항목입니다.' });
     }
     
@@ -70,10 +86,13 @@ router.post('/', async (req, res) => {
     
     const savedLecturer = await newLecturer.save();
     console.log('강사 정보 생성 성공 (lecturersRoutes):', savedLecturer._id);
-    res.status(201).json(savedLecturer);
+    
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(201).json(savedLecturer);
   } catch (error) {
     console.error('강사 정보 생성 실패 (lecturersRoutes):', error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(500).json({ message: '서버 오류가 발생했습니다.', error: error.message });
   }
 });
 
@@ -89,6 +108,7 @@ router.put('/:id', async (req, res) => {
     console.log('강사 정보 수정 요청 수신 (lecturersRoutes):', { id: req.params.id, name });
     
     if (!name) {
+      res.setHeader('Content-Type', 'application/json');
       return res.status(400).json({ message: '강사 이름은 필수 항목입니다.' });
     }
     
@@ -113,14 +133,17 @@ router.put('/:id', async (req, res) => {
     );
     
     if (!updatedLecturer) {
+      res.setHeader('Content-Type', 'application/json');
       return res.status(404).json({ message: '강사 정보를 찾을 수 없습니다.' });
     }
     
     console.log('강사 정보 수정 성공 (lecturersRoutes):', updatedLecturer._id);
-    res.json(updatedLecturer);
+    res.setHeader('Content-Type', 'application/json');
+    return res.json(updatedLecturer);
   } catch (error) {
     console.error('강사 정보 수정 실패 (lecturersRoutes):', error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(500).json({ message: '서버 오류가 발생했습니다.', error: error.message });
   }
 });
 
@@ -136,14 +159,17 @@ router.delete('/:id', async (req, res) => {
     const deletedLecturer = await Lecturer.findByIdAndDelete(req.params.id);
     
     if (!deletedLecturer) {
+      res.setHeader('Content-Type', 'application/json');
       return res.status(404).json({ message: '강사 정보를 찾을 수 없습니다.' });
     }
     
     console.log('강사 정보 삭제 성공 (lecturersRoutes)');
-    res.json({ message: '강사 정보가 삭제되었습니다.' });
+    res.setHeader('Content-Type', 'application/json');
+    return res.json({ message: '강사 정보가 삭제되었습니다.' });
   } catch (error) {
     console.error('강사 정보 삭제 실패 (lecturersRoutes):', error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(500).json({ message: '서버 오류가 발생했습니다.', error: error.message });
   }
 });
 

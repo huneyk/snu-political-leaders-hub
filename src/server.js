@@ -36,21 +36,38 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log('CORS 정책 위반 시도:', origin);
       callback(new Error('CORS 정책에 의해 차단되었습니다'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+  exposedHeaders: ['Content-Type', 'Content-Length'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+  maxAge: 86400 // 24시간 preflight 요청 캐시
 }));
 
-// 미들웨어 설정
+// 요청 파싱 미들웨어
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // 요청 로깅 미들웨어
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
+  
+  // 모든 응답에 JSON 콘텐츠 타입 헤더 적용
+  res.setHeader('Content-Type', 'application/json');
+  
+  // OPTIONS 요청에 대해 CORS 헤더 추가
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    return res.status(204).end();
+  }
+  
   next();
 });
 
@@ -89,12 +106,15 @@ app.get('/api/status', (req, res) => {
 
 // 모든 다른 요청은 클라이언트 앱으로 리다이렉트 (SPA 지원)
 app.get('*', (req, res) => {
+  // SPA 라우트인 경우 HTML 파일 제공
+  res.setHeader('Content-Type', 'text/html');
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 // 오류 처리 미들웨어
 app.use((err, req, res, next) => {
   console.error('서버 오류:', err);
+  res.setHeader('Content-Type', 'application/json');
   res.status(500).json({ message: '서버 오류가 발생했습니다.', error: err.message });
 });
 

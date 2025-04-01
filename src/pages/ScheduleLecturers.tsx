@@ -56,10 +56,47 @@ const ScheduleLecturers = () => {
       setLoading(true);
       console.log('MongoDB에서 강사진 데이터 가져오기 시작...');
       
-      const data = await apiService.getLecturers();
+      // 직접 API 호출 (apiService 사용하지 않고)
+      const apiUrl = import.meta.env.MODE === 'production' 
+        ? 'https://snu-plp-hub-server.onrender.com/api/lecturers'
+        : 'http://localhost:5001/api/lecturers';
       
-      // API 응답 로깅 추가
-      console.log('MongoDB 강사진 데이터 응답:', data);
+      console.log('직접 API 요청 URL:', apiUrl);
+      
+      // 명시적인 헤더 설정
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      
+      console.log('요청 헤더:', headers);
+      
+      // 직접 fetch를 사용하여 요청
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: headers,
+        credentials: 'omit' // CORS 이슈 방지
+      });
+      
+      console.log('API 응답 상태:', response.status);
+      console.log('API 응답 헤더:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        throw new Error(`API 응답 오류: ${response.status} ${response.statusText}`);
+      }
+      
+      // 응답 타입 확인
+      const contentType = response.headers.get('content-type');
+      console.log('응답 Content-Type:', contentType);
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('API가 JSON이 아닌 데이터를 반환했습니다:', contentType);
+        throw new Error('API가 JSON이 아닌 데이터를 반환했습니다');
+      }
+      
+      // 응답 데이터 파싱
+      const data = await response.json();
+      console.log('API 응답 데이터:', data);
       console.log('데이터 타입:', typeof data);
       console.log('배열 여부:', Array.isArray(data));
       
@@ -91,6 +128,25 @@ const ScheduleLecturers = () => {
       console.error('강사진 정보를 불러오는 중 오류가 발생했습니다:', err);
       console.error('오류 유형:', err instanceof Error ? err.name : typeof err);
       console.error('오류 메시지:', err instanceof Error ? err.message : '알 수 없는 오류');
+      
+      // 백업 시도: apiService 사용 (첫 번째 시도가 실패한 경우)
+      try {
+        console.log('백업 시도: apiService 사용...');
+        const apiData = await apiService.getLecturers();
+        
+        if (apiData && Array.isArray(apiData) && apiData.length > 0) {
+          console.log(`apiService를 통해 ${apiData.length}명의 강사 데이터 로드 성공`);
+          setLecturers(apiData);
+          
+          // 기수별, 카테고리별로 강사 그룹화
+          const groupByTerm = groupLecturersByTermAndCategory(apiData);
+          setTermGroups(groupByTerm);
+          setError(null);
+          return;
+        }
+      } catch (apiErr) {
+        console.error('apiService 백업 시도도 실패:', apiErr);
+      }
       
       // API 오류 시 로컬 스토리지에서 가져오기
       loadFromLocalStorage();
