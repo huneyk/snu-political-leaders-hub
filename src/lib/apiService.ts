@@ -143,14 +143,12 @@ export const apiService = {
   // 목표 저장 API (관리자용)
   updateObjective: async (objectiveData: any, token?: string) => {
     try {
-      // 절대 경로로 수정
+      console.log('목표 데이터 저장 시작 - createRecommendation 패턴 그대로 적용');
       const response = await axios.post(`${baseURL}/content/objectives`, objectiveData, {
         headers: {
           'Content-Type': 'application/json'
         }
       });
-      
-      console.log('서버 응답 성공:', response.status);
       return response.data;
     } catch (error) {
       console.error('목표 저장 중 오류:', error);
