@@ -98,20 +98,8 @@ const Objectives = () => {
       setError(null);
       console.log('===== Objectives.tsx: MongoDB에서 과정 목표 데이터 로드 시도 =====');
       
-      // 로컬 스토리지에서 캐시된 데이터 확인
-      const cachedData = localStorage.getItem('objectives');
-      const cachedTime = localStorage.getItem('objectivesTime');
-      const CACHE_DURATION = 60 * 60 * 1000; // 1시간
-      
-      // 캐시가 유효한 경우 캐시된 데이터 사용
-      if (cachedData && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_DURATION) {
-        console.log('캐시된 데이터 사용 중...');
-        const parsedData = JSON.parse(cachedData);
-        setObjectives(parsedData);
-        setSectionTitle(parsedData[0]?.sectionTitle || '과정의 목표');
-        setIsLoading(false);
-        return;
-      }
+      // 캐시 무시하고 항상 서버에서 데이터 가져오기
+      console.log('서버에서 최신 데이터 가져오기...');
       
       console.log('apiService.getObjectives() 호출 시작...');
       // apiService 사용하여 데이터 가져오기
@@ -205,6 +193,17 @@ const Objectives = () => {
   // 페이지 로드 시 데이터 가져오기
   useEffect(() => {
     window.scrollTo(0, 0);
+    
+    // localStorage에서 캐시 데이터 삭제
+    try {
+      console.log('캐시 데이터 삭제 중...');
+      localStorage.removeItem('objectives');
+      localStorage.removeItem('objectivesTime');
+      console.log('캐시 데이터 삭제 완료');
+    } catch (err) {
+      console.error('캐시 데이터 삭제 중 오류:', err);
+    }
+    
     fetchObjectives();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -261,61 +260,75 @@ const Objectives = () => {
           ) : error ? (
             <div className="text-center py-12 space-y-4">
               <p className="text-red-500">{error}</p>
-              {retryCount >= MAX_RETRIES && (
-                <button 
-                  onClick={handleRetry}
-                  className="px-4 py-2 bg-mainBlue text-white rounded hover:bg-mainBlue/90 transition-colors"
-                >
-                  다시 시도
-                </button>
-              )}
+              <button 
+                onClick={handleRetry}
+                className="px-4 py-2 bg-mainBlue text-white rounded hover:bg-mainBlue/90 transition-colors"
+              >
+                다시 시도
+              </button>
             </div>
           ) : objectives.length === 0 ? (
             <div className="text-center text-gray-500 py-12">
               <p>등록된 과정 목표가 없습니다.</p>
+              <button 
+                onClick={handleRetry}
+                className="mt-4 px-4 py-2 bg-mainBlue text-white rounded hover:bg-mainBlue/90 transition-colors"
+              >
+                데이터 새로고침
+              </button>
             </div>
           ) : (
-            <motion.div 
-              className="grid gap-10 md:gap-16 max-w-4xl mx-auto"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {objectives.map((objective, index) => (
-                <motion.div 
-                  key={objective._id}
-                  className={`flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} gap-6 md:gap-8`}
-                  variants={itemVariants}
+            <>
+              <div className="flex justify-end mb-6">
+                <button 
+                  onClick={handleRetry}
+                  className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300 transition-colors"
                 >
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-md mx-auto md:mx-0 bg-mainBlue">
-                      {objective.iconImage ? (
-                        <img 
-                          src={objective.iconImage} 
-                          alt={objective.title} 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-mainBlue text-white">
+                  새로고침
+                </button>
+              </div>
+              <motion.div 
+                className="grid gap-10 md:gap-16 max-w-4xl mx-auto"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                {objectives.map((objective, index) => (
+                  <motion.div 
+                    key={objective._id}
+                    className={`flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} gap-6 md:gap-8`}
+                    variants={itemVariants}
+                  >
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-md mx-auto md:mx-0 bg-mainBlue">
+                        {objective.iconImage ? (
                           <img 
-                            src={getIconUrl(objective.iconType)} 
-                            alt={objective.title}
-                            className="w-8 h-8 md:w-10 md:h-10" 
+                            src={objective.iconImage} 
+                            alt={objective.title} 
+                            className="w-full h-full object-cover"
                           />
-                        </div>
-                      )}
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-mainBlue text-white">
+                            <img 
+                              src={getIconUrl(objective.iconType)} 
+                              alt={objective.title}
+                              className="w-8 h-8 md:w-10 md:h-10" 
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex-1">
-                    <h2 className="text-xl md:text-2xl font-bold text-mainBlue mb-3">{objective.title}</h2>
-                    <div className="prose prose-lg max-w-none">
-                      <p className="text-gray-700 whitespace-pre-line">{objective.description}</p>
+                    
+                    <div className="flex-1">
+                      <h2 className="text-xl md:text-2xl font-bold text-mainBlue mb-3">{objective.title}</h2>
+                      <div className="prose prose-lg max-w-none">
+                        <p className="text-gray-700 whitespace-pre-line">{objective.description}</p>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </>
           )}
         </div>
       </main>

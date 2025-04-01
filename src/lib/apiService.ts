@@ -106,7 +106,7 @@ export const apiService = {
   // 목표(Objectives) 관련 API
   getObjectives: async () => {
     try {
-      console.log('===== 목표 데이터 가져오기 시작 =====');
+      console.log('▶️▶️▶️ getObjectives 함수 호출 시작 ▶️▶️▶️');
       console.log('요청 URL:', `${baseURL}/objectives`);
       console.log('현재 환경:', import.meta.env.MODE);
       
@@ -119,20 +119,32 @@ export const apiService = {
       
       // 먼저 /api/objectives 경로로 시도
       try {
-        console.log('첫 번째 경로로 서버에 요청 전송 시작: /api/objectives');
-        response = await axios.get(`${baseURL}/objectives`, {
+        console.log('🔄 첫 번째 경로로 서버에 요청 전송 시작: /api/objectives');
+        const config = {
           headers,
           withCredentials: false // 인증 관련 쿠키 전송 방지
-        });
-        console.log('첫 번째 경로 성공 (/api/objectives)');
+        };
+        console.log('요청 설정:', config);
+        
+        response = await axios.get(`${baseURL}/objectives`, config);
+        console.log('✅ 첫 번째 경로 성공 (/api/objectives)');
+        console.log('응답 상태:', response.status);
+        console.log('응답 헤더:', response.headers);
       } catch (firstPathError) {
-        console.warn('첫 번째 경로 실패, 두 번째 경로 시도: /api/content/objectives');
+        console.warn('⚠️ 첫 번째 경로 실패:', firstPathError);
+        console.warn('⚠️ 두 번째 경로 시도: /api/content/objectives');
+        
         // 첫 번째 경로 실패 시 두 번째 경로 시도
-        response = await axios.get(`${baseURL}/content/objectives`, {
+        const config = {
           headers,
           withCredentials: false
-        });
-        console.log('두 번째 경로 성공 (/api/content/objectives)');
+        };
+        console.log('두 번째 요청 설정:', config);
+        
+        response = await axios.get(`${baseURL}/content/objectives`, config);
+        console.log('✅ 두 번째 경로 성공 (/api/content/objectives)');
+        console.log('응답 상태:', response.status);
+        console.log('응답 헤더:', response.headers);
       }
       
       console.log('===== 서버 응답 확인 =====');
@@ -164,18 +176,27 @@ export const apiService = {
       
       return response.data;
     } catch (error) {
-      console.error('===== 목표 데이터 가져오기 오류 =====');
+      console.error('❌❌❌ 목표 데이터 가져오기 오류 ❌❌❌');
       console.error('Error fetching objectives data:', error);
       
       if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
+        console.error('🔍 Axios Error Details:', {
           status: error.response?.status,
           statusText: error.response?.statusText,
           data: error.response?.data,
           message: error.message,
-          request: error.request ? 'Request was made' : 'No request was made',
-          response: error.response ? 'Response received' : 'No response'
+          request: error.request ? '요청이 전송됨' : '요청이 전송되지 않음',
+          response: error.response ? '응답 수신됨' : '응답 수신되지 않음',
+          config: error.config
         });
+        
+        if (error.request) {
+          console.error('🔍 Request 객체:', {
+            method: error.config?.method,
+            url: error.config?.url,
+            headers: error.config?.headers
+          });
+        }
       }
       
       // 로컬스토리지에서 백업 데이터 시도
