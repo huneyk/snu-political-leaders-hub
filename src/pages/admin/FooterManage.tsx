@@ -222,12 +222,12 @@ const FooterManage: React.FC = () => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     
-    // 선택된 파일의 첫 번째 파일 사용
     const file = files[0];
     
-    // 파일 정보 저장
+    // Store file information
     const fileInfo: FileInfo = {
       name: file.name,
+      originalName: file.name, // Store original name explicitly
       size: file.size,
       type: file.type,
       file: file
@@ -256,7 +256,6 @@ const FooterManage: React.FC = () => {
         break;
     }
     
-    // 파일 업로드 처리는 저장 버튼 클릭 시 수행
     toast({
       title: "파일 선택 완료",
       description: `${file.name} 파일이 선택되었습니다. 저장 버튼을 클릭하여 업로드하세요.`,
@@ -322,79 +321,56 @@ const FooterManage: React.FC = () => {
     try {
       let updatedConfig = { ...footerConfig };
       
-      // Process Word file
+      // For Word file
       if (wordFileInfo?.file) {
         try {
-          // Convert file to base64
+          // Convert to base64
           const base64 = await fileToBase64(wordFileInfo.file);
-          
-          // Store the base64 data in the wordFile field
           updatedConfig.wordFile = base64;
-          
-          // Store the original filename in a separate field
-          updatedConfig.wordFileName = wordFileInfo.file.name;
-          
-          console.log(`Word file encoded: ${wordFileInfo.file.name}`);
+          updatedConfig.wordFileName = wordFileInfo.originalName || wordFileInfo.name;
         } catch (error) {
-          console.error('Word 파일 인코딩 실패:', error);
+          console.error('Word 파일 처리 실패:', error);
           toast({
             title: "Word 파일 처리 실패",
-            description: "파일 처리 중 오류가 발생했습니다.",
+            description: "파일 변환 중 오류가 발생했습니다.",
             variant: "destructive",
           });
         }
       }
       
-      // Process HWP file
+      // Similar code for HWP and PDF files
       if (hwpFileInfo?.file) {
         try {
-          // Convert file to base64
           const base64 = await fileToBase64(hwpFileInfo.file);
-          
-          // Store the base64 data in the hwpFile field
           updatedConfig.hwpFile = base64;
-          
-          // Store the original filename in a separate field
-          updatedConfig.hwpFileName = hwpFileInfo.file.name;
-          
-          console.log(`HWP file encoded: ${hwpFileInfo.file.name}`);
+          updatedConfig.hwpFileName = hwpFileInfo.originalName || hwpFileInfo.name;
         } catch (error) {
-          console.error('HWP 파일 인코딩 실패:', error);
+          console.error('HWP 파일 처리 실패:', error);
           toast({
             title: "HWP 파일 처리 실패",
-            description: "파일 처리 중 오류가 발생했습니다.",
+            description: "파일 변환 중 오류가 발생했습니다.",
             variant: "destructive",
           });
         }
       }
       
-      // Process PDF file
       if (pdfFileInfo?.file) {
         try {
-          // Convert file to base64
           const base64 = await fileToBase64(pdfFileInfo.file);
-          
-          // Store the base64 data in the pdfFile field
           updatedConfig.pdfFile = base64;
-          
-          // Store the original filename in a separate field
-          updatedConfig.pdfFileName = pdfFileInfo.file.name;
-          
-          console.log(`PDF file encoded: ${pdfFileInfo.file.name}`);
+          updatedConfig.pdfFileName = pdfFileInfo.originalName || pdfFileInfo.name;
         } catch (error) {
-          console.error('PDF 파일 인코딩 실패:', error);
+          console.error('PDF 파일 처리 실패:', error);
           toast({
             title: "PDF 파일 처리 실패",
-            description: "파일 처리 중 오류가 발생했습니다.",
+            description: "파일 변환 중 오류가 발생했습니다.",
             variant: "destructive",
           });
         }
       }
       
-      // Save to MongoDB using the existing API that works
+      // Save to database with the existing working API
       let response;
-      let success = false;
-      
       try {
         response = await axios.post(`${API_BASE_URL}/footer`, updatedConfig, {
           headers: {
@@ -402,113 +378,68 @@ const FooterManage: React.FC = () => {
             'Authorization': 'Bearer admin-auth'
           }
         });
-        success = true;
         console.log('Footer 저장 성공:', response.data);
-      } catch (apiError: any) {
-        console.log('첫번째 시도 실패, 오류:', apiError.message);
         
-        // 다른 URL 형식 시도 (로컬 테스트용)
-        try {
-          const altBaseUrl = import.meta.env.MODE === 'production'
-            ? 'https://snu-plp-hub-server.onrender.com/api'
-            : 'http://localhost:5001/api';
-            
-          response = await axios.post(`${altBaseUrl}/footer`, updatedConfig, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer admin-auth'
-            }
-          });
-          success = true;
-          console.log('대체 URL로 Footer 저장 성공:', response.data);
-        } catch (urlError) {
-          console.error('모든 API 시도 실패');
-          
-          // 모든 시도 실패 시, 로컬 저장만 수행하고 성공으로 처리
-          // 로컬 저장소에 저장
-          localStorage.setItem('footer-config', JSON.stringify(updatedConfig));
-          localStorage.setItem('footer-config-timestamp', new Date().toISOString());
-          
-          // Toast 알림 (로컬 저장만 성공)
-          toast({
-            title: "로컬 저장만 성공",
-            description: "서버 연결 실패로 로컬에만 저장되었습니다. 다음에 서버가 가능할 때 자동으로 동기화됩니다.",
-            variant: "default",
-          });
-          
-          // 일단 성공으로 처리하여 사용자 경험 향상
-          success = true;
-          // 의사 응답 데이터 생성
-          response = { 
-            data: {
-              ...updatedConfig,
-              updatedAt: new Date().toISOString()
-            } 
-          };
-        }
-      }
-      
-      if (success && response.data) {
-        // Update the state with the returned data
+        // Update state with the response
         setFooterConfig(response.data);
         
-        // Update file info objects with original filenames
-        if (wordFileInfo && updatedConfig.wordFileName) {
+        // Update file info objects with filename info
+        if (wordFileInfo) {
           setWordFileInfo({
             ...wordFileInfo,
-            name: updatedConfig.wordFileName,
-            originalName: updatedConfig.wordFileName,
             file: undefined,
             url: response.data.wordFile
           });
         }
         
-        if (hwpFileInfo && updatedConfig.hwpFileName) {
+        if (hwpFileInfo) {
           setHwpFileInfo({
             ...hwpFileInfo,
-            name: updatedConfig.hwpFileName,
-            originalName: updatedConfig.hwpFileName,
             file: undefined,
             url: response.data.hwpFile
           });
         }
         
-        if (pdfFileInfo && updatedConfig.pdfFileName) {
+        if (pdfFileInfo) {
           setPdfFileInfo({
             ...pdfFileInfo,
-            name: updatedConfig.pdfFileName,
-            originalName: updatedConfig.pdfFileName,
             file: undefined,
             url: response.data.pdfFile
           });
         }
         
-        // localStorage에도 백업으로 저장
-        localStorage.setItem('footer-config', JSON.stringify(response.data));
-        localStorage.setItem('footer-config-timestamp', new Date().toISOString());
-        
         toast({
           title: "설정 저장 성공",
           description: "Footer 설정 및 파일이 성공적으로 저장되었습니다.",
         });
-      } else {
-        throw new Error('저장에 실패했습니다.');
+      } catch (error) {
+        console.error('Footer 저장 실패:', error);
+        toast({
+          title: "설정 저장 실패",
+          description: "Footer 설정을 저장하는 중 오류가 발생했습니다.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error('Footer 정보 저장 실패:', error);
-      
+      console.error('Footer 저장 실패:', error);
       toast({
         title: "설정 저장 실패",
         description: "Footer 설정을 저장하는 중 오류가 발생했습니다.",
         variant: "destructive",
       });
-      
-      // 실패해도 localStorage에는 저장
-      localStorage.setItem('footer-config', JSON.stringify(footerConfig));
-      localStorage.setItem('footer-config-timestamp', new Date().toISOString());
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Helper function to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   };
 
   const handleDownload = (url: string, fileName: string) => {
@@ -602,6 +533,59 @@ const FooterManage: React.FC = () => {
       })
     : '업데이트 정보 없음';
 
+  const handleDownloadFile = (fileType: 'wordFile' | 'hwpFile' | 'pdfFile') => {
+    let fileData: string;
+    let fileName: string;
+    
+    switch (fileType) {
+      case 'wordFile':
+        fileData = footerConfig.wordFile;
+        fileName = footerConfig.wordFileName || "입학지원서.docx";
+        break;
+      case 'hwpFile':
+        fileData = footerConfig.hwpFile;
+        fileName = footerConfig.hwpFileName || "입학지원서.hwp";
+        break;
+      case 'pdfFile':
+        fileData = footerConfig.pdfFile;
+        fileName = footerConfig.pdfFileName || "과정안내서.pdf";
+        break;
+      default:
+        return;
+    }
+    
+    if (!fileData) {
+      toast({
+        title: "다운로드 실패",
+        description: "파일이 존재하지 않습니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // Create download link
+      const link = document.createElement('a');
+      link.href = fileData; // The base64 data URL
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "다운로드 시작",
+        description: `${fileName} 파일이 다운로드됩니다.`
+      });
+    } catch (error) {
+      console.error('파일 다운로드 오류:', error);
+      toast({
+        title: "다운로드 실패",
+        description: "파일 다운로드 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <AdminLayout>
       <Card>
@@ -641,15 +625,14 @@ const FooterManage: React.FC = () => {
                               )}
                             </div>
                           </div>
-                          <button 
-                            className="text-xs text-blue-600 hover:underline"
-                            onClick={() => handleDownloadBase64(
-                              footerConfig.wordFile, 
-                              footerConfig.wordFileName || "입학지원서.docx"
-                            )}
-                          >
-                            다운로드
-                          </button>
+                          {wordFileInfo.url && (
+                            <button 
+                              className="text-xs text-blue-600 hover:underline"
+                              onClick={() => handleDownloadFile('wordFile')}
+                            >
+                              다운로드
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <span className="text-gray-500 text-sm">파일을 선택해주세요</span>
@@ -697,10 +680,7 @@ const FooterManage: React.FC = () => {
                           </div>
                           <button 
                             className="text-xs text-red-600 hover:underline"
-                            onClick={() => handleDownloadBase64(
-                              footerConfig.hwpFile, 
-                              footerConfig.hwpFileName || "입학지원서.hwp"
-                            )}
+                            onClick={() => handleDownloadFile('hwpFile')}
                           >
                             다운로드
                           </button>
@@ -751,10 +731,7 @@ const FooterManage: React.FC = () => {
                           </div>
                           <button 
                             className="text-xs text-red-700 hover:underline"
-                            onClick={() => handleDownloadBase64(
-                              footerConfig.pdfFile, 
-                              footerConfig.pdfFileName || "과정안내서.pdf"
-                            )}
+                            onClick={() => handleDownloadFile('pdfFile')}
                           >
                             다운로드
                           </button>
