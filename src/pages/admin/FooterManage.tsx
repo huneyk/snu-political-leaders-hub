@@ -441,6 +441,39 @@ const FooterManage: React.FC = () => {
     }
   };
 
+  const handleDownload = (url: string, fileName: string) => {
+    if (!url) {
+      toast({
+        title: "다운로드 실패",
+        description: "파일이 존재하지 않습니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // 다운로드 시작
+    try {
+      // 파일 이름 추출 (URL의 마지막 부분)
+      const extractedFileName = url.split('/').pop() || fileName;
+      
+      // 링크 생성
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', extractedFileName);
+      link.setAttribute('target', '_blank');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('파일 다운로드 오류:', error);
+      toast({
+        title: "다운로드 실패",
+        description: "파일 다운로드 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const lastUpdated = footerConfig.updatedAt 
     ? new Date(footerConfig.updatedAt).toLocaleDateString('ko-KR', {
         year: 'numeric',
@@ -495,6 +528,7 @@ const FooterManage: React.FC = () => {
                               className="text-xs text-blue-600 hover:underline"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                handleDownload(wordFileInfo.url, wordFileInfo.name);
                               }}
                             >
                               다운로드
@@ -550,6 +584,7 @@ const FooterManage: React.FC = () => {
                               className="text-xs text-red-600 hover:underline"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                handleDownload(hwpFileInfo.url, hwpFileInfo.name);
                               }}
                             >
                               다운로드
@@ -605,6 +640,7 @@ const FooterManage: React.FC = () => {
                               className="text-xs text-red-700 hover:underline"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                handleDownload(pdfFileInfo.url, pdfFileInfo.name);
                               }}
                             >
                               다운로드
