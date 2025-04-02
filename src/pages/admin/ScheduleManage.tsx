@@ -154,7 +154,7 @@ const ScheduleManage = () => {
             
             return {
               _id: schedule._id,
-              term: schedule.term,
+              term: Number(schedule.term), // term을 숫자로 변환
               year: schedule.year || new Date().getFullYear().toString(),
               category: schedule.category,
               title: schedule.title,
@@ -190,11 +190,11 @@ const ScheduleManage = () => {
           try {
             console.log(`로컬 스토리지 키 '${storageKey}'에서 데이터 찾음`);
             const parsedSchedules = JSON.parse(savedSchedules);
-            // term 필드를 문자열에서 숫자로 변환
+            // term 필드를 숫자로 변환
             const convertedSchedules = parsedSchedules.map((schedule: any) => ({
               ...schedule,
               _id: schedule._id || schedule.id || Date.now().toString(),
-              term: typeof schedule.term === 'string' ? parseInt(schedule.term, 10) : schedule.term,
+              term: Number(schedule.term), // term을 숫자로 변환
               year: schedule.year || new Date().getFullYear().toString(),
               isActive: schedule.isActive !== undefined ? schedule.isActive : true
             }));
@@ -262,6 +262,7 @@ const ScheduleManage = () => {
 
       const scheduleToAdd = {
         ...newSchedule,
+        term: Number(newSchedule.term), // term을 숫자로 변환
         isActive: true,
         // 학사 일정인 경우에만 카테고리를 'academic'으로 설정하고,
         // 특별활동인 경우에는 사용자가 선택한 카테고리 값을 유지
@@ -388,17 +389,22 @@ const ScheduleManage = () => {
         학기: selectedSchedule.term
       });
       
+      const scheduleToUpdate = {
+        ...selectedSchedule,
+        term: Number(selectedSchedule.term) // term을 숫자로 변환
+      };
+      
       try {
         // API를 통해 일정 업데이트 (token은 선택적)
         console.log('MongoDB에 일정 업데이트 시도');
-        await apiService.updateSchedule(selectedSchedule._id, selectedSchedule, token || '');
+        await apiService.updateSchedule(scheduleToUpdate._id, scheduleToUpdate, token || '');
         
         console.log('MongoDB 일정 업데이트 성공');
         
         // 상태 업데이트
         setSchedules(prev => 
           prev.map(schedule => 
-            schedule._id === selectedSchedule._id ? selectedSchedule : schedule
+            schedule._id === scheduleToUpdate._id ? scheduleToUpdate : schedule
           )
         );
         
@@ -419,7 +425,7 @@ const ScheduleManage = () => {
         // 상태 업데이트
         setSchedules(prev => 
           prev.map(schedule => 
-            schedule._id === selectedSchedule._id ? selectedSchedule : schedule
+            schedule._id === scheduleToUpdate._id ? scheduleToUpdate : schedule
           )
         );
         
@@ -427,7 +433,7 @@ const ScheduleManage = () => {
         const storageKey = activeTab === 'academic' ? 'academicSchedules' : 'specialActivities';
         const currentSchedules = JSON.parse(localStorage.getItem(storageKey) || '[]');
         const updatedSchedules = currentSchedules.map((schedule: Schedule) => 
-          schedule._id === selectedSchedule._id ? selectedSchedule : schedule
+          schedule._id === scheduleToUpdate._id ? scheduleToUpdate : schedule
         );
         localStorage.setItem(storageKey, JSON.stringify(updatedSchedules));
         
