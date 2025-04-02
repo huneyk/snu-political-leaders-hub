@@ -1,6 +1,5 @@
 import express from 'express';
 import Gallery from '../models/Gallery.js';
-import { isAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -40,9 +39,9 @@ router.get('/:id', async (req, res) => {
 /**
  * @route   POST /api/gallery
  * @desc    새 갤러리 아이템 추가
- * @access  Private/Admin
+ * @access  Public - 인증 제거됨
  */
-router.post('/', isAdmin, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const newGallery = new Gallery(req.body);
     await newGallery.save();
@@ -54,11 +53,34 @@ router.post('/', isAdmin, async (req, res) => {
 });
 
 /**
+ * @route   POST /api/gallery/bulk
+ * @desc    여러 갤러리 아이템 일괄 추가
+ * @access  Public - 인증 제거됨
+ */
+router.post('/bulk', async (req, res) => {
+  try {
+    console.log('일괄 갤러리 항목 추가 요청 수신:', req.body.length, '개 항목');
+    
+    if (!Array.isArray(req.body)) {
+      return res.status(400).json({ message: '요청 본문이 배열 형식이어야 합니다.' });
+    }
+    
+    const galleries = await Gallery.insertMany(req.body);
+    console.log('일괄 추가 완료:', galleries.length, '개 항목 추가됨');
+    
+    res.status(201).json(galleries);
+  } catch (error) {
+    console.error('일괄 갤러리 항목 생성 오류:', error);
+    res.status(500).json({ message: '갤러리 항목 일괄 생성 중 오류가 발생했습니다.' });
+  }
+});
+
+/**
  * @route   PUT /api/gallery/:id
  * @desc    갤러리 아이템 업데이트
- * @access  Private/Admin
+ * @access  Public - 인증 제거됨
  */
-router.put('/:id', isAdmin, async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const gallery = await Gallery.findByIdAndUpdate(
       req.params.id,
@@ -80,9 +102,9 @@ router.put('/:id', isAdmin, async (req, res) => {
 /**
  * @route   DELETE /api/gallery/:id
  * @desc    갤러리 아이템 삭제
- * @access  Private/Admin
+ * @access  Public - 인증 제거됨
  */
-router.delete('/:id', isAdmin, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const gallery = await Gallery.findByIdAndDelete(req.params.id);
     
