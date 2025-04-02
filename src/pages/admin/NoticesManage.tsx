@@ -15,9 +15,9 @@ import { apiService } from '@/lib/apiService';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import axios from 'axios';
 
-// API 기본 URL 설정
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
+// API 기본 URL 설정 - 전체 URL 사용
+const API_BASE_URL = import.meta.env.MODE === 'production' 
+  ? 'https://snu-plp-hub-server.onrender.com/api' 
   : 'http://localhost:5001/api';
 
 interface Notice {
@@ -152,29 +152,42 @@ const NoticesManage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // apiService 사용하여 공지사항 추가
-      let result;
+      // 공지사항 추가 시도
+      let success = false;
+      
       try {
-        result = await apiService.addNotice(formData);
+        // 1. 먼저 apiService로 시도
+        await apiService.addNotice(formData);
+        success = true;
       } catch (apiError) {
         console.log('apiService 실패, 직접 axios 요청 시도');
-        // 직접 axios 요청
-        const response = await axios.post(`${API_BASE_URL}/notices`, formData, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        result = response.data;
+        
+        try {
+          // 2. apiService 실패시 직접 axios로 시도
+          await axios.post(`${API_BASE_URL}/notices`, formData, {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          success = true;
+        } catch (axiosError) {
+          console.error('직접 axios 요청도 실패:', axiosError);
+          // 여기서 throw하지 않고 success = false 그대로 두어 다음 단계로 넘어감
+        }
       }
       
-      toast({
-        title: "공지사항 추가 성공",
-        description: "새 공지사항이 성공적으로 추가되었습니다.",
-      });
-      
-      // 공지사항 목록 새로고침
-      await loadNotices();
-      setIsAddDialogOpen(false);
+      if (success) {
+        toast({
+          title: "공지사항 추가 성공",
+          description: "새 공지사항이 성공적으로 추가되었습니다.",
+        });
+        
+        // 공지사항 목록 새로고침
+        await loadNotices();
+        setIsAddDialogOpen(false);
+      } else {
+        throw new Error('모든 추가 시도가 실패했습니다');
+      }
     } catch (error) {
       console.error('공지사항 추가 실패:', error);
       toast({
@@ -201,30 +214,43 @@ const NoticesManage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // apiService 사용하여 공지사항 수정
+      // 공지사항 수정 시도
       const noticeId = selectedNotice._id || selectedNotice.id;
-      let result;
+      let success = false;
+      
       try {
-        result = await apiService.updateNotice(noticeId, formData);
+        // 1. 먼저 apiService로 시도
+        await apiService.updateNotice(noticeId, formData);
+        success = true;
       } catch (apiError) {
         console.log('apiService 실패, 직접 axios 요청 시도');
-        // 직접 axios 요청
-        const response = await axios.put(`${API_BASE_URL}/notices/${noticeId}`, formData, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        result = response.data;
+        
+        try {
+          // 2. apiService 실패시 직접 axios로 시도
+          await axios.put(`${API_BASE_URL}/notices/${noticeId}`, formData, {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          success = true;
+        } catch (axiosError) {
+          console.error('직접 axios 요청도 실패:', axiosError);
+          // 여기서 throw하지 않고 success = false 그대로 두어 다음 단계로 넘어감
+        }
       }
       
-      toast({
-        title: "공지사항 수정 성공",
-        description: "공지사항이 성공적으로 수정되었습니다.",
-      });
-      
-      // 공지사항 목록 새로고침
-      await loadNotices();
-      setIsEditDialogOpen(false);
+      if (success) {
+        toast({
+          title: "공지사항 수정 성공",
+          description: "공지사항이 성공적으로 수정되었습니다.",
+        });
+        
+        // 공지사항 목록 새로고침
+        await loadNotices();
+        setIsEditDialogOpen(false);
+      } else {
+        throw new Error('모든 수정 시도가 실패했습니다');
+      }
     } catch (error) {
       console.error('공지사항 수정 실패:', error);
       toast({
@@ -242,27 +268,40 @@ const NoticesManage: React.FC = () => {
       setIsLoading(true);
       try {
         // apiService 사용하여 공지사항 삭제
-        let result;
+        let success = false;
+        
         try {
-          result = await apiService.deleteNotice(id);
+          // 1. 먼저 apiService로 시도
+          await apiService.deleteNotice(id);
+          success = true;
         } catch (apiError) {
           console.log('apiService 실패, 직접 axios 요청 시도');
-          // 직접 axios 요청
-          const response = await axios.delete(`${API_BASE_URL}/notices/${id}`, {
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-          result = response.data;
+          
+          try {
+            // 2. apiService 실패시 직접 axios로 시도
+            await axios.delete(`${API_BASE_URL}/notices/${id}`, {
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            success = true;
+          } catch (axiosError) {
+            console.error('직접 axios 요청도 실패:', axiosError);
+            // 여기서 throw하지 않고 success = false 그대로 두어 다음 단계로 넘어감
+          }
         }
         
-        toast({
-          title: "공지사항 삭제 성공",
-          description: "공지사항이 성공적으로 삭제되었습니다.",
-        });
-        
-        // 공지사항 목록 새로고침
-        await loadNotices();
+        if (success) {
+          toast({
+            title: "공지사항 삭제 성공",
+            description: "공지사항이 성공적으로 삭제되었습니다.",
+          });
+          
+          // 공지사항 목록 새로고침
+          await loadNotices();
+        } else {
+          throw new Error('모든 삭제 시도가 실패했습니다');
+        }
       } catch (error) {
         console.error('공지사항 삭제 실패:', error);
         toast({
@@ -291,6 +330,9 @@ const NoticesManage: React.FC = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>새 공지사항 추가</DialogTitle>
+            <p className="text-sm text-gray-500">
+              새로운 공지사항을 작성하여 추가합니다.
+            </p>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -352,6 +394,9 @@ const NoticesManage: React.FC = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>공지사항 수정</DialogTitle>
+            <p className="text-sm text-gray-500">
+              선택한 공지사항의 내용을 수정합니다.
+            </p>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
