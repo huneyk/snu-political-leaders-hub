@@ -265,10 +265,11 @@ const FooterManage: React.FC = () => {
     setFooterConfig(prev => ({ ...prev, email: e.target.value }));
   };
 
-  const uploadFile = async (file: File): Promise<string> => {
+  const uploadFile = async (file: File, fileType: string): Promise<string> => {
     // 파일 업로드를 위한 FormData 생성
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('fileType', fileType); // 파일 타입 추가
     
     try {
       // 파일 업로드 API 호출
@@ -278,6 +279,8 @@ const FooterManage: React.FC = () => {
           'Authorization': 'Bearer admin-auth'
         }
       });
+      
+      console.log('파일 업로드 응답:', response.data);
       
       // 업로드된 파일 URL 반환
       return response.data.fileUrl;
@@ -297,7 +300,7 @@ const FooterManage: React.FC = () => {
       // Word 파일 업로드
       if (wordFileInfo?.file) {
         try {
-          const wordFileUrl = await uploadFile(wordFileInfo.file);
+          const wordFileUrl = await uploadFile(wordFileInfo.file, 'wordFile');
           updatedConfig.wordFile = wordFileUrl;
         } catch (error) {
           console.error('Word 파일 업로드 실패:', error);
@@ -312,7 +315,7 @@ const FooterManage: React.FC = () => {
       // HWP 파일 업로드
       if (hwpFileInfo?.file) {
         try {
-          const hwpFileUrl = await uploadFile(hwpFileInfo.file);
+          const hwpFileUrl = await uploadFile(hwpFileInfo.file, 'hwpFile');
           updatedConfig.hwpFile = hwpFileUrl;
         } catch (error) {
           console.error('HWP 파일 업로드 실패:', error);
@@ -327,7 +330,7 @@ const FooterManage: React.FC = () => {
       // PDF 파일 업로드
       if (pdfFileInfo?.file) {
         try {
-          const pdfFileUrl = await uploadFile(pdfFileInfo.file);
+          const pdfFileUrl = await uploadFile(pdfFileInfo.file, 'pdfFile');
           updatedConfig.pdfFile = pdfFileUrl;
         } catch (error) {
           console.error('PDF 파일 업로드 실패:', error);
