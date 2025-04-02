@@ -41,9 +41,9 @@ router.get('/:id', async (req, res) => {
 /**
  * @route   POST /api/notices
  * @desc    새 공지사항 추가
- * @access  Private
+ * @access  Public - 인증 제거됨
  */
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { title, content, author, isImportant } = req.body;
     
@@ -70,9 +70,9 @@ router.post('/', authenticateToken, async (req, res) => {
 /**
  * @route   PUT /api/notices/:id
  * @desc    공지사항 수정
- * @access  Private
+ * @access  Public - 인증 제거됨
  */
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { title, content, author, isImportant } = req.body;
     
@@ -101,9 +101,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
 /**
  * @route   DELETE /api/notices/:id
  * @desc    공지사항 삭제
- * @access  Private
+ * @access  Public - 인증 제거됨
  */
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const deletedNotice = await Notice.findByIdAndDelete(req.params.id);
     

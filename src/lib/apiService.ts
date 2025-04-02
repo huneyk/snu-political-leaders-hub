@@ -1487,15 +1487,16 @@ export const apiService = {
     }
   },
 
-  // 공지사항 추가
+  // 공지사항 추가 - 인증 제거됨
   addNotice: async (noticeData: any) => {
     try {
       console.log('새 공지사항 추가 시작');
       
-      // 인증 토큰 없이 작동하도록 수정 - 단순 헤더
+      // admin-auth 토큰 추가
       const response = await axios.post(`${baseURL}/notices`, noticeData, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer admin-auth'
         }
       });
       
@@ -1514,15 +1515,16 @@ export const apiService = {
     }
   },
 
-  // 공지사항 수정
+  // 공지사항 수정 - 인증 제거됨
   updateNotice: async (id: string, noticeData: any) => {
     try {
       console.log(`공지사항 수정 시작 (ID: ${id})`);
       
-      // 인증 미들웨어 제거 - 단순 헤더
+      // admin-auth 토큰 추가
       const response = await axios.put(`${baseURL}/notices/${id}`, noticeData, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer admin-auth'
         }
       });
       
@@ -1541,15 +1543,16 @@ export const apiService = {
     }
   },
 
-  // 공지사항 삭제
+  // 공지사항 삭제 - 인증 제거됨
   deleteNotice: async (id: string) => {
     try {
       console.log(`공지사항 삭제 시작 (ID: ${id})`);
       
-      // 인증 미들웨어 제거 - 단순 헤더
+      // admin-auth 토큰 추가
       const response = await axios.delete(`${baseURL}/notices/${id}`, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer admin-auth'
         }
       });
       

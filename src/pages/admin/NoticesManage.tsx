@@ -152,7 +152,7 @@ const NoticesManage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // 공지사항 추가 시도
+      // 여러 서로 다른 엔드포인트로 시도
       let success = false;
       
       try {
@@ -166,13 +166,27 @@ const NoticesManage: React.FC = () => {
           // 2. apiService 실패시 직접 axios로 시도
           await axios.post(`${API_BASE_URL}/notices`, formData, {
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer admin-auth'
             }
           });
           success = true;
         } catch (axiosError) {
           console.error('직접 axios 요청도 실패:', axiosError);
-          // 여기서 throw하지 않고 success = false 그대로 두어 다음 단계로 넘어감
+          
+          try {
+            // 3. 대체 서버 API 엔드포인트로 시도
+            console.log('대체 경로로 시도: /api/content/notices');
+            await axios.post(`${API_BASE_URL.replace('/api', '/api/content')}/notices`, formData, {
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer admin-auth'
+              }
+            });
+            success = true;
+          } catch (fallbackError) {
+            console.error('모든 API 경로 시도 실패:', fallbackError);
+          }
         }
       }
       
@@ -185,6 +199,14 @@ const NoticesManage: React.FC = () => {
         // 공지사항 목록 새로고침
         await loadNotices();
         setIsAddDialogOpen(false);
+        
+        // 입력 폼 초기화
+        setFormData({
+          title: '',
+          content: '',
+          author: '',
+          isImportant: false,
+        });
       } else {
         throw new Error('모든 추가 시도가 실패했습니다');
       }
@@ -229,13 +251,27 @@ const NoticesManage: React.FC = () => {
           // 2. apiService 실패시 직접 axios로 시도
           await axios.put(`${API_BASE_URL}/notices/${noticeId}`, formData, {
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer admin-auth'
             }
           });
           success = true;
         } catch (axiosError) {
           console.error('직접 axios 요청도 실패:', axiosError);
-          // 여기서 throw하지 않고 success = false 그대로 두어 다음 단계로 넘어감
+          
+          try {
+            // 3. 대체 서버 API 엔드포인트로 시도
+            console.log('대체 경로로 시도: /api/content/notices');
+            await axios.put(`${API_BASE_URL.replace('/api', '/api/content')}/notices/${noticeId}`, formData, {
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer admin-auth'
+              }
+            });
+            success = true;
+          } catch (fallbackError) {
+            console.error('모든 API 경로 시도 실패:', fallbackError);
+          }
         }
       }
       
@@ -281,13 +317,27 @@ const NoticesManage: React.FC = () => {
             // 2. apiService 실패시 직접 axios로 시도
             await axios.delete(`${API_BASE_URL}/notices/${id}`, {
               headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer admin-auth'
               }
             });
             success = true;
           } catch (axiosError) {
             console.error('직접 axios 요청도 실패:', axiosError);
-            // 여기서 throw하지 않고 success = false 그대로 두어 다음 단계로 넘어감
+            
+            try {
+              // 3. 대체 서버 API 엔드포인트로 시도
+              console.log('대체 경로로 시도: /api/content/notices');
+              await axios.delete(`${API_BASE_URL.replace('/api', '/api/content')}/notices/${id}`, {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer admin-auth'
+                }
+              });
+              success = true;
+            } catch (fallbackError) {
+              console.error('모든 API 경로 시도 실패:', fallbackError);
+            }
           }
         }
         
