@@ -1411,26 +1411,33 @@ export const apiService = {
   // 갤러리 항목 수정
   updateGalleryItem: async (id: string, galleryData: any, token?: string) => {
     try {
-      // 임시로 토큰 인증 우회 (테스트용)
-      console.log('토큰 인증 우회 - updateGalleryItem (테스트용)');
+      console.log(`갤러리 항목 수정 시작 (ID: ${id})`);
+      
+      // 헤더 설정
       const headers: any = {
         'Content-Type': 'application/json'
       };
       
-      // 토큰이 제공된 경우에만 Authorization 헤더 추가
+      // 토큰이 있으면 헤더에 추가
       if (token) {
         headers.Authorization = `Bearer ${token}`;
+        console.log('인증 토큰이 포함된 요청 전송');
+      } else {
+        console.warn('⚠️ 인증 토큰이 없습니다. 요청이 거부될 수 있습니다.');
       }
       
+      // API 요청 시도
       const response = await axios.put(`${baseURL}/gallery/${id}`, galleryData, {
-        headers
+        headers,
+        withCredentials: true // 쿠키 전송 허용
       });
-      console.log('Update Gallery Item Response:', response.data);
+      
+      console.log('갤러리 항목 수정 성공:', response.status);
       return response.data;
     } catch (error) {
-      console.error(`Error updating gallery item with id ${id}:`, error);
+      console.error(`갤러리 항목 수정 실패 (ID: ${id}):`, error);
       if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
+        console.error('API 오류 세부정보:', {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message
