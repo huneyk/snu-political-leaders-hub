@@ -1342,18 +1342,12 @@ export const apiService = {
   // 갤러리(Gallery) 관련 API
   getGallery: async () => {
     try {
+      console.log('갤러리 데이터 가져오기 시도');
       const response = await axios.get(`${baseURL}/gallery`);
-      console.log('Gallery API Response:', response.data);
+      console.log('갤러리 데이터 응답:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching gallery data:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
-      }
+      console.error('갤러리 데이터 가져오기 실패:', error);
       throw error;
     }
   },
