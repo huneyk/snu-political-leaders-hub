@@ -956,10 +956,11 @@ export const apiService = {
   },
 
   // 일정 수정 API
-  updateSchedule: async (id: string, scheduleData: any, token: string) => {
+  updateSchedule: async (id: string, data: any, token?: string) => {
     try {
-      console.log(`▶️▶️▶️ updateSchedule 함수 호출 시작 (ID: ${id}) ▶️▶️▶️`);
-      console.log('일정 수정 데이터:', scheduleData.title);
+      console.log('▶️▶️▶️ updateSchedule 함수 호출 시작 ▶️▶️▶️');
+      console.log('수정할 일정 ID:', id);
+      console.log('수정할 데이터:', data);
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
@@ -968,7 +969,7 @@ export const apiService = {
       
       console.log('요청 URL:', apiUrl);
       
-      // 헤더 설정
+      // 명시적인 헤더 설정
       const headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -977,23 +978,79 @@ export const apiService = {
       // 토큰이 있으면 헤더에 추가
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-      } else {
-        console.warn('⚠️ 토큰이 없습니다. 인증이 필요한 API에 접근할 수 없을 수 있습니다.');
       }
       
-      const response = await axios.put(apiUrl, scheduleData, {
-        headers
-      });
+      // API 요청 시도
+      console.log('🔄 서버에 일정 수정 요청 전송');
       
-      console.log('일정 수정 결과:', response.status);
-      return response.data;
+      try {
+        // 첫 번째 시도 - 기본 URL로 요청
+        const config = {
+          headers,
+          withCredentials: false,
+          timeout: 10000 // 10초 타임아웃
+        };
+        
+        const response = await axios.put(apiUrl, data, config);
+        console.log('✅ 일정 수정 요청 성공');
+        
+        // 백업: 로컬스토리지에 최신 데이터 저장
+        try {
+          localStorage.setItem('admin-schedules-all', JSON.stringify(response.data));
+          localStorage.setItem('admin-schedules-all-time', Date.now().toString());
+          console.log('일정 데이터 로컬스토리지에 백업 완료');
+        } catch (storageError) {
+          console.warn('로컬스토리지 백업 실패:', storageError);
+        }
+        
+        return response.data;
+      } catch (error) {
+        // 첫 번째 시도 실패 시 다른 경로로 시도
+        console.warn('⚠️ 첫 번째 경로 실패, 대체 경로 시도');
+        
+        try {
+          // 대체 URL - /api/schedules/:id 경로 시도
+          const altUrl = import.meta.env.MODE === 'production' 
+            ? `https://snu-plp-hub-server.onrender.com/api/schedules/${id}`
+            : `http://localhost:5001/api/schedules/${id}`;
+          
+          console.log('🔄 대체 URL로 다시 시도:', altUrl);
+          
+          const config = {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            withCredentials: false,
+            timeout: 10000
+          };
+          
+          const response = await axios.put(altUrl, data, config);
+          console.log('✅ 대체 경로 요청 성공');
+          
+          // 백업: 로컬스토리지에 최신 데이터 저장
+          try {
+            localStorage.setItem('admin-schedules-all', JSON.stringify(response.data));
+            localStorage.setItem('admin-schedules-all-time', Date.now().toString());
+            console.log('일정 데이터 로컬스토리지에 백업 완료 (대체 경로)');
+          } catch (storageError) {
+            console.warn('로컬스토리지 백업 실패:', storageError);
+          }
+          
+          return response.data;
+        } catch (altError) {
+          console.error('❌ 모든 API 경로 시도 실패');
+          throw altError;
+        }
+      }
     } catch (error) {
-      console.error(`❌❌❌ 일정 수정 오류 (ID: ${id}) ❌❌❌`);
-      console.error(`Error updating schedule with id ${id}:`, error);
+      console.error('❌❌❌ 일정 수정 실패 ❌❌❌');
+      console.error('Error updating schedule:', error);
       
       if (axios.isAxiosError(error)) {
-        console.error('🔍 Axios Error Details:', {
+        console.error('🔍 API 오류 세부정보:', {
           status: error.response?.status,
+          statusText: error.response?.statusText,
           data: error.response?.data,
           message: error.message
         });
@@ -1004,9 +1061,10 @@ export const apiService = {
   },
 
   // 일정 삭제 API
-  deleteSchedule: async (id: string, token: string) => {
+  deleteSchedule: async (id: string, token?: string) => {
     try {
-      console.log(`▶️▶️▶️ deleteSchedule 함수 호출 시작 (ID: ${id}) ▶️▶️▶️`);
+      console.log('▶️▶️▶️ deleteSchedule 함수 호출 시작 ▶️▶️▶️');
+      console.log('삭제할 일정 ID:', id);
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
@@ -1015,7 +1073,7 @@ export const apiService = {
       
       console.log('요청 URL:', apiUrl);
       
-      // 헤더 설정
+      // 명시적인 헤더 설정
       const headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -1024,23 +1082,89 @@ export const apiService = {
       // 토큰이 있으면 헤더에 추가
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-      } else {
-        console.warn('⚠️ 토큰이 없습니다. 인증이 필요한 API에 접근할 수 없을 수 있습니다.');
       }
       
-      const response = await axios.delete(apiUrl, {
-        headers
-      });
+      // API 요청 시도
+      console.log('🔄 서버에 일정 삭제 요청 전송');
       
-      console.log('일정 삭제 결과:', response.status);
-      return response.data;
+      try {
+        // 첫 번째 시도 - 기본 URL로 요청
+        const config = {
+          headers,
+          withCredentials: false,
+          timeout: 10000 // 10초 타임아웃
+        };
+        
+        const response = await axios.delete(apiUrl, config);
+        console.log('✅ 일정 삭제 요청 성공');
+        
+        // 백업: 로컬스토리지에서 해당 일정 제거
+        try {
+          const savedData = localStorage.getItem('admin-schedules-all');
+          if (savedData) {
+            const schedules = JSON.parse(savedData);
+            const updatedSchedules = schedules.filter((schedule: any) => schedule._id !== id);
+            localStorage.setItem('admin-schedules-all', JSON.stringify(updatedSchedules));
+            localStorage.setItem('admin-schedules-all-time', Date.now().toString());
+            console.log('로컬스토리지에서 일정 삭제 완료');
+          }
+        } catch (storageError) {
+          console.warn('로컬스토리지 업데이트 실패:', storageError);
+        }
+        
+        return response.data;
+      } catch (error) {
+        // 첫 번째 시도 실패 시 다른 경로로 시도
+        console.warn('⚠️ 첫 번째 경로 실패, 대체 경로 시도');
+        
+        try {
+          // 대체 URL - /api/schedules/:id 경로 시도
+          const altUrl = import.meta.env.MODE === 'production' 
+            ? `https://snu-plp-hub-server.onrender.com/api/schedules/${id}`
+            : `http://localhost:5001/api/schedules/${id}`;
+          
+          console.log('🔄 대체 URL로 다시 시도:', altUrl);
+          
+          const config = {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            withCredentials: false,
+            timeout: 10000
+          };
+          
+          const response = await axios.delete(altUrl, config);
+          console.log('✅ 대체 경로 요청 성공');
+          
+          // 백업: 로컬스토리지에서 해당 일정 제거
+          try {
+            const savedData = localStorage.getItem('admin-schedules-all');
+            if (savedData) {
+              const schedules = JSON.parse(savedData);
+              const updatedSchedules = schedules.filter((schedule: any) => schedule._id !== id);
+              localStorage.setItem('admin-schedules-all', JSON.stringify(updatedSchedules));
+              localStorage.setItem('admin-schedules-all-time', Date.now().toString());
+              console.log('로컬스토리지에서 일정 삭제 완료 (대체 경로)');
+            }
+          } catch (storageError) {
+            console.warn('로컬스토리지 업데이트 실패:', storageError);
+          }
+          
+          return response.data;
+        } catch (altError) {
+          console.error('❌ 모든 API 경로 시도 실패');
+          throw altError;
+        }
+      }
     } catch (error) {
-      console.error(`❌❌❌ 일정 삭제 오류 (ID: ${id}) ❌❌❌`);
-      console.error(`Error deleting schedule with id ${id}:`, error);
+      console.error('❌❌❌ 일정 삭제 실패 ❌❌❌');
+      console.error('Error deleting schedule:', error);
       
       if (axios.isAxiosError(error)) {
-        console.error('🔍 Axios Error Details:', {
+        console.error('🔍 API 오류 세부정보:', {
           status: error.response?.status,
+          statusText: error.response?.statusText,
           data: error.response?.data,
           message: error.message
         });
