@@ -17,8 +17,11 @@ const API_BASE_URL = import.meta.env.MODE === 'production'
 interface FooterConfig {
   _id?: string;
   wordFile: string;
+  wordFileName?: string;
   hwpFile: string;
+  hwpFileName?: string;
   pdfFile: string;
+  pdfFileName?: string;
   email: string;
   companyName?: string;
   address?: string;
@@ -34,6 +37,7 @@ interface FileInfo {
   type: string;
   file?: File;
   url?: string;
+  originalName?: string;
 }
 
 const FooterManage: React.FC = () => {
@@ -111,9 +115,10 @@ const FooterManage: React.FC = () => {
         
         // 파일 정보 설정
         if (data.wordFile) {
-          const fileName = data.wordFile.split('/').pop() || '입학지원서.docx';
+          const fileName = data.wordFileName || data.wordFile.split('/').pop() || '입학지원서.docx';
           setWordFileInfo({
             name: fileName,
+            originalName: data.wordFileName,
             size: 0,
             type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             url: data.wordFile
@@ -121,9 +126,10 @@ const FooterManage: React.FC = () => {
         }
         
         if (data.hwpFile) {
-          const fileName = data.hwpFile.split('/').pop() || '입학지원서.hwp';
+          const fileName = data.hwpFileName || data.hwpFile.split('/').pop() || '입학지원서.hwp';
           setHwpFileInfo({
             name: fileName,
+            originalName: data.hwpFileName,
             size: 0,
             type: 'application/x-hwp',
             url: data.hwpFile
@@ -131,9 +137,10 @@ const FooterManage: React.FC = () => {
         }
         
         if (data.pdfFile) {
-          const fileName = data.pdfFile.split('/').pop() || '과정안내서.pdf';
+          const fileName = data.pdfFileName || data.pdfFile.split('/').pop() || '과정안내서.pdf';
           setPdfFileInfo({
             name: fileName,
+            originalName: data.pdfFileName,
             size: 0,
             type: 'application/pdf',
             url: data.pdfFile
@@ -166,9 +173,10 @@ const FooterManage: React.FC = () => {
           
           // 파일 정보 설정
           if (parsedConfig.wordFile) {
-            const fileName = parsedConfig.wordFile.split('/').pop() || '입학지원서.docx';
+            const fileName = parsedConfig.wordFileName || parsedConfig.wordFile.split('/').pop() || '입학지원서.docx';
             setWordFileInfo({
               name: fileName,
+              originalName: parsedConfig.wordFileName,
               size: 0,
               type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
               url: parsedConfig.wordFile
@@ -176,9 +184,10 @@ const FooterManage: React.FC = () => {
           }
           
           if (parsedConfig.hwpFile) {
-            const fileName = parsedConfig.hwpFile.split('/').pop() || '입학지원서.hwp';
+            const fileName = parsedConfig.hwpFileName || parsedConfig.hwpFile.split('/').pop() || '입학지원서.hwp';
             setHwpFileInfo({
               name: fileName,
+              originalName: parsedConfig.hwpFileName,
               size: 0,
               type: 'application/x-hwp',
               url: parsedConfig.hwpFile
@@ -186,9 +195,10 @@ const FooterManage: React.FC = () => {
           }
           
           if (parsedConfig.pdfFile) {
-            const fileName = parsedConfig.pdfFile.split('/').pop() || '과정안내서.pdf';
+            const fileName = parsedConfig.pdfFileName || parsedConfig.pdfFile.split('/').pop() || '과정안내서.pdf';
             setPdfFileInfo({
               name: fileName,
+              originalName: parsedConfig.pdfFileName,
               size: 0,
               type: 'application/pdf',
               url: parsedConfig.pdfFile
@@ -274,6 +284,38 @@ const FooterManage: React.FC = () => {
     });
   };
 
+  const uploadFile = async (file: File, fileType: string): Promise<{url: string, filename: string}> => {
+    // Store the original filename
+    const originalFilename = file.name;
+    
+    // Create FormData as before
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('fileType', fileType);
+    formData.append('originalFilename', originalFilename); // Add original filename to form data
+    
+    try {
+      // 파일 업로드 API 호출
+      const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer admin-auth'
+        }
+      });
+      
+      console.log('파일 업로드 응답:', response.data);
+      
+      // Return both the URL and the original filename
+      return {
+        url: response.data.fileUrl,
+        filename: originalFilename
+      };
+    } catch (error) {
+      console.error('파일 업로드 실패:', error);
+      throw error;
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     
@@ -284,8 +326,9 @@ const FooterManage: React.FC = () => {
       // Word 파일 업로드
       if (wordFileInfo?.file) {
         try {
-          const wordFileBase64 = await convertFileToBase64(wordFileInfo.file);
-          updatedConfig.wordFile = wordFileBase64;
+          const result = await uploadFile(wordFileInfo.file, 'wordFile');
+          updatedConfig.wordFile = result.url;
+          updatedConfig.wordFileName = result.filename;
         } catch (error) {
           console.error('Word 파일 업로드 실패:', error);
           toast({
@@ -299,8 +342,9 @@ const FooterManage: React.FC = () => {
       // HWP 파일 업로드
       if (hwpFileInfo?.file) {
         try {
-          const hwpFileBase64 = await convertFileToBase64(hwpFileInfo.file);
-          updatedConfig.hwpFile = hwpFileBase64;
+          const result = await uploadFile(hwpFileInfo.file, 'hwpFile');
+          updatedConfig.hwpFile = result.url;
+          updatedConfig.hwpFileName = result.filename;
         } catch (error) {
           console.error('HWP 파일 업로드 실패:', error);
           toast({
@@ -314,8 +358,9 @@ const FooterManage: React.FC = () => {
       // PDF 파일 업로드
       if (pdfFileInfo?.file) {
         try {
-          const pdfFileBase64 = await convertFileToBase64(pdfFileInfo.file);
-          updatedConfig.pdfFile = pdfFileBase64;
+          const result = await uploadFile(pdfFileInfo.file, 'pdfFile');
+          updatedConfig.pdfFile = result.url;
+          updatedConfig.pdfFileName = result.filename;
         } catch (error) {
           console.error('PDF 파일 업로드 실패:', error);
           toast({
@@ -515,7 +560,9 @@ const FooterManage: React.FC = () => {
                               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                             </span>
                             <div>
-                              <p className="text-sm font-medium">{wordFileInfo.name}</p>
+                              <p className="text-sm font-medium">
+                                {footerConfig.wordFileName || wordFileInfo.originalName || wordFileInfo.name}
+                              </p>
                               {wordFileInfo.size > 0 && (
                                 <p className="text-xs text-gray-500">{formatFileSize(wordFileInfo.size)}</p>
                               )}
@@ -524,12 +571,9 @@ const FooterManage: React.FC = () => {
                           {wordFileInfo.url && (
                             <a 
                               href={wordFileInfo.url} 
-                              download 
+                              download={footerConfig.wordFileName || wordFileInfo.originalName || wordFileInfo.name}
                               className="text-xs text-blue-600 hover:underline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDownload(wordFileInfo.url, wordFileInfo.name);
-                              }}
+                              onClick={(e) => e.stopPropagation()}
                             >
                               다운로드
                             </a>
@@ -571,7 +615,9 @@ const FooterManage: React.FC = () => {
                               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                             </span>
                             <div>
-                              <p className="text-sm font-medium">{hwpFileInfo.name}</p>
+                              <p className="text-sm font-medium">
+                                {footerConfig.hwpFileName || hwpFileInfo.originalName || hwpFileInfo.name}
+                              </p>
                               {hwpFileInfo.size > 0 && (
                                 <p className="text-xs text-gray-500">{formatFileSize(hwpFileInfo.size)}</p>
                               )}
@@ -580,12 +626,9 @@ const FooterManage: React.FC = () => {
                           {hwpFileInfo.url && (
                             <a 
                               href={hwpFileInfo.url} 
-                              download 
+                              download={footerConfig.hwpFileName || hwpFileInfo.originalName || hwpFileInfo.name}
                               className="text-xs text-red-600 hover:underline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDownload(hwpFileInfo.url, hwpFileInfo.name);
-                              }}
+                              onClick={(e) => e.stopPropagation()}
                             >
                               다운로드
                             </a>
@@ -627,7 +670,9 @@ const FooterManage: React.FC = () => {
                               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                             </span>
                             <div>
-                              <p className="text-sm font-medium">{pdfFileInfo.name}</p>
+                              <p className="text-sm font-medium">
+                                {footerConfig.pdfFileName || pdfFileInfo.originalName || pdfFileInfo.name}
+                              </p>
                               {pdfFileInfo.size > 0 && (
                                 <p className="text-xs text-gray-500">{formatFileSize(pdfFileInfo.size)}</p>
                               )}
@@ -636,12 +681,9 @@ const FooterManage: React.FC = () => {
                           {pdfFileInfo.url && (
                             <a 
                               href={pdfFileInfo.url} 
-                              download 
+                              download={footerConfig.pdfFileName || pdfFileInfo.originalName || pdfFileInfo.name}
                               className="text-xs text-red-700 hover:underline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDownload(pdfFileInfo.url, pdfFileInfo.name);
-                              }}
+                              onClick={(e) => e.stopPropagation()}
                             >
                               다운로드
                             </a>
