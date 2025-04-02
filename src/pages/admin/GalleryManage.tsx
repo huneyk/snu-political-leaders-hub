@@ -606,7 +606,12 @@ const GalleryManage = () => {
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-medium text-lg">{item.title}</h3>
                     </div>
-                    <p className="text-sm text-gray-500 mb-2">{formatDate(item.date)}</p>
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-sm text-gray-500">{formatDate(item.date)}</p>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {item.term}기
+                      </span>
+                    </div>
                     <p className="text-sm text-gray-600 mb-4 line-clamp-2">{item.description}</p>
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" size="sm" onClick={() => handleEditClick(item)}>
