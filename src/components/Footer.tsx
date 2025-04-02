@@ -127,8 +127,8 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center mb-8">
           <div className="text-center md:text-left mb-4 md:mb-0">
-            <h2 className="text-xl font-bold text-gray-800 mb-2">서울대학교 정치지도자과정<br>SNU Political Leaders Program</h2>
-            <p className="text-gray-600">서울시 관악구 관악로 1 서울대학교 사회과학대학</p>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">서울대학교 정치지도자과정<br />SNU Political Leaders Program</h2>
+            <p className="text-gray-600">서울시 관악구 관악로 1 서울대학교 아시아연구소 517호 정치지도자과정</p>            <p className="text-gray-600">Tel: 02-880-4107  Email : plp@snu.ac.kr</p>
           </div>
           
           <div className="flex flex-col md:flex-row gap-2 md:gap-4">
@@ -186,7 +186,7 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
         
         <div className="border-t border-gray-300 pt-4">
           <p className="text-center text-gray-500 text-sm">
-            © {footerConfig.copyrightYear || currentYear} 서울대학교 정치지도자과정 All rights reserved.
+            © {footerConfig.copyrightYear || currentYear} 서울대학교 정치리더십과정. All rights reserved.
           </p>
         </div>
       </div>
