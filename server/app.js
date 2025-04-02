@@ -32,8 +32,16 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // 업로드 파일 경로 설정
 const uploadDir = path.join(__dirname, 'uploads');
+// 업로드 디렉토리가 없는 경우 생성
+if (!require('fs').existsSync(uploadDir)) {
+  require('fs').mkdirSync(uploadDir, { recursive: true });
+  console.log(`📁 업로드 디렉토리 생성됨: ${uploadDir}`);
+} else {
+  console.log(`📁 업로드 디렉토리 확인: ${uploadDir}`);
+}
 // 업로드 디렉토리에 직접 접근할 수 있도록 정적 파일 미들웨어 설정
 app.use('/uploads', express.static(uploadDir));
+console.log('✅ 업로드 파일 서비스 경로 설정: /uploads -> ' + uploadDir);
 
 // 라우트 불러오기
 const usersRoutes = require('./routes/usersRoutes');

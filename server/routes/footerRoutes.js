@@ -2,149 +2,159 @@ const express = require('express');
 const router = express.Router();
 const Footer = require('../models/Footer');
 const mongoose = require('mongoose');
+const { authenticateToken } = require('../middleware/authMiddleware');
 
 /**
  * @route   GET /api/footer
- * @desc    Footer 정보 가져오기
+ * @desc    Get footer information
  * @access  Public
  */
 router.get('/', async (req, res) => {
   try {
-    console.log('Footer 정보 요청 수신');
-    console.log('요청 헤더:', req.headers);
+    console.log('GET /api/footer - 요청 수신');
+    console.log('MongoDB 연결 상태:', mongoose.connection.readyState);
     
-    // MongoDB 연결 확인
+    // MongoDB 연결 상태 확인
     if (mongoose.connection.readyState !== 1) {
-      console.log('MongoDB 연결 상태 오류:', mongoose.connection.readyState);
-      return res.status(500).json({ 
-        message: 'MongoDB 연결이 활성화되지 않았습니다.', 
-        readyState: mongoose.connection.readyState 
-      });
+      console.log('MongoDB 연결이 활성화되지 않았습니다.');
+      return res.status(500).json({ message: 'Database connection is not active' });
     }
     
-    // MongoDB에서 footer 정보 가져오기 (가장 최근 문서 사용)
-    let footerInfo = await Footer.findOne().sort({ createdAt: -1 });
+    // Collection 목록 확인 (디버깅용)
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    console.log('사용 가능한 컬렉션:', collections.map(c => c.name));
     
-    // 데이터가 없는 경우 기본값 생성
-    if (!footerInfo) {
-      console.log('기존 Footer 정보가 없어 기본값 반환');
-      footerInfo = {
+    // 가장 최근의 footer 설정 조회
+    const footer = await Footer.findOne().sort({ updatedAt: -1 });
+    
+    if (footer) {
+      console.log('Footer 데이터 조회 성공:', footer);
+      res.json(footer);
+    } else {
+      // 데이터가 없으면 기본값 반환
+      console.log('Footer 데이터가 없어 기본값 반환');
+      res.json({
         wordFile: '',
         hwpFile: '',
         pdfFile: '',
         email: 'plp@snu.ac.kr',
-        companyName: '서울대학교 정치리더스과정',
-        address: '서울시 관악구 관악로 1 서울대학교 사회과학대학',
-        contactPhone: '02-880-xxxx',
-        contactEmail: 'plp@snu.ac.kr',
-        copyrightYear: new Date().getFullYear().toString()
-      };
+        updatedAt: new Date()
+      });
     }
-    
-    console.log('Footer 정보 조회 성공');
-    res.json(footerInfo);
   } catch (error) {
-    console.error('Footer 정보 조회 실패:', error);
-    res.status(500).json({ 
-      message: '서버 오류가 발생했습니다.', 
-      error: error.message, 
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
-    });
+    console.error('Footer 정보 조회 오류:', error);
+    res.status(500).json({ message: 'Error fetching footer information', error: error.message });
   }
 });
 
 /**
  * @route   POST /api/footer
- * @desc    Footer 정보 생성/업데이트
- * @access  Public (인증 제거됨)
+ * @desc    Update or create footer information
+ * @access  Private (admin only, but allowing without auth for testing)
  */
 router.post('/', async (req, res) => {
   try {
-    console.log('Footer 정보 업데이트 요청 수신 (POST):', req.body);
+    console.log('POST /api/footer - 요청 수신');
     console.log('요청 헤더:', req.headers);
+    console.log('요청 본문:', req.body);
+    console.log('MongoDB 연결 상태:', mongoose.connection.readyState);
     
-    // 권한 확인 로직 제거 - 모든 요청 허용
-    
-    // MongoDB 연결 확인
+    // MongoDB 연결 상태 확인
     if (mongoose.connection.readyState !== 1) {
-      console.log('MongoDB 연결 상태 오류:', mongoose.connection.readyState);
-      return res.status(500).json({ 
-        message: 'MongoDB 연결이 활성화되지 않았습니다.', 
-        readyState: mongoose.connection.readyState 
-      });
+      console.log('MongoDB 연결이 활성화되지 않았습니다.');
+      return res.status(500).json({ message: 'Database connection is not active' });
     }
     
-    // MongoDB 데이터베이스 정보 로깅
-    console.log('MongoDB 데이터베이스 이름:', mongoose.connection.db.databaseName);
-    console.log('MongoDB 컬렉션 목록 요청 중...');
-    try {
-      const collections = await mongoose.connection.db.listCollections().toArray();
-      console.log('MongoDB 컬렉션 목록:', collections.map(c => c.name));
-    } catch (dbError) {
-      console.error('MongoDB 컬렉션 목록 조회 실패:', dbError);
-    }
+    // Collection 목록 확인 (디버깅용)
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    console.log('사용 가능한 컬렉션:', collections.map(c => c.name));
     
-    // req.body에서 _id가 있으면 해당 문서 업데이트, 없으면 새 문서 생성
-    if (req.body._id) {
-      try {
-        console.log('기존 문서 업데이트 시도 - ID:', req.body._id);
-        // 기존 문서 업데이트
-        const updatedFooter = await Footer.findByIdAndUpdate(
-          req.body._id,
-          { 
-            ...req.body,
-            updatedAt: new Date()
-          },
-          { new: true }
-        );
-        
-        if (!updatedFooter) {
-          console.log('지정된 ID로 문서를 찾을 수 없어서 새 문서 생성');
-          // ID가 존재하지만 해당 문서가 없는 경우, 새 문서 생성
-          const newFooter = new Footer({
-            ...req.body,
-            updatedAt: new Date()
-          });
-          
-          const savedFooter = await newFooter.save();
-          console.log('새 Footer 정보 생성 성공:', savedFooter._id);
-          return res.json(savedFooter);
-        }
-        
-        console.log('Footer 정보 업데이트 성공 (ID 기준):', updatedFooter._id);
-        return res.json(updatedFooter);
-      } catch (updateError) {
-        console.error('ID로 업데이트 실패, 새 문서 생성:', updateError.message);
-        // ID가 유효하지 않은 경우 새 문서 생성
-        const newFooter = new Footer({
-          ...req.body,
+    const { _id, wordFile, hwpFile, pdfFile, email, companyName, address, contactPhone, contactEmail, copyrightYear } = req.body;
+    
+    let footer;
+    
+    // _id가 있으면 해당 문서 업데이트, 없으면 새로 생성
+    if (_id) {
+      console.log(`ID ${_id}로 기존 Footer 문서 업데이트 시도`);
+      
+      footer = await Footer.findByIdAndUpdate(
+        _id,
+        {
+          wordFile,
+          hwpFile,
+          pdfFile,
+          email,
+          companyName,
+          address,
+          contactPhone,
+          contactEmail,
+          copyrightYear,
           updatedAt: new Date()
+        },
+        { new: true, runValidators: true }
+      );
+      
+      if (!footer) {
+        console.log('업데이트할 Footer 문서를 찾을 수 없어 새로 생성합니다.');
+        footer = new Footer({
+          wordFile,
+          hwpFile,
+          pdfFile,
+          email,
+          companyName,
+          address,
+          contactPhone,
+          contactEmail,
+          copyrightYear
         });
         
-        const savedFooter = await newFooter.save();
-        console.log('새 Footer 정보 생성 성공 (업데이트 실패 후):', savedFooter._id);
-        return res.json(savedFooter);
+        footer = await footer.save();
+      }
+    } else {
+      console.log('ID가 없으므로 새 Footer 문서 생성');
+      
+      // 가장 최근의 footer 문서 조회
+      const existingFooter = await Footer.findOne().sort({ updatedAt: -1 });
+      
+      if (existingFooter) {
+        console.log('기존 Footer 문서 발견, 업데이트합니다:', existingFooter._id);
+        
+        existingFooter.wordFile = wordFile;
+        existingFooter.hwpFile = hwpFile;
+        existingFooter.pdfFile = pdfFile;
+        existingFooter.email = email;
+        existingFooter.companyName = companyName;
+        existingFooter.address = address;
+        existingFooter.contactPhone = contactPhone;
+        existingFooter.contactEmail = contactEmail;
+        existingFooter.copyrightYear = copyrightYear;
+        existingFooter.updatedAt = new Date();
+        
+        footer = await existingFooter.save();
+      } else {
+        console.log('Footer 문서가 없어 새로 생성합니다.');
+        
+        footer = new Footer({
+          wordFile,
+          hwpFile,
+          pdfFile,
+          email,
+          companyName,
+          address,
+          contactPhone,
+          contactEmail,
+          copyrightYear
+        });
+        
+        footer = await footer.save();
       }
     }
     
-    console.log('새 Footer 문서 생성 시도');
-    // ID 없는 경우 새 문서 생성
-    const newFooter = new Footer({
-      ...req.body,
-      updatedAt: new Date()
-    });
-    
-    const savedFooter = await newFooter.save();
-    console.log('Footer 정보 저장 성공 (새 문서):', savedFooter._id);
-    
-    res.json(savedFooter);
+    console.log('Footer 저장 성공:', footer);
+    res.json(footer);
   } catch (error) {
-    console.error('Footer 정보 업데이트 실패:', error);
-    res.status(500).json({ 
-      message: '서버 오류가 발생했습니다.', 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
-    });
+    console.error('Footer 정보 저장 오류:', error);
+    res.status(500).json({ message: 'Error saving footer information', error: error.message });
   }
 });
 

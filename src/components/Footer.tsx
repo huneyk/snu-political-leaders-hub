@@ -186,7 +186,7 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
         
         <div className="border-t border-gray-300 pt-4">
           <p className="text-center text-gray-500 text-sm">
-            © {footerConfig.copyrightYear || currentYear} 서울대학교 정치리더십과정. All rights reserved.
+            © {footerConfig.copyrightYear || currentYear} 서울대학교 정치외교학부 All rights reserved.
           </p>
         </div>
       </div>
