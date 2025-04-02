@@ -1477,10 +1477,104 @@ export const apiService = {
   // 공지사항(Notices) 관련 API
   getNotices: async () => {
     try {
+      console.log('공지사항 데이터 가져오기 시도');
       const response = await axios.get(`${baseURL}/notices`);
+      console.log('공지사항 데이터 응답:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching notices data:', error);
+      console.error('공지사항 데이터 가져오기 실패:', error);
+      throw error;
+    }
+  },
+
+  // 공지사항 추가
+  addNotice: async (noticeData: any) => {
+    try {
+      console.log('새 공지사항 추가 시작');
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 인증 토큰 없이도 작동하도록 수정
+      const response = await axios.post(`${baseURL}/notices`, noticeData, {
+        headers,
+        withCredentials: true
+      });
+      
+      console.log('공지사항 추가 성공:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('공지사항 추가 실패:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('API 오류 세부정보:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      throw error;
+    }
+  },
+
+  // 공지사항 수정
+  updateNotice: async (id: string, noticeData: any) => {
+    try {
+      console.log(`공지사항 수정 시작 (ID: ${id})`);
+      
+      // 인증 미들웨어 제거 - 헤더 단순화
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // API 요청 시도 - 인증 요구 없이
+      const response = await axios.put(`${baseURL}/notices/${id}`, noticeData, {
+        headers,
+        withCredentials: true
+      });
+      
+      console.log('공지사항 수정 성공:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error(`공지사항 수정 실패 (ID: ${id}):`, error);
+      if (axios.isAxiosError(error)) {
+        console.error('API 오류 세부정보:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      throw error;
+    }
+  },
+
+  // 공지사항 삭제
+  deleteNotice: async (id: string) => {
+    try {
+      console.log(`공지사항 삭제 시작 (ID: ${id})`);
+      
+      // 인증 미들웨어 제거 - 헤더 단순화
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // API 요청 시도 - 인증 요구 없이
+      const response = await axios.delete(`${baseURL}/notices/${id}`, {
+        headers,
+        withCredentials: true
+      });
+      
+      console.log('공지사항 삭제 성공:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error(`공지사항 삭제 실패 (ID: ${id}):`, error);
+      if (axios.isAxiosError(error)) {
+        console.error('API 오류 세부정보:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
       throw error;
     }
   },

@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { apiService } from '@/lib/apiService';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import axios from 'axios';
 
 // API 기본 URL 설정
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -152,14 +151,8 @@ const NoticesManage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // MongoDB에 공지사항 추가
-      const token = localStorage.getItem('adminToken') || 'admin-auth';
-      await axios.post(`${API_BASE_URL}/notices`, formData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // apiService 사용하여 공지사항 추가
+      await apiService.addNotice(formData);
       
       toast({
         title: "공지사항 추가 성공",
@@ -195,15 +188,9 @@ const NoticesManage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // MongoDB에 공지사항 수정
-      const token = localStorage.getItem('adminToken') || 'admin-auth';
+      // apiService 사용하여 공지사항 수정
       const noticeId = selectedNotice._id || selectedNotice.id;
-      await axios.put(`${API_BASE_URL}/notices/${noticeId}`, formData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      await apiService.updateNotice(noticeId, formData);
       
       toast({
         title: "공지사항 수정 성공",
@@ -229,13 +216,8 @@ const NoticesManage: React.FC = () => {
     if (window.confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
       setIsLoading(true);
       try {
-        // MongoDB에서 공지사항 삭제
-        const token = localStorage.getItem('adminToken') || 'admin-auth';
-        await axios.delete(`${API_BASE_URL}/notices/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        // apiService 사용하여 공지사항 삭제
+        await apiService.deleteNotice(id);
         
         toast({
           title: "공지사항 삭제 성공",

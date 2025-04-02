@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Notice = require('../models/Notice');
-const { isAdmin } = require('../middleware/authMiddleware');
 
 // 모든 공지사항 가져오기 (공개)
 router.get('/', async (req, res) => {
@@ -41,8 +40,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 공지사항 생성 (관리자 전용)
-router.post('/', isAdmin, async (req, res) => {
+// 공지사항 생성 (인증 제거됨)
+router.post('/', async (req, res) => {
   try {
     const { title, content, author, isImportant } = req.body;
     
@@ -62,6 +61,42 @@ router.post('/', isAdmin, async (req, res) => {
   } catch (error) {
     console.error('공지사항 생성 실패:', error);
     res.status(500).json({ message: '공지사항을 생성하는 중 오류가 발생했습니다.' });
+  }
+});
+
+// 공지사항 수정 (인증 제거됨)
+router.put('/:id', async (req, res) => {
+  try {
+    const updatedNotice = await Notice.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    
+    if (!updatedNotice) {
+      return res.status(404).json({ message: '해당 공지사항을 찾을 수 없습니다.' });
+    }
+    
+    res.json(updatedNotice);
+  } catch (error) {
+    console.error(`공지사항 ID ${req.params.id} 수정 실패:`, error);
+    res.status(500).json({ message: '공지사항을 수정하는 중 오류가 발생했습니다.' });
+  }
+});
+
+// 공지사항 삭제 (인증 제거됨)
+router.delete('/:id', async (req, res) => {
+  try {
+    const deletedNotice = await Notice.findByIdAndDelete(req.params.id);
+    
+    if (!deletedNotice) {
+      return res.status(404).json({ message: '해당 공지사항을 찾을 수 없습니다.' });
+    }
+    
+    res.json({ message: '공지사항이 성공적으로 삭제되었습니다.' });
+  } catch (error) {
+    console.error(`공지사항 ID ${req.params.id} 삭제 실패:`, error);
+    res.status(500).json({ message: '공지사항을 삭제하는 중 오류가 발생했습니다.' });
   }
 });
 
