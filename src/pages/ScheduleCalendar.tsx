@@ -44,40 +44,107 @@ const ScheduleCalendar: React.FC = () => {
   // MongoDB API를 통해 일정 데이터 가져오기
   const fetchSchedules = async () => {
     setIsLoading(true);
+    setError(null);
+    
     try {
-      // 모든 일정 데이터 가져오기 (학사 일정 + 특별활동)
-      const data = await apiService.getSchedules();
-      if (Array.isArray(data)) {
-        console.log("API에서 가져온 일정 데이터:", data); // 데이터 로깅 추가
-        setSchedules(data);
+      console.log('일정 데이터 가져오기 시작...');
+      
+      // MongoDB에서 데이터 가져오기 시도
+      console.log('MongoDB에서 데이터 가져오기 시도...');
+      const data = await apiService.getSchedulesAll();
+      
+      if (data && Array.isArray(data) && data.length > 0) {
+        console.log(`일정 데이터 로드 완료: ${data.length}개 일정`);
         
-        // 데이터 캐싱 (로컬 스토리지 저장)
-        localStorage.setItem('schedules-data', JSON.stringify(data));
+        // 유효한 데이터인지 확인
+        const isValidData = data.every(item => 
+          item && typeof item === 'object' && 
+          item._id && item.title && item.date && item.category
+        );
         
-        // 사용 가능한 학기 목록 추출
-        loadAvailableTerms(data);
-        setError(null);
-        
-        // 백업 데이터가 24시간 이상 지난 경우 경고
-        const now = new Date();
-        const saveTime = new Date(localStorage.getItem('schedules-data-saveTime') || '0');
-        const hoursDiff = (now.getTime() - saveTime.getTime()) / (1000 * 60 * 60);
-        if (hoursDiff > 24) {
-          toast({
-            title: "오래된 데이터",
-            description: `현재 표시되는 데이터는 ${Math.floor(hoursDiff)}시간 전의 데이터입니다.`,
-            variant: "default"
-          });
+        if (isValidData) {
+          console.log('데이터 유효성 검사 통과');
+          setSchedules(data);
+          
+          // 데이터 캐싱 (로컬 스토리지 저장)
+          try {
+            localStorage.setItem('schedules-data', JSON.stringify(data));
+            localStorage.setItem('schedules-data-saveTime', Date.now().toString());
+            console.log('일정 데이터 로컬스토리지에 백업 완료');
+          } catch (storageError) {
+            console.warn('로컬스토리지 백업 실패:', storageError);
+          }
+          
+          // 사용 가능한 학기 목록 추출
+          loadAvailableTerms(data);
+          setError(null);
+          
+          // 백업 데이터가 24시간 이상 지난 경우 경고
+          const now = new Date();
+          const saveTime = new Date(parseInt(localStorage.getItem('schedules-data-saveTime') || '0'));
+          const hoursDiff = (now.getTime() - saveTime.getTime()) / (1000 * 60 * 60);
+          if (hoursDiff > 24) {
+            toast({
+              title: "오래된 데이터",
+              description: `현재 표시되는 데이터는 ${Math.floor(hoursDiff)}시간 전의 데이터입니다.`,
+              variant: "default"
+            });
+          }
+          
+          return;
+        } else {
+          console.error('API에서 유효하지 않은 데이터 형식 반환:', data);
+          throw new Error('Invalid data format from API');
         }
       } else {
-        console.error('API 응답이 배열 형태가 아닙니다:', data);
-        // API 데이터가 올바르지 않은 경우 로컬 스토리지에서 가져오기
-        loadFromLocalStorage();
+        console.error('API 응답이 비어있거나 배열이 아닙니다');
+        throw new Error('Empty or invalid response from API');
       }
     } catch (err) {
       console.error('일정 데이터 로드 중 오류 발생:', err);
-      // API 오류 시 로컬 스토리지에서 가져오기
-      loadFromLocalStorage();
+      
+      // 에러 메시지 표시
+      toast({
+        title: "데이터 로드 오류",
+        description: "서버에서 일정 데이터를 가져오는 중 문제가 발생했습니다. 로컬 데이터를 사용합니다.",
+        variant: "destructive"
+      });
+      
+      // 로컬 스토리지에서 백업 데이터 복원 시도
+      try {
+        const savedData = localStorage.getItem('schedules-data');
+        const timestamp = localStorage.getItem('schedules-data-saveTime');
+        
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          console.log(`로컬 스토리지에서 일정 데이터 복원: ${parsedData.length}개`);
+          
+          if (timestamp) {
+            const saveTime = new Date(parseInt(timestamp));
+            console.log(`마지막 저장 시간: ${saveTime.toLocaleString()}`);
+            
+            // 백업 데이터가 24시간 이상 지난 경우 경고
+            const now = new Date();
+            const hoursDiff = (now.getTime() - saveTime.getTime()) / (1000 * 60 * 60);
+            if (hoursDiff > 24) {
+              toast({
+                title: "오래된 데이터",
+                description: `현재 표시되는 데이터는 ${Math.floor(hoursDiff)}시간 전의 데이터입니다.`,
+                variant: "default"
+              });
+            }
+          }
+          
+          setSchedules(parsedData);
+          loadAvailableTerms(parsedData);
+          setError(null);
+        } else {
+          setError('일정 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        }
+      } catch (storageErr) {
+        console.error('로컬 스토리지 데이터 복원 실패:', storageErr);
+        setError('일정 데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
+      }
     } finally {
       setIsLoading(false);
     }

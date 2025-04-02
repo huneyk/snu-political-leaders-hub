@@ -44,7 +44,7 @@ const ScheduleActivities: React.FC = () => {
   // MongoDB에서 특별활동 일정 데이터 가져오기
   useEffect(() => {
     fetchSchedules();
-  }, []);
+  }, []); // 컴포넌트 마운트 시에만 실행
   
   // 일정 데이터 가져오기 함수
   const fetchSchedules = async () => {
@@ -177,6 +177,27 @@ const ScheduleActivities: React.FC = () => {
     }
   };
   
+  // 새로고침 버튼 클릭 핸들러
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    try {
+      await fetchSchedules();
+      toast({
+        title: "데이터 새로고침 완료",
+        description: "특별활동 데이터가 최신으로 업데이트되었습니다.",
+      });
+    } catch (error) {
+      console.error('데이터 새로고침 실패:', error);
+      toast({
+        title: "새로고침 실패",
+        description: "데이터를 새로고침하는 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   // 선택된 기수의 활동만 필터링
   const termActivities = selectedTerm !== null 
     ? specialActivities.filter(activity => activity.term === selectedTerm)
@@ -279,7 +300,7 @@ const ScheduleActivities: React.FC = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={fetchSchedules}
+                onClick={handleRefresh}
                 disabled={isLoading}
                 className="flex items-center gap-2"
               >
