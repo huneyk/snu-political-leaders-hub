@@ -707,7 +707,7 @@ export const apiService = {
           console.warn('로컬스토리지 백업 실패:', storageError);
         }
         
-        return response.data;
+      return response.data;
       } else {
         console.error('❌ API 응답이 배열이 아닙니다:', response.data);
         throw new Error('API did not return an array of schedules');
@@ -824,7 +824,7 @@ export const apiService = {
           console.log('🔄 대체 URL로 다시 시도:', altUrl);
           
           const config = {
-            headers: {
+        headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json'
             },
@@ -848,7 +848,7 @@ export const apiService = {
               console.warn('로컬스토리지 백업 실패:', storageError);
             }
             
-            return response.data;
+      return response.data;
           } else {
             throw new Error('Alternative path API did not return an array');
           }
@@ -919,7 +919,7 @@ export const apiService = {
       
       // 헤더 설정
       const headers = {
-        'Content-Type': 'application/json',
+          'Content-Type': 'application/json',
         'Accept': 'application/json'
       };
       
@@ -1017,8 +1017,8 @@ export const apiService = {
           console.log('🔄 대체 URL로 다시 시도:', altUrl);
           
           const config = {
-            headers: {
-              'Content-Type': 'application/json',
+        headers: {
+          'Content-Type': 'application/json',
               'Accept': 'application/json'
             },
             withCredentials: false,
@@ -1037,7 +1037,7 @@ export const apiService = {
             console.warn('로컬스토리지 백업 실패:', storageError);
           }
           
-          return response.data;
+      return response.data;
         } catch (altError) {
           console.error('❌ 모든 API 경로 시도 실패');
           throw altError;
@@ -1126,7 +1126,7 @@ export const apiService = {
           console.log('🔄 대체 URL로 다시 시도:', altUrl);
           
           const config = {
-            headers: {
+        headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json'
             },
@@ -1151,7 +1151,7 @@ export const apiService = {
             console.warn('로컬스토리지 업데이트 실패:', storageError);
           }
           
-          return response.data;
+      return response.data;
         } catch (altError) {
           console.error('❌ 모든 API 경로 시도 실패');
           throw altError;
@@ -1259,7 +1259,7 @@ export const apiService = {
           console.warn('로컬스토리지 백업 실패:', storageError);
         }
         
-        return response.data;
+      return response.data;
       } else {
         console.error('❌ API 응답이 배열이 아닙니다:', response.data);
         throw new Error('API did not return an array of lecturers');
@@ -1412,7 +1412,7 @@ export const apiService = {
       throw error;
     }
   },
-
+  
   // 갤러리 항목 삭제
   deleteGalleryItem: async (id: string, token?: string) => {
     try {

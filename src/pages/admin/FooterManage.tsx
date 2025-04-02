@@ -320,62 +320,81 @@ const FooterManage: React.FC = () => {
     setIsSaving(true);
     
     try {
-      // 변경된 파일이 있는 경우 업로드 수행
       let updatedConfig = { ...footerConfig };
       
-      // Word 파일 업로드
+      // Process Word file
       if (wordFileInfo?.file) {
         try {
-          const result = await uploadFile(wordFileInfo.file, 'wordFile');
-          updatedConfig.wordFile = result.url;
-          updatedConfig.wordFileName = result.filename;
+          // Convert file to base64
+          const base64 = await fileToBase64(wordFileInfo.file);
+          
+          // Store the base64 data in the wordFile field
+          updatedConfig.wordFile = base64;
+          
+          // Store the original filename in a separate field
+          updatedConfig.wordFileName = wordFileInfo.file.name;
+          
+          console.log(`Word file encoded: ${wordFileInfo.file.name}`);
         } catch (error) {
-          console.error('Word 파일 업로드 실패:', error);
+          console.error('Word 파일 인코딩 실패:', error);
           toast({
-            title: "Word 파일 업로드 실패",
-            description: "해당 파일 업로드 중 오류가 발생했습니다.",
+            title: "Word 파일 처리 실패",
+            description: "파일 처리 중 오류가 발생했습니다.",
             variant: "destructive",
           });
         }
       }
       
-      // HWP 파일 업로드
+      // Process HWP file
       if (hwpFileInfo?.file) {
         try {
-          const result = await uploadFile(hwpFileInfo.file, 'hwpFile');
-          updatedConfig.hwpFile = result.url;
-          updatedConfig.hwpFileName = result.filename;
+          // Convert file to base64
+          const base64 = await fileToBase64(hwpFileInfo.file);
+          
+          // Store the base64 data in the hwpFile field
+          updatedConfig.hwpFile = base64;
+          
+          // Store the original filename in a separate field
+          updatedConfig.hwpFileName = hwpFileInfo.file.name;
+          
+          console.log(`HWP file encoded: ${hwpFileInfo.file.name}`);
         } catch (error) {
-          console.error('HWP 파일 업로드 실패:', error);
+          console.error('HWP 파일 인코딩 실패:', error);
           toast({
-            title: "HWP 파일 업로드 실패",
-            description: "해당 파일 업로드 중 오류가 발생했습니다.",
+            title: "HWP 파일 처리 실패",
+            description: "파일 처리 중 오류가 발생했습니다.",
             variant: "destructive",
           });
         }
       }
       
-      // PDF 파일 업로드
+      // Process PDF file
       if (pdfFileInfo?.file) {
         try {
-          const result = await uploadFile(pdfFileInfo.file, 'pdfFile');
-          updatedConfig.pdfFile = result.url;
-          updatedConfig.pdfFileName = result.filename;
+          // Convert file to base64
+          const base64 = await fileToBase64(pdfFileInfo.file);
+          
+          // Store the base64 data in the pdfFile field
+          updatedConfig.pdfFile = base64;
+          
+          // Store the original filename in a separate field
+          updatedConfig.pdfFileName = pdfFileInfo.file.name;
+          
+          console.log(`PDF file encoded: ${pdfFileInfo.file.name}`);
         } catch (error) {
-          console.error('PDF 파일 업로드 실패:', error);
+          console.error('PDF 파일 인코딩 실패:', error);
           toast({
-            title: "PDF 파일 업로드 실패",
-            description: "해당 파일 업로드 중 오류가 발생했습니다.",
+            title: "PDF 파일 처리 실패",
+            description: "파일 처리 중 오류가 발생했습니다.",
             variant: "destructive",
           });
         }
       }
       
-      // Footer 설정 저장
+      // Save to MongoDB using the existing API that works
       let response;
       let success = false;
       
-      // 항상 admin-auth 토큰으로 인증하여 API 호출
       try {
         response = await axios.post(`${API_BASE_URL}/footer`, updatedConfig, {
           headers: {
@@ -430,29 +449,35 @@ const FooterManage: React.FC = () => {
       }
       
       if (success && response.data) {
-        // 응답 데이터로 상태 업데이트
+        // Update the state with the returned data
         setFooterConfig(response.data);
         
-        // 파일 정보 업데이트 (파일 객체 제거)
-        if (wordFileInfo) {
+        // Update file info objects with original filenames
+        if (wordFileInfo && updatedConfig.wordFileName) {
           setWordFileInfo({
             ...wordFileInfo,
+            name: updatedConfig.wordFileName,
+            originalName: updatedConfig.wordFileName,
             file: undefined,
             url: response.data.wordFile
           });
         }
         
-        if (hwpFileInfo) {
+        if (hwpFileInfo && updatedConfig.hwpFileName) {
           setHwpFileInfo({
             ...hwpFileInfo,
+            name: updatedConfig.hwpFileName,
+            originalName: updatedConfig.hwpFileName,
             file: undefined,
             url: response.data.hwpFile
           });
         }
         
-        if (pdfFileInfo) {
+        if (pdfFileInfo && updatedConfig.pdfFileName) {
           setPdfFileInfo({
             ...pdfFileInfo,
+            name: updatedConfig.pdfFileName,
+            originalName: updatedConfig.pdfFileName,
             file: undefined,
             url: response.data.pdfFile
           });
@@ -519,6 +544,54 @@ const FooterManage: React.FC = () => {
     }
   };
 
+  const handleDownloadBase64 = (base64Data: string, fileName: string) => {
+    if (!base64Data) {
+      toast({
+        title: "다운로드 실패",
+        description: "파일이 존재하지 않습니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // Create a blob from the base64 data
+      const byteString = atob(base64Data.split(',')[1]);
+      const mimeType = base64Data.split(',')[0].split(':')[1].split(';')[0];
+      
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      
+      const blob = new Blob([ab], { type: mimeType });
+      
+      // Create a download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "다운로드 시작",
+        description: `${fileName} 파일이 다운로드됩니다.`
+      });
+    } catch (error) {
+      console.error('파일 다운로드 오류:', error);
+      toast({
+        title: "다운로드 실패",
+        description: "파일 다운로드 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const lastUpdated = footerConfig.updatedAt 
     ? new Date(footerConfig.updatedAt).toLocaleDateString('ko-KR', {
         year: 'numeric',
@@ -561,23 +634,22 @@ const FooterManage: React.FC = () => {
                             </span>
                             <div>
                               <p className="text-sm font-medium">
-                                {footerConfig.wordFileName || wordFileInfo.originalName || wordFileInfo.name}
+                                {footerConfig.wordFileName || wordFileInfo.originalName || wordFileInfo.name || "입학지원서.docx"}
                               </p>
                               {wordFileInfo.size > 0 && (
                                 <p className="text-xs text-gray-500">{formatFileSize(wordFileInfo.size)}</p>
                               )}
                             </div>
                           </div>
-                          {wordFileInfo.url && (
-                            <a 
-                              href={wordFileInfo.url} 
-                              download={footerConfig.wordFileName || wordFileInfo.originalName || wordFileInfo.name}
-                              className="text-xs text-blue-600 hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              다운로드
-                            </a>
-                          )}
+                          <button 
+                            className="text-xs text-blue-600 hover:underline"
+                            onClick={() => handleDownloadBase64(
+                              footerConfig.wordFile, 
+                              footerConfig.wordFileName || "입학지원서.docx"
+                            )}
+                          >
+                            다운로드
+                          </button>
                         </div>
                       ) : (
                         <span className="text-gray-500 text-sm">파일을 선택해주세요</span>
@@ -616,23 +688,22 @@ const FooterManage: React.FC = () => {
                             </span>
                             <div>
                               <p className="text-sm font-medium">
-                                {footerConfig.hwpFileName || hwpFileInfo.originalName || hwpFileInfo.name}
+                                {footerConfig.hwpFileName || hwpFileInfo.originalName || hwpFileInfo.name || "입학지원서.hwp"}
                               </p>
                               {hwpFileInfo.size > 0 && (
                                 <p className="text-xs text-gray-500">{formatFileSize(hwpFileInfo.size)}</p>
                               )}
                             </div>
                           </div>
-                          {hwpFileInfo.url && (
-                            <a 
-                              href={hwpFileInfo.url} 
-                              download={footerConfig.hwpFileName || hwpFileInfo.originalName || hwpFileInfo.name}
-                              className="text-xs text-red-600 hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              다운로드
-                            </a>
-                          )}
+                          <button 
+                            className="text-xs text-red-600 hover:underline"
+                            onClick={() => handleDownloadBase64(
+                              footerConfig.hwpFile, 
+                              footerConfig.hwpFileName || "입학지원서.hwp"
+                            )}
+                          >
+                            다운로드
+                          </button>
                         </div>
                       ) : (
                         <span className="text-gray-500 text-sm">파일을 선택해주세요</span>
@@ -671,23 +742,22 @@ const FooterManage: React.FC = () => {
                             </span>
                             <div>
                               <p className="text-sm font-medium">
-                                {footerConfig.pdfFileName || pdfFileInfo.originalName || pdfFileInfo.name}
+                                {footerConfig.pdfFileName || pdfFileInfo.originalName || pdfFileInfo.name || "과정안내서.pdf"}
                               </p>
                               {pdfFileInfo.size > 0 && (
                                 <p className="text-xs text-gray-500">{formatFileSize(pdfFileInfo.size)}</p>
                               )}
                             </div>
                           </div>
-                          {pdfFileInfo.url && (
-                            <a 
-                              href={pdfFileInfo.url} 
-                              download={footerConfig.pdfFileName || pdfFileInfo.originalName || pdfFileInfo.name}
-                              className="text-xs text-red-700 hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              다운로드
-                            </a>
-                          )}
+                          <button 
+                            className="text-xs text-red-700 hover:underline"
+                            onClick={() => handleDownloadBase64(
+                              footerConfig.pdfFile, 
+                              footerConfig.pdfFileName || "과정안내서.pdf"
+                            )}
+                          >
+                            다운로드
+                          </button>
                         </div>
                       ) : (
                         <span className="text-gray-500 text-sm">파일을 선택해주세요</span>
