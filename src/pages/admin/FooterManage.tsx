@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,14 @@ interface FooterConfig {
   updatedAt?: string;
 }
 
+interface FileInfo {
+  name: string;
+  size: number;
+  type: string;
+  file?: File;
+  url?: string;
+}
+
 const FooterManage: React.FC = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -39,10 +47,15 @@ const FooterManage: React.FC = () => {
     email: ''
   });
 
-  // File references for display
-  const [wordFileName, setWordFileName] = useState<string>('');
-  const [hwpFileName, setHwpFileName] = useState<string>('');
-  const [pdfFileName, setPdfFileName] = useState<string>('');
+  // File upload references
+  const wordFileRef = useRef<HTMLInputElement>(null);
+  const hwpFileRef = useRef<HTMLInputElement>(null);
+  const pdfFileRef = useRef<HTMLInputElement>(null);
+
+  // File information
+  const [wordFileInfo, setWordFileInfo] = useState<FileInfo | null>(null);
+  const [hwpFileInfo, setHwpFileInfo] = useState<FileInfo | null>(null);
+  const [pdfFileInfo, setPdfFileInfo] = useState<FileInfo | null>(null);
 
   // Admin 인증 체크
   useEffect(() => {
@@ -96,20 +109,35 @@ const FooterManage: React.FC = () => {
           updatedAt: data.updatedAt
         });
         
-        // Set file names for display
+        // 파일 정보 설정
         if (data.wordFile) {
-          const wordName = data.wordFile.split('/').pop() || '입학지원서.docx';
-          setWordFileName(wordName);
+          const fileName = data.wordFile.split('/').pop() || '입학지원서.docx';
+          setWordFileInfo({
+            name: fileName,
+            size: 0,
+            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            url: data.wordFile
+          });
         }
         
         if (data.hwpFile) {
-          const hwpName = data.hwpFile.split('/').pop() || '입학지원서.hwp';
-          setHwpFileName(hwpName);
+          const fileName = data.hwpFile.split('/').pop() || '입학지원서.hwp';
+          setHwpFileInfo({
+            name: fileName,
+            size: 0,
+            type: 'application/x-hwp',
+            url: data.hwpFile
+          });
         }
         
         if (data.pdfFile) {
-          const pdfName = data.pdfFile.split('/').pop() || '과정안내서.pdf';
-          setPdfFileName(pdfName);
+          const fileName = data.pdfFile.split('/').pop() || '과정안내서.pdf';
+          setPdfFileInfo({
+            name: fileName,
+            size: 0,
+            type: 'application/pdf',
+            url: data.pdfFile
+          });
         }
         
         // 백업 저장
@@ -136,20 +164,35 @@ const FooterManage: React.FC = () => {
           const parsedConfig = JSON.parse(savedConfig);
           setFooterConfig(parsedConfig);
           
-          // Set file names for display
+          // 파일 정보 설정
           if (parsedConfig.wordFile) {
-            const wordName = parsedConfig.wordFile.split('/').pop() || '입학지원서.docx';
-            setWordFileName(wordName);
+            const fileName = parsedConfig.wordFile.split('/').pop() || '입학지원서.docx';
+            setWordFileInfo({
+              name: fileName,
+              size: 0,
+              type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              url: parsedConfig.wordFile
+            });
           }
           
           if (parsedConfig.hwpFile) {
-            const hwpName = parsedConfig.hwpFile.split('/').pop() || '입학지원서.hwp';
-            setHwpFileName(hwpName);
+            const fileName = parsedConfig.hwpFile.split('/').pop() || '입학지원서.hwp';
+            setHwpFileInfo({
+              name: fileName,
+              size: 0,
+              type: 'application/x-hwp',
+              url: parsedConfig.hwpFile
+            });
           }
           
           if (parsedConfig.pdfFile) {
-            const pdfName = parsedConfig.pdfFile.split('/').pop() || '과정안내서.pdf';
-            setPdfFileName(pdfName);
+            const fileName = parsedConfig.pdfFile.split('/').pop() || '과정안내서.pdf';
+            setPdfFileInfo({
+              name: fileName,
+              size: 0,
+              type: 'application/pdf',
+              url: parsedConfig.pdfFile
+            });
           }
           
           toast({
@@ -165,68 +208,144 @@ const FooterManage: React.FC = () => {
     }
   };
 
-  const handleFileUpload = (fileType: 'wordFile' | 'hwpFile' | 'pdfFile', event: React.ChangeEvent<HTMLInputElement>) => {
-    // 실제 파일 업로드 로직 구현 필요
-    // 예시에서는 File URL을 직접 입력받는 방식으로 구현
+  const handleFileUpload = async (fileType: 'wordFile' | 'hwpFile' | 'pdfFile', event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     
     // 선택된 파일의 첫 번째 파일 사용
     const file = files[0];
     
-    // 파일명 저장
+    // 파일 정보 저장
+    const fileInfo: FileInfo = {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      file: file
+    };
+    
+    // 파일 크기 제한 (10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast({
+        title: "파일 크기 제한 초과",
+        description: "10MB 이하의 파일만 업로드 가능합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     switch (fileType) {
       case 'wordFile':
-        setWordFileName(file.name);
+        setWordFileInfo(fileInfo);
         break;
       case 'hwpFile':
-        setHwpFileName(file.name);
+        setHwpFileInfo(fileInfo);
         break;
       case 'pdfFile':
-        setPdfFileName(file.name);
+        setPdfFileInfo(fileInfo);
         break;
     }
-
-    // 실제 구현에서는 파일을 서버에 업로드하고 URL을 받아야 함
-    // 지금은 임시로 파일 이름만 표시하고 실제 URL은 설정하지 않음
-    // setFooterConfig(prev => ({ ...prev, [fileType]: fileUrl }));
+    
+    // 파일 업로드 처리는 저장 버튼 클릭 시 수행
+    toast({
+      title: "파일 선택 완료",
+      description: `${file.name} 파일이 선택되었습니다. 저장 버튼을 클릭하여 업로드하세요.`,
+    });
   };
 
-  const handleUrlChange = (fileType: 'wordFile' | 'hwpFile' | 'pdfFile', e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    setFooterConfig(prev => ({ ...prev, [fileType]: url }));
-    
-    // 파일명 설정
-    const fileName = url.split('/').pop() || '';
-    switch (fileType) {
-      case 'wordFile':
-        setWordFileName(fileName || '입학지원서.docx');
-        break;
-      case 'hwpFile':
-        setHwpFileName(fileName || '입학지원서.hwp');
-        break;
-      case 'pdfFile':
-        setPdfFileName(fileName || '과정안내서.pdf');
-        break;
-    }
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFooterConfig(prev => ({ ...prev, email: e.target.value }));
   };
 
+  const uploadFile = async (file: File): Promise<string> => {
+    // 파일 업로드를 위한 FormData 생성
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      // 파일 업로드 API 호출
+      const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer admin-auth'
+        }
+      });
+      
+      // 업로드된 파일 URL 반환
+      return response.data.fileUrl;
+    } catch (error) {
+      console.error('파일 업로드 실패:', error);
+      throw error;
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     
     try {
-      console.log('Footer 정보 저장 시작', footerConfig);
+      // 변경된 파일이 있는 경우 업로드 수행
+      let updatedConfig = { ...footerConfig };
       
+      // Word 파일 업로드
+      if (wordFileInfo?.file) {
+        try {
+          const wordFileUrl = await uploadFile(wordFileInfo.file);
+          updatedConfig.wordFile = wordFileUrl;
+        } catch (error) {
+          console.error('Word 파일 업로드 실패:', error);
+          toast({
+            title: "Word 파일 업로드 실패",
+            description: "해당 파일 업로드 중 오류가 발생했습니다.",
+            variant: "destructive",
+          });
+        }
+      }
+      
+      // HWP 파일 업로드
+      if (hwpFileInfo?.file) {
+        try {
+          const hwpFileUrl = await uploadFile(hwpFileInfo.file);
+          updatedConfig.hwpFile = hwpFileUrl;
+        } catch (error) {
+          console.error('HWP 파일 업로드 실패:', error);
+          toast({
+            title: "HWP 파일 업로드 실패",
+            description: "해당 파일 업로드 중 오류가 발생했습니다.",
+            variant: "destructive",
+          });
+        }
+      }
+      
+      // PDF 파일 업로드
+      if (pdfFileInfo?.file) {
+        try {
+          const pdfFileUrl = await uploadFile(pdfFileInfo.file);
+          updatedConfig.pdfFile = pdfFileUrl;
+        } catch (error) {
+          console.error('PDF 파일 업로드 실패:', error);
+          toast({
+            title: "PDF 파일 업로드 실패",
+            description: "해당 파일 업로드 중 오류가 발생했습니다.",
+            variant: "destructive",
+          });
+        }
+      }
+      
+      // Footer 설정 저장
       let response;
       let success = false;
       
       // 항상 admin-auth 토큰으로 인증하여 API 호출
       try {
-        response = await axios.post(`${API_BASE_URL}/footer`, footerConfig, {
+        response = await axios.post(`${API_BASE_URL}/footer`, updatedConfig, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer admin-auth'
@@ -243,7 +362,7 @@ const FooterManage: React.FC = () => {
             ? 'https://snu-plp-hub-server.onrender.com/api'
             : 'http://localhost:5001/api';
             
-          response = await axios.post(`${altBaseUrl}/footer`, footerConfig, {
+          response = await axios.post(`${altBaseUrl}/footer`, updatedConfig, {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer admin-auth'
@@ -256,7 +375,7 @@ const FooterManage: React.FC = () => {
           
           // 모든 시도 실패 시, 로컬 저장만 수행하고 성공으로 처리
           // 로컬 저장소에 저장
-          localStorage.setItem('footer-config', JSON.stringify(footerConfig));
+          localStorage.setItem('footer-config', JSON.stringify(updatedConfig));
           localStorage.setItem('footer-config-timestamp', new Date().toISOString());
           
           // Toast 알림 (로컬 저장만 성공)
@@ -271,7 +390,7 @@ const FooterManage: React.FC = () => {
           // 의사 응답 데이터 생성
           response = { 
             data: {
-              ...footerConfig,
+              ...updatedConfig,
               updatedAt: new Date().toISOString()
             } 
           };
@@ -282,13 +401,38 @@ const FooterManage: React.FC = () => {
         // 응답 데이터로 상태 업데이트
         setFooterConfig(response.data);
         
+        // 파일 정보 업데이트 (파일 객체 제거)
+        if (wordFileInfo) {
+          setWordFileInfo({
+            ...wordFileInfo,
+            file: undefined,
+            url: response.data.wordFile
+          });
+        }
+        
+        if (hwpFileInfo) {
+          setHwpFileInfo({
+            ...hwpFileInfo,
+            file: undefined,
+            url: response.data.hwpFile
+          });
+        }
+        
+        if (pdfFileInfo) {
+          setPdfFileInfo({
+            ...pdfFileInfo,
+            file: undefined,
+            url: response.data.pdfFile
+          });
+        }
+        
         // localStorage에도 백업으로 저장
         localStorage.setItem('footer-config', JSON.stringify(response.data));
         localStorage.setItem('footer-config-timestamp', new Date().toISOString());
         
         toast({
           title: "설정 저장 성공",
-          description: "Footer 설정이 성공적으로 저장되었습니다.",
+          description: "Footer 설정 및 파일이 성공적으로 저장되었습니다.",
         });
       } else {
         throw new Error('저장에 실패했습니다.');
@@ -339,88 +483,169 @@ const FooterManage: React.FC = () => {
             
             <TabsContent value="files" className="space-y-4">
               <div className="space-y-4">
+                {/* Word 파일 업로드 */}
                 <div>
-                  <Label htmlFor="wordFile" className="text-base font-medium">입학지원서 (Word) 링크</Label>
+                  <Label htmlFor="wordFile" className="text-base font-medium">입학지원서 (Word)</Label>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <Input
-                      id="wordFile"
-                      value={footerConfig.wordFile}
-                      onChange={(e) => handleUrlChange('wordFile', e)}
-                      className="flex-1"
-                      disabled={isLoading}
+                    <div className="flex-1 border rounded p-2 bg-gray-50">
+                      {wordFileInfo ? (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <span className="text-blue-600 mr-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                            </span>
+                            <div>
+                              <p className="text-sm font-medium">{wordFileInfo.name}</p>
+                              {wordFileInfo.size > 0 && (
+                                <p className="text-xs text-gray-500">{formatFileSize(wordFileInfo.size)}</p>
+                              )}
+                            </div>
+                          </div>
+                          {wordFileInfo.url && (
+                            <a 
+                              href={wordFileInfo.url} 
+                              download 
+                              className="text-xs text-blue-600 hover:underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              다운로드
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 text-sm">파일을 선택해주세요</span>
+                      )}
+                    </div>
+                    <input 
+                      type="file" 
+                      id="wordFileUpload" 
+                      ref={wordFileRef}
+                      className="hidden" 
+                      accept=".docx, .doc"
+                      onChange={(e) => handleFileUpload('wordFile', e)}
                     />
-                    {/* <div className="relative">
-                      <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById('wordFileUpload')?.click()}>
-                        파일 업로드
-                      </Button>
-                      <input 
-                        type="file" 
-                        id="wordFileUpload" 
-                        className="hidden" 
-                        accept=".docx, .doc"
-                        onChange={(e) => handleFileUpload('wordFile', e)}
-                      />
-                    </div> */}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      type="button" 
+                      onClick={() => wordFileRef.current?.click()}
+                      disabled={isLoading}
+                    >
+                      파일 선택
+                    </Button>
                   </div>
-                  {wordFileName && (
-                    <p className="text-sm text-gray-500 mt-1">현재 파일: {wordFileName}</p>
-                  )}
                 </div>
                 
+                {/* HWP 파일 업로드 */}
                 <div>
-                  <Label htmlFor="hwpFile" className="text-base font-medium">입학지원서 (HWP) 링크</Label>
+                  <Label htmlFor="hwpFile" className="text-base font-medium">입학지원서 (HWP)</Label>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <Input
-                      id="hwpFile"
-                      value={footerConfig.hwpFile}
-                      onChange={(e) => handleUrlChange('hwpFile', e)}
-                      className="flex-1"
-                      disabled={isLoading}
+                    <div className="flex-1 border rounded p-2 bg-gray-50">
+                      {hwpFileInfo ? (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <span className="text-red-600 mr-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                            </span>
+                            <div>
+                              <p className="text-sm font-medium">{hwpFileInfo.name}</p>
+                              {hwpFileInfo.size > 0 && (
+                                <p className="text-xs text-gray-500">{formatFileSize(hwpFileInfo.size)}</p>
+                              )}
+                            </div>
+                          </div>
+                          {hwpFileInfo.url && (
+                            <a 
+                              href={hwpFileInfo.url} 
+                              download 
+                              className="text-xs text-red-600 hover:underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              다운로드
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 text-sm">파일을 선택해주세요</span>
+                      )}
+                    </div>
+                    <input 
+                      type="file" 
+                      id="hwpFileUpload" 
+                      ref={hwpFileRef}
+                      className="hidden" 
+                      accept=".hwp"
+                      onChange={(e) => handleFileUpload('hwpFile', e)}
                     />
-                    {/* <div className="relative">
-                      <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById('hwpFileUpload')?.click()}>
-                        파일 업로드
-                      </Button>
-                      <input 
-                        type="file" 
-                        id="hwpFileUpload" 
-                        className="hidden" 
-                        accept=".hwp"
-                        onChange={(e) => handleFileUpload('hwpFile', e)}
-                      />
-                    </div> */}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      type="button" 
+                      onClick={() => hwpFileRef.current?.click()}
+                      disabled={isLoading}
+                    >
+                      파일 선택
+                    </Button>
                   </div>
-                  {hwpFileName && (
-                    <p className="text-sm text-gray-500 mt-1">현재 파일: {hwpFileName}</p>
-                  )}
                 </div>
                 
+                {/* PDF 파일 업로드 */}
                 <div>
-                  <Label htmlFor="pdfFile" className="text-base font-medium">과정안내서 (PDF) 링크</Label>
+                  <Label htmlFor="pdfFile" className="text-base font-medium">과정안내서 (PDF)</Label>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <Input
-                      id="pdfFile"
-                      value={footerConfig.pdfFile}
-                      onChange={(e) => handleUrlChange('pdfFile', e)}
-                      className="flex-1"
-                      disabled={isLoading}
+                    <div className="flex-1 border rounded p-2 bg-gray-50">
+                      {pdfFileInfo ? (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <span className="text-red-700 mr-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                            </span>
+                            <div>
+                              <p className="text-sm font-medium">{pdfFileInfo.name}</p>
+                              {pdfFileInfo.size > 0 && (
+                                <p className="text-xs text-gray-500">{formatFileSize(pdfFileInfo.size)}</p>
+                              )}
+                            </div>
+                          </div>
+                          {pdfFileInfo.url && (
+                            <a 
+                              href={pdfFileInfo.url} 
+                              download 
+                              className="text-xs text-red-700 hover:underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              다운로드
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 text-sm">파일을 선택해주세요</span>
+                      )}
+                    </div>
+                    <input 
+                      type="file" 
+                      id="pdfFileUpload" 
+                      ref={pdfFileRef}
+                      className="hidden" 
+                      accept=".pdf"
+                      onChange={(e) => handleFileUpload('pdfFile', e)}
                     />
-                    {/* <div className="relative">
-                      <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById('pdfFileUpload')?.click()}>
-                        파일 업로드
-                      </Button>
-                      <input 
-                        type="file" 
-                        id="pdfFileUpload" 
-                        className="hidden" 
-                        accept=".pdf"
-                        onChange={(e) => handleFileUpload('pdfFile', e)}
-                      />
-                    </div> */}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      type="button" 
+                      onClick={() => pdfFileRef.current?.click()}
+                      disabled={isLoading}
+                    >
+                      파일 선택
+                    </Button>
                   </div>
-                  {pdfFileName && (
-                    <p className="text-sm text-gray-500 mt-1">현재 파일: {pdfFileName}</p>
-                  )}
                 </div>
               </div>
             </TabsContent>

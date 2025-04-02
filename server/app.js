@@ -30,6 +30,11 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' })); // 이미지 Base64 처리를 위해 용량 제한 증가
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// 업로드 파일 경로 설정
+const uploadDir = path.join(__dirname, 'uploads');
+// 업로드 디렉토리에 직접 접근할 수 있도록 정적 파일 미들웨어 설정
+app.use('/uploads', express.static(uploadDir));
+
 // 라우트 불러오기
 const usersRoutes = require('./routes/usersRoutes');
 const contentRoutes = require('./routes/contentRoutes');
@@ -45,6 +50,7 @@ const professorsRoutes = require('./routes/professorsRoutes');
 const lecturersRoutes = require('./routes/lecturersRoutes');
 const schedulesRoutes = require('./routes/schedulesRoutes');
 const greetingRoutes = require('./routes/greetingRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 // API 라우트 설정
 app.use('/api/users', usersRoutes);
@@ -61,6 +67,7 @@ app.use('/api/professors', professorsRoutes);
 app.use('/api/lecturers', lecturersRoutes);
 app.use('/api/schedules', schedulesRoutes);
 app.use('/api/greeting', greetingRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // API 상태 확인 엔드포인트
 app.get('/api/status', (req, res) => {

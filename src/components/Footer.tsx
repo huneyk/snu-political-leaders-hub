@@ -1,169 +1,193 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { FileDown, Mail } from 'lucide-react';
-import logo from '/logo.png'; // Using the logo.png file from the public directory
-import { apiService } from '@/lib/apiService';
+import React, { useEffect, useState } from 'react';
+import { Button } from './ui/button';
+import { MdFileDownload, MdEmail } from 'react-icons/md';
+import { toast } from '@/hooks/use-toast';
+import axios from 'axios';
+
+interface FooterProps {
+  className?: string;
+}
 
 interface FooterConfig {
   wordFile: string;
   hwpFile: string;
   pdfFile: string;
   email: string;
+  companyName?: string;
+  address?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  copyrightYear?: string;
 }
 
-const Footer = () => {
+const Footer: React.FC<FooterProps> = ({ className }) => {
   const [footerConfig, setFooterConfig] = useState<FooterConfig>({
     wordFile: '',
     hwpFile: '',
     pdfFile: '',
-    email: ''
+    email: 'plp@snu.ac.kr'
   });
-  const [isLoading, setIsLoading] = useState(true);
+  
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // MongoDB에서 footer 설정 로드
     const loadFooterConfig = async () => {
+      setLoading(true);
       try {
-        setIsLoading(true);
-        const data = await apiService.getFooter();
+        // API 엔드포인트 설정
+        const API_BASE_URL = import.meta.env.MODE === 'production' 
+          ? 'https://snu-plp-hub-server.onrender.com/api' 
+          : 'http://localhost:5001/api';
+          
+        const response = await axios.get(`${API_BASE_URL}/footer`);
         
-        if (data) {
-          setFooterConfig({
-            wordFile: data.wordFile || '',
-            hwpFile: data.hwpFile || '',
-            pdfFile: data.pdfFile || '',
-            email: data.email || ''
-          });
+        if (response.data) {
+          setFooterConfig(response.data);
+          // 로컬 스토리지에 백업 (오프라인 지원)
+          localStorage.setItem('footer-config', JSON.stringify(response.data));
+          localStorage.setItem('footer-config-timestamp', new Date().toISOString());
         }
       } catch (error) {
-        console.error('Failed to load footer config:', error);
+        console.error('Footer 정보 로드 실패:', error);
         
-        // 에러가 발생하면 localStorage에서 로드 시도 (fallback)
+        // 로컬 저장소에서 로드 시도
         const savedConfig = localStorage.getItem('footer-config');
         if (savedConfig) {
           try {
-            const parsedConfig = JSON.parse(savedConfig);
-            setFooterConfig(parsedConfig);
-          } catch (error) {
-            console.error('Failed to parse footer config from localStorage:', error);
+            setFooterConfig(JSON.parse(savedConfig));
+          } catch (e) {
+            console.error('저장된 Footer 설정 파싱 오류:', e);
           }
         }
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-    
+
     loadFooterConfig();
   }, []);
 
-  const handleDownload = (fileType: 'wordFile' | 'hwpFile' | 'pdfFile') => {
-    const fileUrl = footerConfig[fileType];
-    if (!fileUrl) return;
-
-    // Create a temporary link element
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    
-    // Set the download filename based on file type
-    switch (fileType) {
-      case 'wordFile':
-        link.download = '입학지원서.docx';
-        break;
-      case 'hwpFile':
-        link.download = '입학지원서.hwp';
-        break;
-      case 'pdfFile':
-        link.download = '과정안내서.pdf';
-        break;
+  const handleDownload = (url: string, fileName: string) => {
+    if (!url) {
+      toast({
+        title: "다운로드 실패",
+        description: "파일이 존재하지 않습니다.",
+        variant: "destructive"
+      });
+      return;
     }
     
-    // Append to body, click, and remove
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // 다운로드 시작
+    try {
+      // 파일 이름 추출 (URL의 마지막 부분)
+      const extractedFileName = url.split('/').pop() || fileName;
+      
+      // 링크 생성
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', extractedFileName);
+      link.setAttribute('target', '_blank');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('파일 다운로드 오류:', error);
+      toast({
+        title: "다운로드 실패",
+        description: "파일 다운로드 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleEmailClick = () => {
+  const handleEmailCopy = () => {
     if (footerConfig.email) {
-      window.location.href = `mailto:${footerConfig.email}?subject=서울대학교 정치지도자과정 지원서 접수`;
+      navigator.clipboard.writeText(footerConfig.email)
+        .then(() => {
+          toast({
+            title: "이메일 주소 복사됨",
+            description: `${footerConfig.email}가 클립보드에 복사되었습니다.`
+          });
+        })
+        .catch((err) => {
+          console.error('클립보드 복사 실패:', err);
+          toast({
+            title: "복사 실패",
+            description: "이메일 주소를 복사하는데 실패했습니다.",
+            variant: "destructive"
+          });
+        });
     }
   };
 
+  const currentYear = new Date().getFullYear();
+  
   return (
-    <footer className="bg-gray-100 py-8 mt-auto">
+    <footer className={`bg-gray-100 py-8 ${className}`}>
       <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-          <div className="mb-4 md:mb-0 flex items-center gap-3">
-            <img
-              src={logo}
-              alt="서울대학교 정치지도자 과정 로고"
-              className="h-10 w-auto object-contain"
-            />
-            <div>
-              <h4 className="text-sm text-mainBlue" style={{ wordBreak: 'keep-all' }}>서울대학교 정치지도자과정</h4>
-              <p className="text-gray-600 text-xs" style={{ wordBreak: 'keep-all' }}>Political Leaders Program</p>
-            </div>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+          <div className="text-center md:text-left mb-4 md:mb-0">
+            <h2 className="text-xl font-bold text-gray-800 mb-2">서울대학교 정치지도자과정<br>SNU Political Leaders Program</h2>
+            <p className="text-gray-600">서울시 관악구 관악로 1 서울대학교 사회과학대학</p>
           </div>
           
-          <div className="flex flex-wrap gap-2 justify-center">
-            <Button 
-              variant="default" 
-              size="sm"
-              onClick={() => handleDownload('wordFile')}
-              disabled={!footerConfig.wordFile || isLoading}
-              className="flex items-center gap-1 bg-[#666666] hover:bg-[#555555] text-white"
-            >
-              <FileDown size={16} />
-              <span style={{ wordBreak: 'keep-all' }}>입학지원서 (Word) 다운로드</span>
-            </Button>
+          <div className="flex flex-col md:flex-row gap-2 md:gap-4">
+            {/* 입학지원서 다운로드 (Word) */}
+            {footerConfig.wordFile && (
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => handleDownload(footerConfig.wordFile, '입학지원서.docx')}
+                disabled={loading}
+              >
+                <MdFileDownload className="text-blue-600" />
+                <span>입학지원서 (Word)</span>
+              </Button>
+            )}
             
-            <Button 
-              variant="default" 
-              size="sm"
-              onClick={() => handleDownload('hwpFile')}
-              disabled={!footerConfig.hwpFile || isLoading}
-              className="flex items-center gap-1 bg-[#666666] hover:bg-[#555555] text-white"
-            >
-              <FileDown size={16} />
-              <span style={{ wordBreak: 'keep-all' }}>입학지원서 (HWP) 다운로드</span>
-            </Button>
+            {/* 입학지원서 다운로드 (HWP) */}
+            {footerConfig.hwpFile && (
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => handleDownload(footerConfig.hwpFile, '입학지원서.hwp')}
+                disabled={loading}
+              >
+                <MdFileDownload className="text-red-600" />
+                <span>입학지원서 (HWP)</span>
+              </Button>
+            )}
             
-            <Button 
-              variant="default" 
-              size="sm"
-              onClick={() => handleDownload('pdfFile')}
-              disabled={!footerConfig.pdfFile || isLoading}
-              className="flex items-center gap-1 bg-[#666666] hover:bg-[#555555] text-white"
-            >
-              <FileDown size={16} />
-              <span style={{ wordBreak: 'keep-all' }}>과정안내서 (PDF) 다운로드</span>
-            </Button>
+            {/* 과정안내서 다운로드 (PDF) */}
+            {footerConfig.pdfFile && (
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => handleDownload(footerConfig.pdfFile, '과정안내서.pdf')}
+                disabled={loading}
+              >
+                <MdFileDownload className="text-red-800" />
+                <span>과정안내서 (PDF)</span>
+              </Button>
+            )}
             
+            {/* 이메일 주소 */}
             <Button 
-              variant="default" 
-              size="sm"
-              onClick={handleEmailClick}
-              disabled={!footerConfig.email || isLoading}
-              className="flex items-center gap-1 bg-[#666666] hover:bg-[#555555] text-white"
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={handleEmailCopy}
+              disabled={loading}
             >
-              <Mail size={16} />
-              <span style={{ wordBreak: 'keep-all' }}>지원서 이메일 접수</span>
+              <MdEmail className="text-gray-600" />
+              <span>{footerConfig.email || 'plp@snu.ac.kr'}</span>
             </Button>
           </div>
         </div>
         
-        <div className="border-t border-gray-300 pt-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-gray-500 text-sm mb-4 md:mb-0">
-              <p style={{ wordBreak: 'keep-all' }}>서울특별시 관악구 관악로 1 서울대학교 아시아연구소 517호 정치지도자과정</p>
-              <p style={{ wordBreak: 'keep-all' }}>Tel: 02-880-4107  Email : {footerConfig.email || 'plp@snu.ac.kr'}</p>
-            </div>
-            <div className="text-gray-500 text-sm">
-              <span style={{ wordBreak: 'keep-all' }}>{new Date().getFullYear()} © 2025 서울대학교 정치외교학부 정치지도자과정 
-               All rights reserved.</span>
-            </div>
-          </div>
+        <div className="border-t border-gray-300 pt-4">
+          <p className="text-center text-gray-500 text-sm">
+            © {footerConfig.copyrightYear || currentYear} 서울대학교 정치지도자과정 All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
