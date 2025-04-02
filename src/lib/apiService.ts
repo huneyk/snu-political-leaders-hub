@@ -1353,52 +1353,26 @@ export const apiService = {
   },
 
   // 갤러리 항목 추가
-  createGalleryItem: async (galleryData: any, token: string) => {
-    try {
-      const response = await axios.post(`${baseURL}/gallery`, galleryData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      });
-      console.log('Create Gallery Item Response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error creating gallery item:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
-      }
-      throw error;
-    }
-  },
-  
-  // addGalleryItem 메서드 추가 - createGalleryItem의 별칭으로 작동
   addGalleryItem: async (galleryData: any, token?: string) => {
     try {
-      // 임시로 토큰 인증 우회 (테스트용)
-      console.log('토큰 인증 우회 - addGalleryItem (테스트용)');
+      console.log('새 갤러리 항목 추가 시작');
+      
       const headers: any = {
         'Content-Type': 'application/json'
       };
       
-      // 토큰이 제공된 경우에만 Authorization 헤더 추가
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      
+      // 인증 미들웨어 제거 - 토큰 없이도 작동하도록 수정
       const response = await axios.post(`${baseURL}/gallery`, galleryData, {
-        headers
+        headers,
+        withCredentials: true
       });
-      console.log('Add Gallery Item Response:', response.data);
+      
+      console.log('갤러리 항목 추가 성공:', response.status);
       return response.data;
     } catch (error) {
-      console.error('Error adding gallery item:', error);
+      console.error('갤러리 항목 추가 실패:', error);
       if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
+        console.error('API 오류 세부정보:', {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message
@@ -1413,23 +1387,15 @@ export const apiService = {
     try {
       console.log(`갤러리 항목 수정 시작 (ID: ${id})`);
       
-      // 헤더 설정
+      // 인증 미들웨어 제거 - 헤더 단순화
       const headers: any = {
         'Content-Type': 'application/json'
       };
       
-      // 토큰이 있으면 헤더에 추가
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-        console.log('인증 토큰이 포함된 요청 전송');
-      } else {
-        console.warn('⚠️ 인증 토큰이 없습니다. 요청이 거부될 수 있습니다.');
-      }
-      
-      // API 요청 시도
+      // API 요청 시도 - 인증 요구 없이
       const response = await axios.put(`${baseURL}/gallery/${id}`, galleryData, {
         headers,
-        withCredentials: true // 쿠키 전송 허용
+        withCredentials: true
       });
       
       console.log('갤러리 항목 수정 성공:', response.status);
@@ -1450,22 +1416,25 @@ export const apiService = {
   // 갤러리 항목 삭제
   deleteGalleryItem: async (id: string, token?: string) => {
     try {
-      // 임시로 토큰 인증 우회 (테스트용)
-      console.log('토큰 인증 우회 - deleteGalleryItem (테스트용)');
-      const headers: any = {};
+      console.log(`갤러리 항목 삭제 시작 (ID: ${id})`);
       
-      // 토큰이 제공된 경우에만 Authorization 헤더 추가
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
+      // 인증 미들웨어 제거 - 헤더 단순화
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
       
-      const response = await axios.delete(`${baseURL}/gallery/${id}`, { headers });
-      console.log('Delete Gallery Item Response:', response.status);
+      // API 요청 시도 - 인증 요구 없이
+      const response = await axios.delete(`${baseURL}/gallery/${id}`, {
+        headers,
+        withCredentials: true
+      });
+      
+      console.log('갤러리 항목 삭제 성공:', response.status);
       return response.data;
     } catch (error) {
-      console.error(`Error deleting gallery item with id ${id}:`, error);
+      console.error(`갤러리 항목 삭제 실패 (ID: ${id}):`, error);
       if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
+        console.error('API 오류 세부정보:', {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message
@@ -1476,20 +1445,26 @@ export const apiService = {
   },
 
   // 갤러리 항목 일괄 생성
-  createBulkGalleryItems: async (items: any[], token: string) => {
+  createBulkGalleryItems: async (items: any[], token?: string) => {
     try {
+      console.log('갤러리 항목 일괄 생성 시작');
+      
+      // 인증 미들웨어 제거 - 헤더 단순화
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
       const response = await axios.post(`${baseURL}/gallery/bulk`, items, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
+        headers,
+        withCredentials: true
       });
-      console.log('Create Bulk Gallery Items Response:', response.data);
+      
+      console.log('갤러리 항목 일괄 생성 성공:', response.status);
       return response.data;
     } catch (error) {
-      console.error('Error creating bulk gallery items:', error);
+      console.error('갤러리 항목 일괄 생성 실패:', error);
       if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
+        console.error('API 오류 세부정보:', {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message
