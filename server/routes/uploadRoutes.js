@@ -64,7 +64,7 @@ const upload = multer({
 /**
  * @route   POST /api/upload
  * @desc    파일 업로드 처리 및 MongoDB Footer 컬렉션 업데이트
- * @access  Private (admin)
+ * @access  Public (authentication removed)
  */
 router.post('/', upload.single('file'), async (req, res) => {
   try {
@@ -168,7 +168,7 @@ router.post('/', upload.single('file'), async (req, res) => {
 /**
  * @route   GET /api/upload/files
  * @desc    업로드된 파일 목록 조회
- * @access  Private (admin)
+ * @access  Public (authentication removed)
  */
 router.get('/files', async (req, res) => {
   try {
@@ -230,7 +230,7 @@ router.get('/files', async (req, res) => {
 /**
  * @route   DELETE /api/upload/:filename
  * @desc    파일 삭제
- * @access  Private (admin)
+ * @access  Public (authentication removed)
  */
 router.delete('/:filename', async (req, res) => {
   try {
