@@ -11,6 +11,7 @@ const mongoose = require('mongoose');
 router.get('/', async (req, res) => {
   try {
     console.log('Footer 정보 요청 수신');
+    console.log('요청 헤더:', req.headers);
     
     // MongoDB 연결 확인
     if (mongoose.connection.readyState !== 1) {
@@ -60,6 +61,9 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     console.log('Footer 정보 업데이트 요청 수신 (POST):', req.body);
+    console.log('요청 헤더:', req.headers);
+    
+    // 권한 확인 로직 제거 - 모든 요청 허용
     
     // MongoDB 연결 확인
     if (mongoose.connection.readyState !== 1) {
@@ -70,9 +74,20 @@ router.post('/', async (req, res) => {
       });
     }
     
+    // MongoDB 데이터베이스 정보 로깅
+    console.log('MongoDB 데이터베이스 이름:', mongoose.connection.db.databaseName);
+    console.log('MongoDB 컬렉션 목록 요청 중...');
+    try {
+      const collections = await mongoose.connection.db.listCollections().toArray();
+      console.log('MongoDB 컬렉션 목록:', collections.map(c => c.name));
+    } catch (dbError) {
+      console.error('MongoDB 컬렉션 목록 조회 실패:', dbError);
+    }
+    
     // req.body에서 _id가 있으면 해당 문서 업데이트, 없으면 새 문서 생성
     if (req.body._id) {
       try {
+        console.log('기존 문서 업데이트 시도 - ID:', req.body._id);
         // 기존 문서 업데이트
         const updatedFooter = await Footer.findByIdAndUpdate(
           req.body._id,
@@ -112,6 +127,7 @@ router.post('/', async (req, res) => {
       }
     }
     
+    console.log('새 Footer 문서 생성 시도');
     // ID 없는 경우 새 문서 생성
     const newFooter = new Footer({
       ...req.body,
@@ -140,6 +156,9 @@ router.post('/', async (req, res) => {
 router.put('/', async (req, res) => {
   try {
     console.log('Footer 정보 업데이트 요청 수신 (PUT):', req.body);
+    console.log('요청 헤더:', req.headers);
+    
+    // 권한 확인 로직 제거 - 모든 요청 허용
     
     // MongoDB 연결 확인
     if (mongoose.connection.readyState !== 1) {
