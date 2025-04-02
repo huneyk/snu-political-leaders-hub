@@ -321,105 +321,69 @@ const FooterManage: React.FC = () => {
     try {
       let updatedConfig = { ...footerConfig };
       
-      // For Word file
+      // Word 파일 처리
       if (wordFileInfo?.file) {
-        try {
-          // Convert to base64
-          const base64 = await fileToBase64(wordFileInfo.file);
-          updatedConfig.wordFile = base64;
-          updatedConfig.wordFileName = wordFileInfo.originalName || wordFileInfo.name;
-        } catch (error) {
-          console.error('Word 파일 처리 실패:', error);
-          toast({
-            title: "Word 파일 처리 실패",
-            description: "파일 변환 중 오류가 발생했습니다.",
-            variant: "destructive",
-          });
-        }
+        const base64 = await fileToBase64(wordFileInfo.file);
+        updatedConfig.wordFile = base64;
+        updatedConfig.wordFileName = wordFileInfo.name; // 파일명 저장
       }
       
-      // Similar code for HWP and PDF files
+      // HWP 파일 처리
       if (hwpFileInfo?.file) {
-        try {
-          const base64 = await fileToBase64(hwpFileInfo.file);
-          updatedConfig.hwpFile = base64;
-          updatedConfig.hwpFileName = hwpFileInfo.originalName || hwpFileInfo.name;
-        } catch (error) {
-          console.error('HWP 파일 처리 실패:', error);
-          toast({
-            title: "HWP 파일 처리 실패",
-            description: "파일 변환 중 오류가 발생했습니다.",
-            variant: "destructive",
-          });
-        }
+        const base64 = await fileToBase64(hwpFileInfo.file);
+        updatedConfig.hwpFile = base64;
+        updatedConfig.hwpFileName = hwpFileInfo.name; // 파일명 저장
       }
       
+      // PDF 파일 처리
       if (pdfFileInfo?.file) {
-        try {
-          const base64 = await fileToBase64(pdfFileInfo.file);
-          updatedConfig.pdfFile = base64;
-          updatedConfig.pdfFileName = pdfFileInfo.originalName || pdfFileInfo.name;
-        } catch (error) {
-          console.error('PDF 파일 처리 실패:', error);
-          toast({
-            title: "PDF 파일 처리 실패",
-            description: "파일 변환 중 오류가 발생했습니다.",
-            variant: "destructive",
-          });
-        }
+        const base64 = await fileToBase64(pdfFileInfo.file);
+        updatedConfig.pdfFile = base64;
+        updatedConfig.pdfFileName = pdfFileInfo.name; // 파일명 저장
       }
       
-      // Save to database with the existing working API
-      let response;
-      try {
-        response = await axios.post(`${API_BASE_URL}/footer`, updatedConfig, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer admin-auth'
-          }
-        });
-        console.log('Footer 저장 성공:', response.data);
-        
-        // Update state with the response
-        setFooterConfig(response.data);
-        
-        // Update file info objects with filename info
-        if (wordFileInfo) {
-          setWordFileInfo({
-            ...wordFileInfo,
-            file: undefined,
-            url: response.data.wordFile
-          });
+      // 서버에 저장
+      const response = await axios.post(`${API_BASE_URL}/footer`, updatedConfig, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer admin-auth'
         }
-        
-        if (hwpFileInfo) {
-          setHwpFileInfo({
-            ...hwpFileInfo,
-            file: undefined,
-            url: response.data.hwpFile
-          });
-        }
-        
-        if (pdfFileInfo) {
-          setPdfFileInfo({
-            ...pdfFileInfo,
-            file: undefined,
-            url: response.data.pdfFile
-          });
-        }
-        
-        toast({
-          title: "설정 저장 성공",
-          description: "Footer 설정 및 파일이 성공적으로 저장되었습니다.",
-        });
-      } catch (error) {
-        console.error('Footer 저장 실패:', error);
-        toast({
-          title: "설정 저장 실패",
-          description: "Footer 설정을 저장하는 중 오류가 발생했습니다.",
-          variant: "destructive",
+      });
+      
+      console.log('Footer 저장 성공:', response.data);
+      
+      // Update state with the response
+      setFooterConfig(response.data);
+      
+      // Update file info objects with filename info
+      if (wordFileInfo) {
+        setWordFileInfo({
+          ...wordFileInfo,
+          file: undefined,
+          url: response.data.wordFile
         });
       }
+      
+      if (hwpFileInfo) {
+        setHwpFileInfo({
+          ...hwpFileInfo,
+          file: undefined,
+          url: response.data.hwpFile
+        });
+      }
+      
+      if (pdfFileInfo) {
+        setPdfFileInfo({
+          ...pdfFileInfo,
+          file: undefined,
+          url: response.data.pdfFile
+        });
+      }
+      
+      toast({
+        title: "설정 저장 성공",
+        description: "Footer 설정 및 파일이 성공적으로 저장되었습니다.",
+      });
     } catch (error) {
       console.error('Footer 저장 실패:', error);
       toast({
@@ -618,7 +582,7 @@ const FooterManage: React.FC = () => {
                             </span>
                             <div>
                               <p className="text-sm font-medium">
-                                {footerConfig.wordFileName || wordFileInfo.originalName || wordFileInfo.name || "입학지원서.docx"}
+                                {footerConfig.wordFileName || "입학지원서.docx"}
                               </p>
                               {wordFileInfo.size > 0 && (
                                 <p className="text-xs text-gray-500">{formatFileSize(wordFileInfo.size)}</p>

@@ -5,7 +5,15 @@ const footerSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  wordFileName: {
+    type: String,
+    default: ''
+  },
   hwpFile: {
+    type: String,
+    default: ''
+  },
+  hwpFileName: {
     type: String,
     default: ''
   },
@@ -13,9 +21,17 @@ const footerSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  email: {
+  pdfFileName: {
     type: String,
     default: ''
+  },
+  email: {
+    type: String,
+    default: 'plp@snu.ac.kr'
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true
