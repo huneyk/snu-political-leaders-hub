@@ -210,7 +210,7 @@ const ScheduleCalendar: React.FC = () => {
   
   // 선택된 학기에 해당하는 일정 필터링
   const termSchedules = schedules.filter(
-    schedule => schedule.term === selectedTerm
+    schedule => Number(schedule.term) === Number(selectedTerm)
   );
   
   // 선택된 날짜에 해당하는 일정 필터링
