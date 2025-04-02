@@ -127,7 +127,7 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center mb-8">
           <div className="text-center md:text-left mb-4 md:mb-0">
-            <p className="text-center text-gray-500 text-sm">서울대학교 정치지도자과정<br />SNU Political Leaders Program</h2>
+            <p className="text-center text-gray-500 text-sm">서울대학교 정치지도자과정<br />SNU Political Leaders Program</p>
             <p className="text-center text-gray-500 text-sm">서울시 관악구 관악로 1 서울대학교 아시아연구소 517호 정치지도자과정</p>            <p className="text-gray-600">Tel: 02-880-4107  Email : plp@snu.ac.kr</p>
           </div>
           
