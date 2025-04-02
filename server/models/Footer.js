@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // Footer 스키마 정의
-const footerSchema = new mongoose.Schema({
+const FooterSchema = new mongoose.Schema({
   wordFile: {
     type: String,
     default: ''
@@ -16,11 +16,39 @@ const footerSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    default: ''
+    default: 'plp@snu.ac.kr'
+  },
+  companyName: {
+    type: String,
+    default: '서울대학교 정치리더스과정'
+  },
+  address: {
+    type: String,
+    default: '서울시 관악구 관악로 1 서울대학교 사회과학대학'
+  },
+  contactPhone: {
+    type: String,
+    default: '02-880-xxxx'
+  },
+  contactEmail: {
+    type: String,
+    default: 'plp@snu.ac.kr'
+  },
+  copyrightYear: {
+    type: String,
+    default: new Date().getFullYear().toString()
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
-}, { timestamps: true });
+});
 
 // Footer 모델 생성
-const Footer = mongoose.model('Footer', footerSchema);
+const Footer = mongoose.model('Footer', FooterSchema);
 
 module.exports = Footer; 

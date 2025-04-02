@@ -9,16 +9,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/components/admin/AdminLayout';
 import axios from 'axios';
 
-// API 기본 URL 설정
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
+// API 기본 URL 설정 - 수정됨
+const API_BASE_URL = import.meta.env.MODE === 'production' 
+  ? 'https://snu-plp-hub-server.onrender.com/api' 
   : 'http://localhost:5001/api';
 
 interface FooterConfig {
+  _id?: string;
   wordFile: string;
   hwpFile: string;
   pdfFile: string;
   email: string;
+  companyName?: string;
+  address?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  copyrightYear?: string;
+  updatedAt?: string;
 }
 
 const FooterManage: React.FC = () => {
@@ -62,15 +69,26 @@ const FooterManage: React.FC = () => {
   const loadFooterConfig = async () => {
     try {
       setIsLoading(true);
+      console.log('Footer 데이터 요청 URL:', `${API_BASE_URL}/footer`);
+      
       const response = await axios.get(`${API_BASE_URL}/footer`);
+      
+      console.log('Footer API 응답:', response.data);
       
       if (response.data) {
         const data = response.data;
         setFooterConfig({
+          _id: data._id,
           wordFile: data.wordFile || '',
           hwpFile: data.hwpFile || '',
           pdfFile: data.pdfFile || '',
-          email: data.email || ''
+          email: data.email || '',
+          companyName: data.companyName,
+          address: data.address,
+          contactPhone: data.contactPhone,
+          contactEmail: data.contactEmail,
+          copyrightYear: data.copyrightYear,
+          updatedAt: data.updatedAt
         });
         
         // Set file names for display
@@ -88,6 +106,15 @@ const FooterManage: React.FC = () => {
           const pdfName = data.pdfFile.split('/').pop() || '과정안내서.pdf';
           setPdfFileName(pdfName);
         }
+        
+        // 백업 저장
+        localStorage.setItem('footer-config', JSON.stringify(data));
+        localStorage.setItem('footer-config-timestamp', new Date().toISOString());
+        
+        toast({
+          title: "Footer 정보 로드 성공",
+          description: "최신 설정을 불러왔습니다."
+        });
       }
     } catch (error) {
       console.error('Footer 정보 로드 실패:', error);
@@ -119,6 +146,11 @@ const FooterManage: React.FC = () => {
             const pdfName = parsedConfig.pdfFile.split('/').pop() || '과정안내서.pdf';
             setPdfFileName(pdfName);
           }
+          
+          toast({
+            title: "로컬 저장 설정 로드",
+            description: "서버에서 불러오기 실패. 로컬에 저장된 설정을 불러왔습니다."
+          });
         } catch (error) {
           console.error('Failed to parse footer config from localStorage:', error);
         }
@@ -179,27 +211,69 @@ const FooterManage: React.FC = () => {
   };
 
   const handleSave = async () => {
-    const authToken = localStorage.getItem('adminToken') || 'admin-auth';
-    
     setIsSaving(true);
     
     try {
-      // API를 통해 Footer 정보 저장
-      const response = await axios.post(`${API_BASE_URL}/footer`, footerConfig, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
+      console.log('Footer 정보 저장 시작', footerConfig);
       
-      if (response.data) {
+      let response;
+      let success = false;
+      
+      try {
+        // 기존 ID가 있으면 PUT 메서드로 업데이트
+        if (footerConfig._id) {
+          response = await axios.put(`${API_BASE_URL}/footer`, footerConfig, {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+        } else {
+          // 새로운 데이터면 POST 메서드로 생성
+          response = await axios.post(`${API_BASE_URL}/footer`, footerConfig, {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+        success = true;
+      } catch (apiError) {
+        console.log('첫번째 시도 실패, 인증 토큰 추가 시도');
+        
+        // 인증 토큰 추가하여 다시 시도
+        const authToken = localStorage.getItem('adminToken') || 'admin-auth';
+        
+        if (footerConfig._id) {
+          response = await axios.put(`${API_BASE_URL}/footer`, footerConfig, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            }
+          });
+        } else {
+          response = await axios.post(`${API_BASE_URL}/footer`, footerConfig, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            }
+          });
+        }
+        success = true;
+      }
+      
+      if (success && response.data) {
+        // 응답 데이터로 상태 업데이트
+        setFooterConfig(response.data);
+        
         // localStorage에도 백업으로 저장
-        localStorage.setItem('footer-config', JSON.stringify(footerConfig));
+        localStorage.setItem('footer-config', JSON.stringify(response.data));
+        localStorage.setItem('footer-config-timestamp', new Date().toISOString());
         
         toast({
           title: "설정 저장 성공",
           description: "Footer 설정이 성공적으로 저장되었습니다.",
         });
+      } else {
+        throw new Error('저장에 실패했습니다.');
       }
     } catch (error) {
       console.error('Footer 정보 저장 실패:', error);
@@ -212,16 +286,30 @@ const FooterManage: React.FC = () => {
       
       // 실패해도 localStorage에는 저장
       localStorage.setItem('footer-config', JSON.stringify(footerConfig));
+      localStorage.setItem('footer-config-timestamp', new Date().toISOString());
     } finally {
       setIsSaving(false);
     }
   };
 
+  const lastUpdated = footerConfig.updatedAt 
+    ? new Date(footerConfig.updatedAt).toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : '업데이트 정보 없음';
+
   return (
     <AdminLayout>
       <Card>
         <CardHeader>
-          <CardTitle>Footer 설정</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>Footer 설정</CardTitle>
+            <div className="text-sm text-gray-500">마지막 업데이트: {lastUpdated}</div>
+          </div>
         </CardHeader>
         
         <CardContent>
