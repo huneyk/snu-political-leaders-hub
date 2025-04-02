@@ -119,24 +119,12 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
     }
   };
 
-  const handleEmailCopy = () => {
-    if (footerConfig.email) {
-      navigator.clipboard.writeText(footerConfig.email)
-        .then(() => {
-          toast({
-            title: "이메일 주소 복사됨",
-            description: `${footerConfig.email}가 클립보드에 복사되었습니다.`
-          });
-        })
-        .catch((err) => {
-          console.error('클립보드 복사 실패:', err);
-          toast({
-            title: "복사 실패",
-            description: "이메일 주소를 복사하는데 실패했습니다.",
-            variant: "destructive"
-          });
-        });
-    }
+  const handleEmailSubmit = () => {
+    const email = footerConfig.email || 'plp@snu.ac.kr';
+    const subject = encodeURIComponent('서울대학교 정치지도자과정 지원서 제출');
+    const mailtoLink = `mailto:${email}?subject=${subject}`;
+    
+    window.location.href = mailtoLink;
   };
 
   const currentYear = new Date().getFullYear();
@@ -213,11 +201,11 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
             <Button 
               variant="outline" 
               className="flex items-center gap-2"
-              onClick={handleEmailCopy}
+              onClick={handleEmailSubmit}
               disabled={loading}
             >
               <MdEmail className="text-gray-600" />
-              <span>{footerConfig.email || 'plp@snu.ac.kr'}</span>
+              <span>지원서 이메일 제출</span>
             </Button>
           </div>
         </div>

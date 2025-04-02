@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/components/admin/AdminLayout';
 import axios from 'axios';
+import { MdEmail } from 'react-icons/md';
 
 // API 기본 URL 설정 - 수정됨
 const API_BASE_URL = import.meta.env.MODE === 'production' 
@@ -579,6 +580,14 @@ const FooterManage: React.FC = () => {
     }
   };
 
+  const handleEmailSubmit = () => {
+    const email = footerConfig.email || 'plp@snu.ac.kr';
+    const subject = encodeURIComponent('서울대학교 정치지도자과정 지원서 제출');
+    const mailtoLink = `mailto:${email}?subject=${subject}`;
+    
+    window.location.href = mailtoLink;
+  };
+
   return (
     <AdminLayout>
       <Card>
@@ -767,6 +776,15 @@ const FooterManage: React.FC = () => {
                   disabled={isLoading}
                 />
               </div>
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={handleEmailSubmit}
+                disabled={isLoading}
+              >
+                <MdEmail className="text-gray-600" />
+                <span>지원서 이메일 제출</span>
+              </Button>
             </TabsContent>
           </Tabs>
         </CardContent>
