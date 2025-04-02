@@ -133,8 +133,18 @@ const ScheduleManage = () => {
           console.log(`전체 일정 ${data.length}개 로드됨`);
           
           // 현재 탭에 맞는 일정만 필터링
-          const filteredData = data.filter(schedule => schedule.category === activeTab);
+          const filteredData = data.filter(schedule => {
+            if (activeTab === 'academic') {
+              return schedule.category === 'academic';
+            } else if (activeTab === 'special') {
+              // 특별활동은 field, social, overseas 카테고리를 포함
+              return ['field', 'social', 'overseas'].includes(schedule.category);
+            }
+            return false;
+          });
+          
           console.log(`현재 탭(${activeTab})에 해당하는 일정: ${filteredData.length}개`);
+          console.log('필터링된 일정:', filteredData);
           
           // MongoDB 데이터 형식을 컴포넌트에서 사용하는 형식으로 변환
           const formattedData = filteredData.map(schedule => {
