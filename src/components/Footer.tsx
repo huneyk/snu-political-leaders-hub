@@ -71,8 +71,8 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
     loadFooterConfig();
   }, []);
 
-  const handleDownload = (url: string, fileName: string) => {
-    if (!url) {
+  const handleDownload = (fileData: string, fileName: string) => {
+    if (!fileData) {
       toast({
         title: "다운로드 실패",
         description: "파일이 존재하지 않습니다.",
@@ -83,17 +83,32 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
     
     // 다운로드 시작
     try {
-      // 파일 이름 추출 (URL의 마지막 부분)
-      const extractedFileName = url.split('/').pop() || fileName;
-      
-      // 링크 생성
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', extractedFileName);
-      link.setAttribute('target', '_blank');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Check if the data is base64 encoded (starts with data:)
+      if (fileData.startsWith('data:')) {
+        // It's a base64 string - create a direct download
+        const link = document.createElement('a');
+        link.href = fileData; // The base64 data URL can be used directly
+        link.download = fileName; // Use the provided filename
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        console.log(`Base64 파일 다운로드: ${fileName}`);
+      } else {
+        // It's a regular URL - extract filename from URL
+        const extractedFileName = fileData.split('/').pop() || fileName;
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = fileData;
+        link.setAttribute('download', extractedFileName);
+        link.setAttribute('target', '_blank');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        console.log(`URL 파일 다운로드: ${extractedFileName}`);
+      }
     } catch (error) {
       console.error('파일 다운로드 오류:', error);
       toast({
@@ -151,7 +166,10 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2"
-                onClick={() => handleDownload(footerConfig.wordFile, '입학지원서.docx')}
+                onClick={() => handleDownload(
+                  footerConfig.wordFile, 
+                  footerConfig.wordFileName || '입학지원서.docx'
+                )}
                 disabled={loading}
               >
                 <MdFileDownload className="text-blue-600" />
@@ -164,7 +182,10 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2"
-                onClick={() => handleDownload(footerConfig.hwpFile, '입학지원서.hwp')}
+                onClick={() => handleDownload(
+                  footerConfig.hwpFile, 
+                  footerConfig.hwpFileName || '입학지원서.hwp'
+                )}
                 disabled={loading}
               >
                 <MdFileDownload className="text-red-600" />
@@ -177,7 +198,10 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2"
-                onClick={() => handleDownload(footerConfig.pdfFile, '과정안내서.pdf')}
+                onClick={() => handleDownload(
+                  footerConfig.pdfFile, 
+                  footerConfig.pdfFileName || '과정안내서.pdf'
+                )}
                 disabled={loading}
               >
                 <MdFileDownload className="text-red-800" />
