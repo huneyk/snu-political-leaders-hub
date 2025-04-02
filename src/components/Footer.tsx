@@ -141,7 +141,7 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
                 className="h-10 w-auto object-contain"
               />
               <div className="text-left">
-                <p className="text-sm font-medium">서울대학교 정치지도자과정<br />SNU Political Leaders Program</p>
+                <p className="text-sm">서울대학교 정치지도자과정<br />SNU Political Leaders Program</p>
                 <p className="text-xs text-gray-600">서울시 관악구 관악로 1 서울대학교 아시아연구소 517호</p>
                 <p className="text-xs text-gray-600">Tel: 02-880-4107  Email: plp@snu.ac.kr</p>
               </div>
