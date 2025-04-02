@@ -319,30 +319,59 @@ const FooterManage: React.FC = () => {
     setIsSaving(true);
     
     try {
-      let updatedConfig = { ...footerConfig };
+      // 중요: 기존 구성에서 시작하되, 기존 파일 이름 필드도 유지합니다
+      let updatedConfig = { 
+        ...footerConfig,
+        // 기존 파일 이름 필드가 있다면 유지
+        wordFileName: footerConfig.wordFileName || '',
+        hwpFileName: footerConfig.hwpFileName || '',
+        pdfFileName: footerConfig.pdfFileName || ''
+      };
       
       // Word 파일 처리
       if (wordFileInfo?.file) {
-        const base64 = await fileToBase64(wordFileInfo.file);
-        updatedConfig.wordFile = base64;
-        updatedConfig.wordFileName = wordFileInfo.name; // 파일명 저장
+        try {
+          const base64 = await fileToBase64(wordFileInfo.file);
+          updatedConfig.wordFile = base64;
+          updatedConfig.wordFileName = wordFileInfo.name; // 명시적으로 파일명 설정
+          console.log('Word 파일명 저장:', updatedConfig.wordFileName); // 디버깅용
+        } catch (error) {
+          console.error('Word 파일 처리 실패:', error);
+        }
       }
       
       // HWP 파일 처리
       if (hwpFileInfo?.file) {
-        const base64 = await fileToBase64(hwpFileInfo.file);
-        updatedConfig.hwpFile = base64;
-        updatedConfig.hwpFileName = hwpFileInfo.name; // 파일명 저장
+        try {
+          const base64 = await fileToBase64(hwpFileInfo.file);
+          updatedConfig.hwpFile = base64;
+          updatedConfig.hwpFileName = hwpFileInfo.name; // 명시적으로 파일명 설정
+          console.log('HWP 파일명 저장:', updatedConfig.hwpFileName); // 디버깅용
+        } catch (error) {
+          console.error('HWP 파일 처리 실패:', error);
+        }
       }
       
       // PDF 파일 처리
       if (pdfFileInfo?.file) {
-        const base64 = await fileToBase64(pdfFileInfo.file);
-        updatedConfig.pdfFile = base64;
-        updatedConfig.pdfFileName = pdfFileInfo.name; // 파일명 저장
+        try {
+          const base64 = await fileToBase64(pdfFileInfo.file);
+          updatedConfig.pdfFile = base64;
+          updatedConfig.pdfFileName = pdfFileInfo.name; // 명시적으로 파일명 설정
+          console.log('PDF 파일명 저장:', updatedConfig.pdfFileName); // 디버깅용
+        } catch (error) {
+          console.error('PDF 파일 처리 실패:', error);
+        }
       }
       
-      // 서버에 저장
+      // 저장 전 데이터 로깅
+      console.log('서버로 보내는 데이터:', {
+        wordFileName: updatedConfig.wordFileName,
+        hwpFileName: updatedConfig.hwpFileName,
+        pdfFileName: updatedConfig.pdfFileName
+      });
+      
+      // 서버에 데이터 저장
       const response = await axios.post(`${API_BASE_URL}/footer`, updatedConfig, {
         headers: {
           'Content-Type': 'application/json',
@@ -350,7 +379,7 @@ const FooterManage: React.FC = () => {
         }
       });
       
-      console.log('Footer 저장 성공:', response.data);
+      console.log('서버 응답:', response.data);
       
       // Update state with the response
       setFooterConfig(response.data);

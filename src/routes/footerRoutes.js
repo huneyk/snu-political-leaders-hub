@@ -32,35 +32,61 @@ router.get('/', async (req, res) => {
  */
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { wordFile, hwpFile, pdfFile, email } = req.body;
+    console.log('Footer 업데이트 요청 데이터:', req.body);
     
-    // 기존 정보 찾기
-    let footerInfo = await Footer.findOne().sort({ updatedAt: -1 });
+    const { 
+      _id, wordFile, wordFileName, hwpFile, hwpFileName, 
+      pdfFile, pdfFileName, email, // 파일 이름 필드도 명시적으로 추출
+      // 기타 필드...
+    } = req.body;
     
-    if (footerInfo) {
-      // 기존 정보 업데이트
-      if (wordFile !== undefined) footerInfo.wordFile = wordFile;
-      if (hwpFile !== undefined) footerInfo.hwpFile = hwpFile;
-      if (pdfFile !== undefined) footerInfo.pdfFile = pdfFile;
-      if (email !== undefined) footerInfo.email = email;
-      
-      await footerInfo.save();
-      res.json(footerInfo);
+    let footer;
+    
+    // _id가 있으면 업데이트, 없으면 새로 생성
+    if (_id) {
+      console.log('기존 문서 업데이트', _id);
+      footer = await Footer.findByIdAndUpdate(
+        _id,
+        {
+          wordFile,
+          wordFileName, // 명시적으로 파일명 필드 포함
+          hwpFile,
+          hwpFileName, // 명시적으로 파일명 필드 포함
+          pdfFile,
+          pdfFileName, // 명시적으로 파일명 필드 포함
+          email,
+          // 기타 필드...
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
     } else {
-      // 새로운 정보 생성
-      const newFooterInfo = new Footer({
-        wordFile: wordFile || '',
-        hwpFile: hwpFile || '',
-        pdfFile: pdfFile || '',
-        email: email || ''
+      console.log('새 문서 생성');
+      footer = new Footer({
+        wordFile,
+        wordFileName, // 명시적으로 파일명 필드 포함
+        hwpFile,
+        hwpFileName, // 명시적으로 파일명 필드 포함
+        pdfFile,
+        pdfFileName, // 명시적으로 파일명 필드 포함
+        email,
+        // 기타 필드...
       });
       
-      const savedInfo = await newFooterInfo.save();
-      res.status(201).json(savedInfo);
+      await footer.save();
     }
+    
+    console.log('저장된 문서:', {
+      id: footer._id,
+      wordFileName: footer.wordFileName,
+      hwpFileName: footer.hwpFileName,
+      pdfFileName: footer.pdfFileName
+    });
+    
+    res.json(footer);
   } catch (error) {
-    console.error('Footer 정보 저장 실패:', error);
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    console.error('Footer 저장 오류:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
