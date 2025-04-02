@@ -40,14 +40,46 @@ const HomeSchedule: FC<HomeScheduleProps> = ({ onStatusChange }) => {
       
       if (onStatusChange) onStatusChange(false, null);
       
-      const scheduleData = await apiService.getSchedules();
+      // MongoDB에서 최신 데이터 가져오기
+      console.log('MongoDB에서 일정 데이터 가져오기 시도...');
+      const scheduleData = await apiService.getSchedulesAll();
       console.log('로드된 일정 데이터:', scheduleData);
       
-      if (scheduleData && Array.isArray(scheduleData)) {
-        const formattedSchedules = scheduleData.map(formatSchedule).filter(Boolean);
-        const upcomingEvents = filterUpcomingEvents(formattedSchedules);
-        setUpcomingEvents(upcomingEvents);
+      if (scheduleData && Array.isArray(scheduleData) && scheduleData.length > 0) {
+        // 데이터 유효성 검사
+        const isValidData = scheduleData.every(item => 
+          item && typeof item === 'object' && 
+          item._id && item.title && item.date
+        );
+        
+        if (isValidData) {
+          console.log('데이터 유효성 검사 통과');
+          
+          // 데이터 형식 변환 및 필터링
+          const formattedSchedules = scheduleData
+            .map(formatSchedule)
+            .filter((schedule): schedule is EventItem => schedule !== null);
+          
+          // 다가오는 일정 필터링
+          const upcomingEvents = filterUpcomingEvents(formattedSchedules);
+          console.log('다가오는 일정:', upcomingEvents);
+          
+          setUpcomingEvents(upcomingEvents);
+          
+          // 데이터 캐싱 (로컬 스토리지 저장)
+          try {
+            localStorage.setItem('home-schedules-data', JSON.stringify(scheduleData));
+            localStorage.setItem('home-schedules-data-saveTime', Date.now().toString());
+            console.log('일정 데이터 로컬스토리지에 백업 완료');
+          } catch (storageError) {
+            console.warn('로컬스토리지 백업 실패:', storageError);
+          }
+        } else {
+          console.error('유효하지 않은 데이터 형식:', scheduleData);
+          throw new Error('Invalid data format from API');
+        }
       } else {
+        console.log('일정 데이터가 없거나 빈 배열입니다');
         setUpcomingEvents([]);
       }
       
@@ -56,8 +88,44 @@ const HomeSchedule: FC<HomeScheduleProps> = ({ onStatusChange }) => {
       
     } catch (err) {
       console.error('일정 데이터 로드 오류:', err);
+      
+      // 에러 발생 시 로컬 스토리지에서 백업 데이터 복원 시도
+      try {
+        const savedData = localStorage.getItem('home-schedules-data');
+        const timestamp = localStorage.getItem('home-schedules-data-saveTime');
+        
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          console.log('로컬 스토리지에서 일정 데이터 복원 시도');
+          
+          if (parsedData && Array.isArray(parsedData)) {
+            const formattedSchedules = parsedData
+              .map(formatSchedule)
+              .filter((schedule): schedule is EventItem => schedule !== null);
+            
+            const upcomingEvents = filterUpcomingEvents(formattedSchedules);
+            setUpcomingEvents(upcomingEvents);
+            
+            // 백업 데이터가 24시간 이상 지난 경우 경고
+            if (timestamp) {
+              const saveTime = new Date(parseInt(timestamp));
+              const now = new Date();
+              const hoursDiff = (now.getTime() - saveTime.getTime()) / (1000 * 60 * 60);
+              if (hoursDiff > 24) {
+                console.warn(`백업 데이터가 ${Math.floor(hoursDiff)}시간 전의 데이터입니다.`);
+              }
+            }
+          }
+        } else {
+          console.log('로컬 스토리지에 백업 데이터가 없습니다');
+          setUpcomingEvents([]);
+        }
+      } catch (storageErr) {
+        console.error('로컬 스토리지 데이터 복원 실패:', storageErr);
+        setUpcomingEvents([]);
+      }
+      
       setError(err instanceof Error ? err.message : '일정 데이터를 불러오는 중 오류가 발생했습니다.');
-      setUpcomingEvents([]);
       setLoading(false);
       
       if (onStatusChange) onStatusChange(true, err instanceof Error ? err.message : '일정 데이터 로드 오류');
@@ -73,6 +141,13 @@ const HomeSchedule: FC<HomeScheduleProps> = ({ onStatusChange }) => {
         return null;
       }
       
+      // 날짜 형식 검증
+      const date = new Date(schedule.date);
+      if (isNaN(date.getTime())) {
+        console.warn('유효하지 않은 날짜 형식:', schedule.date);
+        return null;
+      }
+      
       return {
         _id: schedule._id,
         id: schedule._id || schedule.id || Math.random().toString(36).substring(2, 9),
@@ -81,7 +156,7 @@ const HomeSchedule: FC<HomeScheduleProps> = ({ onStatusChange }) => {
         time: schedule.time || '',
         location: schedule.location || '',
         description: schedule.description || '',
-        type: schedule.type || '일반'
+        type: schedule.category || '일반' // category 필드 사용
       };
     } catch (error) {
       console.error('일정 데이터 형식 변환 오류:', error);
@@ -90,12 +165,21 @@ const HomeSchedule: FC<HomeScheduleProps> = ({ onStatusChange }) => {
   };
 
   // 다가오는 일정 필터링 함수
-  const filterUpcomingEvents = (events: (EventItem | null)[]): EventItem[] => {
+  const filterUpcomingEvents = (events: EventItem[]): EventItem[] => {
     const now = new Date();
+    now.setHours(0, 0, 0, 0); // 시간을 0으로 설정하여 날짜만 비교
+    
     const filteredEvents = events
-      .filter((event): event is EventItem => 
-        event !== null && new Date(event.date) >= now
-      )
+      .filter(event => {
+        try {
+          const eventDate = new Date(event.date);
+          eventDate.setHours(0, 0, 0, 0); // 시간을 0으로 설정하여 날짜만 비교
+          return eventDate >= now;
+        } catch (error) {
+          console.warn('날짜 변환 오류:', event.date);
+          return false;
+        }
+      })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(0, 5); // 최대 5개까지만 표시
     
