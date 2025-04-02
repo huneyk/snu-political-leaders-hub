@@ -83,15 +83,19 @@ router.post('/', upload.single('file'), async (req, res) => {
     
     // 파일 타입 식별
     const fileType = req.body.fileType || determineFileType(req.file.originalname);
-    let updateData = {};
+    const originalFilename = req.body.originalFilename || req.file.originalname;
     
     // DB에 저장할 필드 결정
+    let updateData = {};
     if (fileType === 'wordFile') {
       updateData.wordFile = fileUrl;
+      updateData.wordFileName = originalFilename;
     } else if (fileType === 'hwpFile') {
       updateData.hwpFile = fileUrl;
+      updateData.hwpFileName = originalFilename;
     } else if (fileType === 'pdfFile') {
       updateData.pdfFile = fileUrl;
+      updateData.pdfFileName = originalFilename;
     }
     
     // MongoDB 연결 상태 확인
@@ -130,7 +134,8 @@ router.post('/', upload.single('file'), async (req, res) => {
         fileUrl: fileUrl,
         size: req.file.size,
         footerId: existingFooter._id,
-        fileType: fileType
+        fileType: fileType,
+        originalFilename: originalFilename
       });
     } else {
       // Footer 문서가 없는 경우 새로 생성
@@ -153,7 +158,8 @@ router.post('/', upload.single('file'), async (req, res) => {
         fileUrl: fileUrl,
         size: req.file.size,
         footerId: savedFooter._id,
-        fileType: fileType
+        fileType: fileType,
+        originalFilename: originalFilename
       });
     }
   } catch (error) {
