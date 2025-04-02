@@ -1492,14 +1492,11 @@ export const apiService = {
     try {
       console.log('새 공지사항 추가 시작');
       
-      const headers: any = {
-        'Content-Type': 'application/json'
-      };
-      
-      // 인증 토큰 없이도 작동하도록 수정
+      // 인증 토큰 없이 작동하도록 수정 - 단순 헤더
       const response = await axios.post(`${baseURL}/notices`, noticeData, {
-        headers,
-        withCredentials: true
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       console.log('공지사항 추가 성공:', response.status);
@@ -1522,15 +1519,11 @@ export const apiService = {
     try {
       console.log(`공지사항 수정 시작 (ID: ${id})`);
       
-      // 인증 미들웨어 제거 - 헤더 단순화
-      const headers: any = {
-        'Content-Type': 'application/json'
-      };
-      
-      // API 요청 시도 - 인증 요구 없이
+      // 인증 미들웨어 제거 - 단순 헤더
       const response = await axios.put(`${baseURL}/notices/${id}`, noticeData, {
-        headers,
-        withCredentials: true
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       console.log('공지사항 수정 성공:', response.status);
@@ -1553,15 +1546,11 @@ export const apiService = {
     try {
       console.log(`공지사항 삭제 시작 (ID: ${id})`);
       
-      // 인증 미들웨어 제거 - 헤더 단순화
-      const headers: any = {
-        'Content-Type': 'application/json'
-      };
-      
-      // API 요청 시도 - 인증 요구 없이
+      // 인증 미들웨어 제거 - 단순 헤더
       const response = await axios.delete(`${baseURL}/notices/${id}`, {
-        headers,
-        withCredentials: true
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       console.log('공지사항 삭제 성공:', response.status);

@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { apiService } from '@/lib/apiService';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import axios from 'axios';
 
 // API 기본 URL 설정
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -152,7 +153,19 @@ const NoticesManage: React.FC = () => {
     setIsLoading(true);
     try {
       // apiService 사용하여 공지사항 추가
-      await apiService.addNotice(formData);
+      let result;
+      try {
+        result = await apiService.addNotice(formData);
+      } catch (apiError) {
+        console.log('apiService 실패, 직접 axios 요청 시도');
+        // 직접 axios 요청
+        const response = await axios.post(`${API_BASE_URL}/notices`, formData, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        result = response.data;
+      }
       
       toast({
         title: "공지사항 추가 성공",
@@ -190,7 +203,19 @@ const NoticesManage: React.FC = () => {
     try {
       // apiService 사용하여 공지사항 수정
       const noticeId = selectedNotice._id || selectedNotice.id;
-      await apiService.updateNotice(noticeId, formData);
+      let result;
+      try {
+        result = await apiService.updateNotice(noticeId, formData);
+      } catch (apiError) {
+        console.log('apiService 실패, 직접 axios 요청 시도');
+        // 직접 axios 요청
+        const response = await axios.put(`${API_BASE_URL}/notices/${noticeId}`, formData, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        result = response.data;
+      }
       
       toast({
         title: "공지사항 수정 성공",
@@ -217,7 +242,19 @@ const NoticesManage: React.FC = () => {
       setIsLoading(true);
       try {
         // apiService 사용하여 공지사항 삭제
-        await apiService.deleteNotice(id);
+        let result;
+        try {
+          result = await apiService.deleteNotice(id);
+        } catch (apiError) {
+          console.log('apiService 실패, 직접 axios 요청 시도');
+          // 직접 axios 요청
+          const response = await axios.delete(`${API_BASE_URL}/notices/${id}`, {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          result = response.data;
+        }
         
         toast({
           title: "공지사항 삭제 성공",
