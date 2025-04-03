@@ -150,7 +150,7 @@ const Professors = () => {
             <div className="space-y-16">
               {professorSections.map((section) => (
                 <div key={section._id} className="mb-12">
-                  <h2 className="text-2xl font-bold text-mainBlue mb-6 pb-2 border-b-2 border-mainBlue/30">
+                  <h2 className="text-2xl font-bold text-mainWhite mb-6 pb-2 border-b-2 border-mainBlue/30">
                     {section.sectionTitle}
                   </h2>
                   
