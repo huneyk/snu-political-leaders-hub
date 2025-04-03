@@ -250,9 +250,7 @@ const ScheduleLecturers = () => {
       <section className="pt-24 pb-16 bg-mainBlue text-white">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">강사진 소개</h1>
-          <p className="text-white/80 max-w-3xl">
-            서울대학교 정치리더십 프로그램의 강사진을 소개합니다.
-          </p>
+
         </div>
       </section>
 

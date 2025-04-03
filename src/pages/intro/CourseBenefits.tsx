@@ -150,9 +150,7 @@ const CourseBenefits = () => {
           <section className="py-16 bg-mainBlue text-white">
             <div className="main-container">
               <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal">{sectionTitle}</h1>
-              <p className="text-white/80 max-w-3xl reveal reveal-delay-100">
-                서울대학교 정치지도자과정의 특전 내용입니다.
-              </p>
+
             </div>
           </section>
         </ScrollReveal>

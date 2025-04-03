@@ -106,9 +106,7 @@ const Greeting = () => {
               <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal" style={{ wordBreak: 'keep-all' }}>
                 {greeting.title}
               </h1>
-              <p className="text-white/80 max-w-3xl reveal reveal-delay-100" style={{ wordBreak: 'keep-all' }}>
-                서울대학교 정치지도자과정의 인사말입니다.
-              </p>
+
             </div>
           </section>
 

@@ -126,9 +126,7 @@ const Notices = () => {
         <section className="bg-mainBlue text-white py-16">
           <div className="container mx-auto px-4">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">공지사항</h1>
-            <p className="text-lg opacity-90">
-              서울대학교 정치지도자 과정의 중요 소식과 안내사항을 확인하세요.
-            </p>
+
           </div>
         </section>
         

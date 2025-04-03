@@ -90,7 +90,7 @@ const AdmissionInfo = () => {
         <div className="bg-mainBlue text-white py-16">
           <div className="main-container">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">입학 지원 안내</h1>
-            <p className="text-xl opacity-90">서울대학교 정치리더십과정 입학 지원에 관한 안내입니다.</p>
+
           </div>
         </div>
 

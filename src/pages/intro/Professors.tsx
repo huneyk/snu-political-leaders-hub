@@ -129,7 +129,7 @@ const Professors = () => {
         <div className="bg-mainBlue text-white py-16">
           <div className="main-container">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">운영 교수진</h1>
-            <p className="text-xl opacity-90">서울대학교 정치리더십과정의 운영을 담당하는 교수진을 소개합니다.</p>
+
           </div>
         </div>
 

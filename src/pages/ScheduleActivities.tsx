@@ -247,9 +247,7 @@ const ScheduleActivities: React.FC = () => {
           <section className="py-16 bg-mainBlue text-white">
             <div className="main-container">
               <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal">특별활동 일정</h1>
-              <p className="text-white/80 max-w-3xl reveal reveal-delay-100">
-                서울대학교 정치지도자과정의 다양한 특별활동을 확인하세요.
-              </p>
+
             </div>
           </section>
         </ScrollReveal>

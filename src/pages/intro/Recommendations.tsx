@@ -186,9 +186,7 @@ const Recommendations = () => {
           <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
             <div className="main-container">
               <h1 className="text-3xl md:text-4xl font-bold mb-4">{sectionTitle}</h1>
-              <p className="text-white/80 max-w-3xl">
-                서울대학교 정치지도자과정에 대한 추천의 글입니다.
-              </p>
+
             </div>
           </div>
         </div>

@@ -305,9 +305,7 @@ const Gallery = () => {
       <section className="pt-28 pb-16 bg-mainBlue text-white">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">갤러리</h1>
-          <p className="text-white/80 max-w-3xl">
-            서울대학교 정치리더십과정의 다양한 활동 모습을 확인하세요.
-          </p>
+
         </div>
       </section>
       
