@@ -26,24 +26,28 @@ const PORT = process.env.PORT || 5001;
 // CORS 설정 수정
 const corsOptions = {
   origin: function (origin, callback) {
-    // 허용할 도메인 목록에 plpsnu.ne.kr 추가
+    // 허용 도메인 목록에 plpsnu.ne.kr 추가
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5173',
       'https://snu-political-leaders-hub-1.onrender.com',
       'https://plpsnu.ne.kr',
-      'http://plpsnu.ne.kr'
+      'http://plpsnu.ne.kr',
+      'https://www.plpsnu.ne.kr',
+      'http://www.plpsnu.ne.kr'
     ];
     
-    // origin이 없거나(같은 도메인에서의 요청) 허용된 도메인이면 허용
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    // 개발 환경이나 같은 출처 요청인 경우 허용
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log('CORS 정책 위반 시도:', origin);
       callback(new Error('CORS 정책에 의해 차단되었습니다'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
