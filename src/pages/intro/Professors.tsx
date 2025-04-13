@@ -128,7 +128,7 @@ const Professors = () => {
       <main className="pt-20">
         <div className="bg-mainBlue text-white py-16">
           <div className="main-container">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">운영 교수진</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">운영 교수진</h1>
 
           </div>
         </div>
@@ -148,9 +148,11 @@ const Professors = () => {
             </div>
           ) : (
             <div className="space-y-16">
-              {professorSections.map((section) => (
+              {[...professorSections]
+                .sort((a, b) => a.sectionTitle.localeCompare(b.sectionTitle))
+                .map((section) => (
                 <div key={section._id} className="mb-12">
-                  <h2 className="text-2xl font-bold text-mainWhite mb-6 pb-2 border-b-2 border-mainBlue/30">
+                  <h2 className="text-2xl font-bold text-mainBlue mb-6 pb-2 border-b-2 border-mainBlue/30">
                     {section.sectionTitle}
                   </h2>
                   

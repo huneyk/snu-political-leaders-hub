@@ -248,7 +248,7 @@ const ScheduleLecturers = () => {
       
       {/* 배너 섹션 */}
       <section className="pt-24 pb-16 bg-mainBlue text-white">
-        <div className="container mx-auto px-4">
+        <div className="main-container">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">강사진 소개</h1>
 
         </div>

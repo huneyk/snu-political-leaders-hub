@@ -89,7 +89,7 @@ const AdmissionInfo = () => {
       <main className="pt-20">
         <div className="bg-mainBlue text-white py-16">
           <div className="main-container">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">입학 지원 안내</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">입학 지원 안내</h1>
 
           </div>
         </div>

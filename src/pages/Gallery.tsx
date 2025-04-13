@@ -303,7 +303,7 @@ const Gallery = () => {
       
       {/* 상단 배너/띠 - 다른 페이지와 일관된 스타일 */}
       <section className="pt-28 pb-16 bg-mainBlue text-white">
-        <div className="container mx-auto px-4">
+        <div className="main-container">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">갤러리</h1>
 
         </div>
