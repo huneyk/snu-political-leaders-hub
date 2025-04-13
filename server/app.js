@@ -12,7 +12,20 @@ dotenv.config();
 const app = express();
 
 // 미들웨어 설정
-app.use(cors());
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'https://snu-political-leaders-hub-1.onrender.com',
+    'https://plpsnu.ne.kr',
+    'https://www.plpsnu.ne.kr'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' })); // 이미지 Base64 처리를 위해 용량 제한 증가
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 

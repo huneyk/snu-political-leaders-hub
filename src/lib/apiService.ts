@@ -9,7 +9,7 @@ import axios from 'axios';
 
 // 기본 URL 설정 - 서버 URL 직접 지정
 const baseURL = import.meta.env.MODE === 'production' 
-  ? 'https://snu-plp-hub-server.onrender.com/api' 
+  ? 'https://api.plpsnu.ne.kr/api' 
   : 'http://localhost:5001/api';
 console.log('🔗 API 기본 URL:', baseURL);
 console.log('🔧 현재 환경:', import.meta.env.MODE);
