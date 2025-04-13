@@ -23,31 +23,30 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// CORS 설정
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:8080',
-  'https://snu-plp.onrender.com',
-  'https://snu-political-leaders-hub-1.onrender.com'
-];
-
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+// CORS 설정 수정
+const corsOptions = {
+  origin: function (origin, callback) {
+    // 허용할 도메인 목록에 plpsnu.ne.kr 추가
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://snu-political-leaders-hub-1.onrender.com',
+      'https://plpsnu.ne.kr',
+      'http://plpsnu.ne.kr'
+    ];
+    
+    // origin이 없거나(같은 도메인에서의 요청) 허용된 도메인이면 허용
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       console.log('CORS 정책 위반 시도:', origin);
       callback(new Error('CORS 정책에 의해 차단되었습니다'));
     }
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
-  exposedHeaders: ['Content-Type', 'Content-Length'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
-  maxAge: 86400 // 24시간 preflight 요청 캐시
-}));
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 
 // 요청 파싱 미들웨어
 app.use(express.json({ limit: '50mb' }));
