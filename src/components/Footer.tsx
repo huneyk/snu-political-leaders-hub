@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { MdFileDownload, MdEmail } from 'react-icons/md';
+import { FaFacebookF, FaYoutube } from 'react-icons/fa';
+import { SiNaver } from 'react-icons/si';
 import { toast } from '@/hooks/use-toast';
 import axios from 'axios';
 
@@ -208,6 +210,57 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
               <span>지원서 이메일 제출</span>
             </Button>
           </div>
+        </div>
+        
+        {/* 소셜 미디어 링크 추가 */}
+        <div className="flex justify-center gap-4 mb-4">
+          <a 
+            href="https://www.facebook.com/plpsnu" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="transition-transform hover:scale-110"
+          >
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full bg-blue-600 text-white hover:bg-blue-700 h-10 w-10"
+            >
+              <FaFacebookF size={20} />
+              <span className="sr-only">페이스북</span>
+            </Button>
+          </a>
+          
+          <a 
+            href="https://www.youtube.com/@snuplp" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="transition-transform hover:scale-110"
+          >
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full bg-red-600 text-white hover:bg-red-700 h-10 w-10"
+            >
+              <FaYoutube size={20} />
+              <span className="sr-only">유튜브</span>
+            </Button>
+          </a>
+          
+          <a 
+            href="https://blog.naver.com/plpsnu" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="transition-transform hover:scale-110"
+          >
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full bg-green-600 text-white hover:bg-green-700 h-10 w-10"
+            >
+              <SiNaver size={18} />
+              <span className="sr-only">네이버 블로그</span>
+            </Button>
+          </a>
         </div>
         
         <div className="border-t border-gray-300 pt-4">
