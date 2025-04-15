@@ -40,7 +40,7 @@ const Hero = () => {
             }`}
             style={{ wordBreak: 'keep-all' }}
           >
-            Political Leaders Program
+            SNU Political Leaders Program
           </p>
           <p 
             className={`mb-12 max-w-2xl mx-auto transition-all duration-1000 delay-500 ease-out ${
