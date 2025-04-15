@@ -114,7 +114,6 @@ const Gallery = () => {
           title: item.title,
           description: item.description,
           imageUrl: item.imageUrl,
-          // 날짜는 원본 형식 그대로 저장 (포맷팅은 표시할 때 수행)
           date: new Date(item.date).toISOString(),
           term: item.term
         }));
@@ -124,17 +123,42 @@ const Gallery = () => {
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         
-        // 데이터 캐싱 (로컬 스토리지 저장)
-        localStorage.setItem('gallery-data', JSON.stringify(sortedItems));
+        // 로컬 스토리지 저장 시 할당량 초과 방지
+        try {
+          // 메타데이터만 저장하여 용량 절약 (이미지 데이터 제외)
+          const storageData = sortedItems.map(item => ({
+            id: item.id,
+            _id: item._id,
+            title: item.title,
+            description: item.description,
+            // 이미지 URL만 저장하고 Base64 데이터는 저장하지 않음
+            imageUrl: item.imageUrl && item.imageUrl.startsWith('data:') 
+              ? '[BASE64_IMAGE]' // 플레이스홀더로 대체
+              : item.imageUrl,
+            date: item.date,
+            term: item.term
+          }));
+          
+          // 저장할 데이터가 너무 크면 최근 항목 20개만 저장
+          const limitedData = storageData.length > 20 
+            ? storageData.slice(0, 20) 
+            : storageData;
+            
+          localStorage.setItem('gallery-data', JSON.stringify(limitedData));
+          console.log(`로컬 스토리지에 ${limitedData.length}개 항목 캐싱 (용량 최적화)`);
+        } catch (storageError) {
+          console.warn('로컬 스토리지 캐싱 실패 (할당량 초과):', storageError);
+          // 에러는 무시하고 계속 진행 - 로컬 스토리지 캐싱은 선택적 기능
+        }
         
         console.log('날짜순 정렬 완료 (최신순)');
         setGalleryItems(sortedItems);
+        setError(null);
       } else {
         console.warn('갤러리 데이터가 비어있거나 배열이 아닙니다.');
         // 로컬 스토리지에서 데이터 로드 시도
         loadFromLocalStorage();
       }
-      setError(null);
     } catch (err) {
       console.error('갤러리 데이터 로드 중 오류:', err);
       // 로컬 스토리지에서 데이터 로드 시도
