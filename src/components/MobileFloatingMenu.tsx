@@ -49,6 +49,15 @@ const MobileFloatingMenu = () => {
     return location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
   };
 
+  // 페이지 전환 시 맨 위로 스크롤하는 함수
+  const handleMenuClick = () => {
+    // 페이지 상단으로 스크롤
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth' // 부드러운 스크롤 효과
+    });
+  };
+
   const menuItems = [
     {
       name: '홈',
@@ -104,6 +113,7 @@ const MobileFloatingMenu = () => {
             <Link
               key={item.name}
               to={item.path}
+              onClick={handleMenuClick}
               className={`flex flex-col items-center justify-center w-full h-full ${
                 isActive(item.path)
                   ? 'text-white font-bold'
@@ -129,6 +139,7 @@ const MobileFloatingMenu = () => {
             <Link
               key={item.name}
               to={item.path}
+              onClick={handleMenuClick}
               className={`flex flex-col items-center justify-center w-full py-3 ${
                 isActive(item.path)
                   ? 'text-white font-bold'
