@@ -78,6 +78,14 @@ const Gallery = () => {
   const [debugMode, setDebugMode] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryItem | null>(null);
 
+  // 페이지 상단으로 스크롤하는 함수
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   useEffect(() => {
     // URL에서 debug 파라미터 확인
     const urlParams = new URLSearchParams(window.location.search);
@@ -85,7 +93,7 @@ const Gallery = () => {
     setDebugMode(debug === 'true');
 
     console.log('Gallery useEffect 실행');
-    window.scrollTo(0, 0);
+    scrollToTop();
     
     // 갤러리 데이터 로드
     loadGalleryData();
