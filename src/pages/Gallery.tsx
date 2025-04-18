@@ -77,6 +77,7 @@ const Gallery = () => {
   const [error, setError] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryItem | null>(null);
+  const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
 
   // 페이지 상단으로 스크롤하는 함수
   const scrollToTop = () => {
@@ -247,8 +248,15 @@ const Gallery = () => {
 
   // 기수 내림차순으로 정렬된 기수 목록
   const sortedTerms = useMemo(() => {
-    return Object.keys(groupedByTerm).sort((a, b) => Number(b) - Number(a));
-  }, [groupedByTerm]);
+    const terms = Object.keys(groupedByTerm).sort((a, b) => Number(b) - Number(a));
+    
+    // 최초 로드 시, 가장 높은 기수(최신 기수)를 선택 상태로 설정
+    if (terms.length > 0 && selectedTerm === null) {
+      setSelectedTerm(terms[0]);
+    }
+    
+    return terms;
+  }, [groupedByTerm, selectedTerm]);
 
   // 날짜 포맷팅 함수
   const formatDate = (dateString: string) => {
@@ -259,6 +267,12 @@ const Gallery = () => {
       day: '2-digit',
       year: 'numeric'
     }).format(date);
+  };
+  
+  // 기수 변경 핸들러
+  const handleTermChange = (term: string) => {
+    setSelectedTerm(term);
+    scrollToTop();
   };
   
   console.log('Gallery 렌더링 반환');
@@ -337,11 +351,28 @@ const Gallery = () => {
       <section className="pt-28 pb-16 bg-mainBlue text-white">
         <div className="main-container">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">갤러리</h1>
-
         </div>
       </section>
       
-      <main className="py-16">
+      {/* 기수 선택 버튼 영역 */}
+      <div className="container mx-auto px-4 mt-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-wrap gap-2 mb-8 justify-center">
+            {sortedTerms.map(term => (
+              <Button 
+                key={term}
+                variant={selectedTerm === term ? "default" : "outline"} 
+                onClick={() => handleTermChange(term)}
+                className="min-w-[80px]"
+              >
+                {term}기
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      <main className="py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             {debugMode && (
@@ -358,17 +389,17 @@ const Gallery = () => {
               </div>
             )}
 
-            {sortedTerms.map(term => (
-              <div key={term} className="mb-12">
+            {selectedTerm && (
+              <div className="mb-12">
                 <div className="flex items-center mb-6">
                   <div className="flex items-center bg-mainBlue text-white px-4 py-2 rounded-r-full">
-                    <span className="text-2xl font-bold">{term}</span>
+                    <span className="text-2xl font-bold">{selectedTerm}</span>
                     <span className="text-lg ml-1">기</span>
                   </div>
                   <div className="h-0.5 bg-mainBlue/30 flex-grow ml-4"></div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {groupedByTerm[term].map((item) => (
+                  {groupedByTerm[selectedTerm]?.map((item) => (
                     <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow border-0 shadow-sm">
                       <div 
                         className="relative aspect-video bg-gray-100 cursor-pointer"
@@ -425,7 +456,7 @@ const Gallery = () => {
                   ))}
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </main>
