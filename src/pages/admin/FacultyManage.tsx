@@ -60,6 +60,9 @@ const FacultyManage = () => {
     }
   ]);
   
+  // 원본 데이터 상태 추가 (변경 사항 추적용)
+  const [originalTerms, setOriginalTerms] = useState<TermFaculty[]>([]);
+  
   const [activeTermIndex, setActiveTermIndex] = useState(0);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<FacultyCategory | null>(null);
@@ -91,6 +94,7 @@ const FacultyManage = () => {
         // 유효한 데이터가 있는 경우 설정
         if (processedData.length > 0) {
           setTerms(processedData);
+          setOriginalTerms(JSON.parse(JSON.stringify(processedData))); // Deep copy for original data
           console.log('변환된 데이터 설정:', processedData);
           
           // 초기 카테고리 선택
@@ -271,9 +275,10 @@ const FacultyManage = () => {
           });
           
           setTerms(validData);
+          setOriginalTerms(JSON.parse(JSON.stringify(validData))); // Deep copy for original data
           console.log('유효한 데이터로 변환:', validData);
         } else {
-          setTerms([{
+          const defaultData = [{
             term: '1',
             categories: [
               {
@@ -287,7 +292,9 @@ const FacultyManage = () => {
                 faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
               }
             ]
-          }]);
+          }];
+          setTerms(defaultData);
+          setOriginalTerms(JSON.parse(JSON.stringify(defaultData)));
         }
         
         // 카테고리 인덱스 초기화
@@ -296,7 +303,7 @@ const FacultyManage = () => {
       } catch (error) {
         console.error('Failed to parse faculty data:', error);
         // 오류 발생 시 기본 데이터로 초기화
-        setTerms([{
+        const defaultData = [{
           term: '1',
           categories: [
             {
@@ -310,10 +317,12 @@ const FacultyManage = () => {
               faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
             }
           ]
-        }]);
+        }];
+        setTerms(defaultData);
+        setOriginalTerms(JSON.parse(JSON.stringify(defaultData)));
       }
     } else {
-      setTerms([{
+      const defaultData = [{
         term: '1',
         categories: [
           {
@@ -327,7 +336,9 @@ const FacultyManage = () => {
             faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
           }
         ]
-      }]);
+      }];
+      setTerms(defaultData);
+      setOriginalTerms(JSON.parse(JSON.stringify(defaultData)));
     }
   };
   
@@ -621,75 +632,192 @@ const FacultyManage = () => {
     });
   };
   
-  // 저장
+  // 변경 사항 감지 함수들 추가
+  const findChangedFaculty = () => {
+    const changes = {
+      created: [],
+      updated: [],
+      deleted: []
+    };
+
+    // 현재 데이터에서 모든 강사 수집
+    const currentFaculty = [];
+    terms.forEach(term => {
+      term.categories.forEach(category => {
+        category.faculty.forEach(faculty => {
+          if (faculty.name && faculty.name.trim() !== '') {
+            currentFaculty.push({
+              ...faculty,
+              term: term.term,
+              category: category.name
+            });
+          }
+        });
+      });
+    });
+
+    // 원본 데이터에서 모든 강사 수집
+    const originalFaculty = [];
+    originalTerms.forEach(term => {
+      term.categories.forEach(category => {
+        category.faculty.forEach(faculty => {
+          if (faculty.name && faculty.name.trim() !== '') {
+            originalFaculty.push({
+              ...faculty,
+              term: term.term,
+              category: category.name
+            });
+          }
+        });
+      });
+    });
+
+    // 새로 생성된 강사 찾기 (원본에는 없고 현재에는 있는)
+    currentFaculty.forEach(current => {
+      if (!current._id) {
+        // _id가 없으면 새로운 강사
+        changes.created.push(current);
+      } else {
+        // 기존 강사인 경우 변경사항 확인
+        const original = originalFaculty.find(orig => orig._id === current._id);
+        if (original) {
+          // 내용이 변경되었는지 확인
+          if (
+            original.name !== current.name ||
+            original.biography !== current.biography ||
+            original.imageUrl !== current.imageUrl ||
+            original.term !== current.term ||
+            original.category !== current.category
+          ) {
+            changes.updated.push(current);
+          }
+        }
+      }
+    });
+
+    // 삭제된 강사 찾기 (원본에는 있고 현재에는 없는)
+    originalFaculty.forEach(original => {
+      if (original._id && !currentFaculty.find(current => current._id === original._id)) {
+        changes.deleted.push(original);
+      }
+    });
+
+    return changes;
+  };
+  
+  // 저장 (변경된 데이터만 업데이트)
   const handleSave = async () => {
     setIsSaving(true);
     
     try {
-      console.log('강사 데이터 저장 시작...');
+      console.log('강사 데이터 변경 사항 감지 시작...');
       
-      // 기존 데이터 삭제를 위해 모든 강사 불러오기
-      const existingLecturers = await apiService.getLecturersAll();
-      console.log('기존 강사 데이터 조회 결과:', existingLecturers?.length || 0, '명');
-      
-      // 기존 데이터 삭제
-      if (existingLecturers && Array.isArray(existingLecturers)) {
-        console.log('기존 강사 데이터 삭제 시작...');
-        for (const lecturer of existingLecturers) {
-          if (lecturer._id) {
+      const changes = findChangedFaculty();
+      console.log('감지된 변경 사항:', changes);
+
+      let operationCount = 0;
+
+      // 삭제된 강사 처리
+      if (changes.deleted.length > 0) {
+        console.log(`${changes.deleted.length}명의 강사 삭제 시작...`);
+        for (const faculty of changes.deleted) {
+          if (faculty._id) {
             try {
-              await apiService.deleteLecturer(lecturer._id);
+              await apiService.deleteLecturer(faculty._id);
+              operationCount++;
+              console.log(`강사 ${faculty.name} 삭제 완료`);
             } catch (deleteError) {
-              console.error(`ID ${lecturer._id} 강사 삭제 중 오류:`, deleteError);
+              console.error(`강사 ${faculty.name} 삭제 중 오류:`, deleteError);
             }
           }
         }
-        console.log('기존 강사 데이터 삭제 완료');
       }
-      
-      // 새 데이터 저장
-      const savedItems = [];
-      let order = 0;
-      
-      console.log('새 강사 데이터 저장 시작...');
-      for (const term of terms) {
-        for (const category of term.categories) {
-          // 이름이 있는 강사만 필터링
-          const validFaculty = category.faculty.filter(faculty => faculty.name && faculty.name.trim() !== '');
-          
-          // 각 강사 정보 저장
-          for (const faculty of validFaculty) {
-            const lecturerData = {
+
+      // 새로 생성된 강사 처리
+      if (changes.created.length > 0) {
+        console.log(`${changes.created.length}명의 새 강사 생성 시작...`);
+        for (const faculty of changes.created) {
+          const lecturerData = {
+            name: faculty.name,
+            biography: faculty.biography || '',
+            imageUrl: faculty.imageUrl || '',
+            term: faculty.term,
+            category: faculty.category,
+            order: operationCount++,
+            isActive: true
+          };
+
+          try {
+            const response = await apiService.createLecturer(lecturerData);
+            console.log(`새 강사 ${faculty.name} 생성 완료`);
+            
+            // 생성된 강사의 _id를 현재 데이터에 업데이트
+            const termIndex = terms.findIndex(t => t.term === faculty.term);
+            if (termIndex !== -1) {
+              const categoryIndex = terms[termIndex].categories.findIndex(c => c.name === faculty.category);
+              if (categoryIndex !== -1) {
+                const facultyIndex = terms[termIndex].categories[categoryIndex].faculty.findIndex(f => 
+                  f.name === faculty.name && !f._id
+                );
+                if (facultyIndex !== -1) {
+                  const newTerms = [...terms];
+                  newTerms[termIndex].categories[categoryIndex].faculty[facultyIndex]._id = response._id;
+                  setTerms(newTerms);
+                }
+              }
+            }
+          } catch (createError) {
+            console.error(`강사 ${faculty.name} 생성 중 오류:`, createError);
+          }
+        }
+      }
+
+      // 업데이트된 강사 처리
+      if (changes.updated.length > 0) {
+        console.log(`${changes.updated.length}명의 강사 업데이트 시작...`);
+        for (const faculty of changes.updated) {
+          if (faculty._id) {
+            const updateData = {
               name: faculty.name,
               biography: faculty.biography || '',
               imageUrl: faculty.imageUrl || '',
-              term: term.term,
-              category: category.name,
-              order: order++,
+              term: faculty.term,
+              category: faculty.category,
+              order: operationCount++,
               isActive: true
             };
-            
-            console.log(`강사 정보 저장 중: ${faculty.name}, 기수: ${term.term}, 카테고리: ${category.name}`);
+
             try {
-              const response = await apiService.createLecturer(lecturerData);
-              savedItems.push(response);
-            } catch (saveError) {
-              console.error(`강사 ${faculty.name} 저장 중 오류:`, saveError);
+              await apiService.updateLecturer(faculty._id, updateData);
+              console.log(`강사 ${faculty.name} 업데이트 완료`);
+            } catch (updateError) {
+              console.error(`강사 ${faculty.name} 업데이트 중 오류:`, updateError);
             }
           }
         }
       }
-      
+
+      // 변경사항이 없는 경우
+      if (changes.created.length === 0 && changes.updated.length === 0 && changes.deleted.length === 0) {
+        toast({
+          title: "변경사항 없음",
+          description: "저장할 변경사항이 없습니다.",
+        });
+        return;
+      }
+
       // 로컬 스토리지에도 백업으로 저장
       localStorage.setItem('faculty-data', JSON.stringify(terms));
       
+      // 원본 데이터 업데이트 (다음 변경 사항 감지를 위해)
+      setOriginalTerms(JSON.parse(JSON.stringify(terms)));
+
+      const totalOperations = changes.created.length + changes.updated.length + changes.deleted.length;
       toast({
         title: "저장 완료",
-        description: `${savedItems.length}개의 강사 정보가 MongoDB에 성공적으로 저장되었습니다.`,
+        description: `${totalOperations}개의 변경사항이 MongoDB에 성공적으로 반영되었습니다. (생성: ${changes.created.length}, 수정: ${changes.updated.length}, 삭제: ${changes.deleted.length})`,
       });
       
-      // 저장 후 데이터 다시 로드
-      await loadLecturers();
     } catch (error) {
       console.error('강사 정보 저장 실패:', error);
       toast({
