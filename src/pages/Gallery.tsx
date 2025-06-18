@@ -77,6 +77,7 @@ const Gallery = () => {
   const [error, setError] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryItem | null>(null);
+  const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
 
   // 페이지 상단으로 스크롤하는 함수
   const scrollToTop = () => {
@@ -110,6 +111,7 @@ const Gallery = () => {
     setIsLoading(true);
     try {
       // MongoDB API를 통해 갤러리 데이터 가져오기
+      console.log('MongoDB Atlas에서 갤러리 데이터 가져오기 시도');
       const data = await apiService.getGallery();
       
       if (Array.isArray(data) && data.length > 0) {
@@ -121,7 +123,7 @@ const Gallery = () => {
           _id: item._id,
           title: item.title,
           description: item.description,
-          imageUrl: item.imageUrl,
+          imageUrl: item.imageUrl || 'https://via.placeholder.com/600x400?text=Image+Unavailable',
           date: new Date(item.date).toISOString(),
           term: item.term
         }));
@@ -375,7 +377,7 @@ const Gallery = () => {
                         onClick={() => setSelectedImage(item)}
                       >
                         <img
-                          src={item.imageUrl}
+                          src={item.imageUrl || 'https://via.placeholder.com/600x400?text=Image+Unavailable'}
                           alt={item.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
