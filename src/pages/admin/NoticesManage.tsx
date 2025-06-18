@@ -15,10 +15,8 @@ import { apiService } from '@/lib/apiService';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import axios from 'axios';
 
-// API 기본 URL 설정 - 전체 URL 사용
-const API_BASE_URL = import.meta.env.MODE === 'production' 
-  ? 'https://snu-plp-hub-server.onrender.com/api' 
-  : 'http://localhost:5001/api';
+// API 기본 URL 설정
+const API_BASE_URL = 'https://snu-plp-hub-server.onrender.com/api';
 
 interface AttachmentFile {
   id: string;
