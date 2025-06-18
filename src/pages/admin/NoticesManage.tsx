@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,16 @@ const API_BASE_URL = import.meta.env.MODE === 'production'
   ? 'https://snu-plp-hub-server.onrender.com/api' 
   : 'http://localhost:5001/api';
 
+interface AttachmentFile {
+  id: string;
+  name: string;
+  originalName: string;
+  size: number;
+  type: string;
+  url: string;
+  uploadedAt: string;
+}
+
 interface Notice {
   _id?: string;
   id?: string;
@@ -28,6 +38,7 @@ interface Notice {
   author: string;
   createdAt: string;
   isImportant: boolean;
+  attachments?: AttachmentFile[];
 }
 
 const NoticesManage: React.FC = () => {
@@ -39,12 +50,44 @@ const NoticesManage: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadedAttachments, setUploadedAttachments] = useState<AttachmentFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     author: '',
     isImportant: false,
   });
+
+  // 지원되는 파일 형식
+  const SUPPORTED_FILE_TYPES = {
+    // 이미지
+    'image/jpeg': '.jpg,.jpeg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'image/webp': '.webp',
+    'image/svg+xml': '.svg',
+    // 문서
+    'application/pdf': '.pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+    'application/msword': '.doc',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+    'application/vnd.ms-excel': '.xls',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+    'application/vnd.ms-powerpoint': '.ppt',
+    // 텍스트
+    'text/plain': '.txt',
+    'text/csv': '.csv',
+    // 압축
+    'application/zip': '.zip',
+    'application/x-rar-compressed': '.rar'
+  };
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  const MAX_FILES = 5; // 최대 5개 파일
 
   // Admin 인증 체크
   useEffect(() => {
@@ -103,6 +146,140 @@ const NoticesManage: React.FC = () => {
       notice.author.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // 파일 선택 처리
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    // 파일 수 제한 확인
+    if (selectedFiles.length + files.length > MAX_FILES) {
+      toast({
+        title: "파일 수 제한 초과",
+        description: `최대 ${MAX_FILES}개의 파일만 업로드할 수 있습니다.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 파일 유효성 검사
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    files.forEach(file => {
+      // 파일 크기 확인
+      if (file.size > MAX_FILE_SIZE) {
+        invalidFiles.push(`${file.name} (파일 크기가 10MB를 초과합니다)`);
+        return;
+      }
+
+      // 파일 형식 확인
+      if (!Object.keys(SUPPORTED_FILE_TYPES).includes(file.type)) {
+        invalidFiles.push(`${file.name} (지원되지 않는 파일 형식입니다)`);
+        return;
+      }
+
+      // 중복 파일 확인
+      if (selectedFiles.some(existing => existing.name === file.name)) {
+        invalidFiles.push(`${file.name} (이미 선택된 파일입니다)`);
+        return;
+      }
+
+      validFiles.push(file);
+    });
+
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "파일 선택 오류",
+        description: invalidFiles.join(', '),
+        variant: "destructive",
+      });
+    }
+
+    if (validFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...validFiles]);
+    }
+
+    // 파일 입력 초기화
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // 선택된 파일 제거
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // 파일 업로드
+  const uploadFiles = async (files: File[]): Promise<AttachmentFile[]> => {
+    if (files.length === 0) return [];
+
+    setIsUploading(true);
+    const uploadedFiles: AttachmentFile[] = [];
+
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // 파일을 Base64로 변환 (서버 업로드 대신 임시로 사용)
+        const base64 = await convertFileToBase64(file);
+        
+        const attachment: AttachmentFile = {
+          id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: file.name,
+          originalName: file.name,
+          size: file.size,
+          type: file.type,
+          url: base64,
+          uploadedAt: new Date().toISOString()
+        };
+
+        uploadedFiles.push(attachment);
+      }
+
+      toast({
+        title: "파일 업로드 성공",
+        description: `${files.length}개의 파일이 업로드되었습니다.`,
+      });
+
+      return uploadedFiles;
+    } catch (error) {
+      console.error('파일 업로드 실패:', error);
+      toast({
+        title: "파일 업로드 실패",
+        description: "파일 업로드 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+      return [];
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // 파일을 Base64로 변환
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // 첨부파일 제거
+  const removeAttachment = (attachmentId: string) => {
+    setUploadedAttachments(prev => prev.filter(att => att.id !== attachmentId));
+  };
+
+  // 파일 크기를 읽기 쉬운 형식으로 변환
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const handleAddClick = () => {
     setFormData({
       title: '',
@@ -110,6 +287,8 @@ const NoticesManage: React.FC = () => {
       author: '',
       isImportant: false,
     });
+    setSelectedFiles([]);
+    setUploadedAttachments([]);
     setIsAddDialogOpen(true);
   };
 
@@ -121,6 +300,8 @@ const NoticesManage: React.FC = () => {
       author: notice.author,
       isImportant: notice.isImportant,
     });
+    setSelectedFiles([]);
+    setUploadedAttachments(notice.attachments || []);
     setIsEditDialogOpen(true);
   };
 
@@ -152,19 +333,32 @@ const NoticesManage: React.FC = () => {
 
     setIsLoading(true);
     try {
+      // 선택된 파일들 업로드
+      let attachments: AttachmentFile[] = [...uploadedAttachments];
+      if (selectedFiles.length > 0) {
+        const newAttachments = await uploadFiles(selectedFiles);
+        attachments = [...attachments, ...newAttachments];
+      }
+
+      // 공지사항 데이터에 첨부파일 정보 포함
+      const noticeData = {
+        ...formData,
+        attachments
+      };
+
       // 여러 서로 다른 엔드포인트로 시도
       let success = false;
       
       try {
         // 1. 먼저 apiService로 시도
-        await apiService.addNotice(formData);
+        await apiService.addNotice(noticeData);
         success = true;
       } catch (apiError) {
         console.log('apiService 실패, 직접 axios 요청 시도');
         
         try {
           // 2. apiService 실패시 직접 axios로 시도
-          await axios.post(`${API_BASE_URL}/notices`, formData, {
+          await axios.post(`${API_BASE_URL}/notices`, noticeData, {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer admin-auth'
@@ -177,7 +371,7 @@ const NoticesManage: React.FC = () => {
           try {
             // 3. 대체 서버 API 엔드포인트로 시도
             console.log('대체 경로로 시도: /api/content/notices');
-            await axios.post(`${API_BASE_URL.replace('/api', '/api/content')}/notices`, formData, {
+            await axios.post(`${API_BASE_URL.replace('/api', '/api/content')}/notices`, noticeData, {
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer admin-auth'
@@ -193,7 +387,7 @@ const NoticesManage: React.FC = () => {
       if (success) {
         toast({
           title: "공지사항 추가 성공",
-          description: "새 공지사항이 성공적으로 추가되었습니다.",
+          description: `새 공지사항이 성공적으로 추가되었습니다.${attachments.length > 0 ? ` (첨부파일 ${attachments.length}개 포함)` : ''}`,
         });
         
         // 공지사항 목록 새로고침
@@ -207,6 +401,8 @@ const NoticesManage: React.FC = () => {
           author: '',
           isImportant: false,
         });
+        setSelectedFiles([]);
+        setUploadedAttachments([]);
       } else {
         throw new Error('모든 추가 시도가 실패했습니다');
       }
@@ -236,20 +432,33 @@ const NoticesManage: React.FC = () => {
 
     setIsLoading(true);
     try {
+      // 선택된 파일들 업로드
+      let attachments: AttachmentFile[] = [...uploadedAttachments];
+      if (selectedFiles.length > 0) {
+        const newAttachments = await uploadFiles(selectedFiles);
+        attachments = [...attachments, ...newAttachments];
+      }
+
+      // 공지사항 데이터에 첨부파일 정보 포함
+      const noticeData = {
+        ...formData,
+        attachments
+      };
+
       // 공지사항 수정 시도
       const noticeId = selectedNotice._id || selectedNotice.id;
       let success = false;
       
       try {
         // 1. 먼저 apiService로 시도
-        await apiService.updateNotice(noticeId, formData);
+        await apiService.updateNotice(noticeId, noticeData);
         success = true;
       } catch (apiError) {
         console.log('apiService 실패, 직접 axios 요청 시도');
         
         try {
           // 2. apiService 실패시 직접 axios로 시도
-          await axios.put(`${API_BASE_URL}/notices/${noticeId}`, formData, {
+          await axios.put(`${API_BASE_URL}/notices/${noticeId}`, noticeData, {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer admin-auth'
@@ -262,7 +471,7 @@ const NoticesManage: React.FC = () => {
           try {
             // 3. 대체 서버 API 엔드포인트로 시도
             console.log('대체 경로로 시도: /api/content/notices');
-            await axios.put(`${API_BASE_URL.replace('/api', '/api/content')}/notices/${noticeId}`, formData, {
+            await axios.put(`${API_BASE_URL.replace('/api', '/api/content')}/notices/${noticeId}`, noticeData, {
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer admin-auth'
@@ -284,14 +493,15 @@ const NoticesManage: React.FC = () => {
         // 공지사항 목록 새로고침
         await loadNotices();
         setIsEditDialogOpen(false);
+        setSelectedNotice(null);
       } else {
         throw new Error('모든 수정 시도가 실패했습니다');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('공지사항 수정 실패:', error);
       toast({
         title: "공지사항 수정 실패",
-        description: "공지사항을 수정하는 중 오류가 발생했습니다.",
+        description: `공지사항을 수정하는 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`,
         variant: "destructive",
       });
     } finally {
@@ -300,68 +510,77 @@ const NoticesManage: React.FC = () => {
   };
 
   const handleDeleteNotice = async (id: string) => {
-    if (window.confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
-      setIsLoading(true);
+    if (!id) {
+      toast({
+        title: "삭제 오류",
+        description: "유효하지 않은 공지사항입니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // 공지사항 삭제 시도
+      let success = false;
+      
       try {
-        // apiService 사용하여 공지사항 삭제
-        let success = false;
+        // 1. 먼저 apiService로 시도
+        await apiService.deleteNotice(id);
+        success = true;
+      } catch (apiError) {
+        console.log('apiService 실패, 직접 axios 요청 시도');
         
         try {
-          // 1. 먼저 apiService로 시도
-          await apiService.deleteNotice(id);
+          // 2. apiService 실패시 직접 axios로 시도
+          await axios.delete(`${API_BASE_URL}/notices/${id}`, {
+            headers: {
+              'Authorization': 'Bearer admin-auth'
+            }
+          });
           success = true;
-        } catch (apiError) {
-          console.log('apiService 실패, 직접 axios 요청 시도');
+        } catch (axiosError) {
+          console.error('직접 axios 요청도 실패:', axiosError);
           
           try {
-            // 2. apiService 실패시 직접 axios로 시도
-            await axios.delete(`${API_BASE_URL}/notices/${id}`, {
+            // 3. 대체 서버 API 엔드포인트로 시도
+            console.log('대체 경로로 시도: /api/content/notices');
+            await axios.delete(`${API_BASE_URL.replace('/api', '/api/content')}/notices/${id}`, {
               headers: {
-                'Content-Type': 'application/json',
                 'Authorization': 'Bearer admin-auth'
               }
             });
             success = true;
-          } catch (axiosError) {
-            console.error('직접 axios 요청도 실패:', axiosError);
-            
-            try {
-              // 3. 대체 서버 API 엔드포인트로 시도
-              console.log('대체 경로로 시도: /api/content/notices');
-              await axios.delete(`${API_BASE_URL.replace('/api', '/api/content')}/notices/${id}`, {
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': 'Bearer admin-auth'
-                }
-              });
-              success = true;
-            } catch (fallbackError) {
-              console.error('모든 API 경로 시도 실패:', fallbackError);
-            }
+          } catch (fallbackError) {
+            console.error('모든 API 경로 시도 실패:', fallbackError);
           }
         }
-        
-        if (success) {
-          toast({
-            title: "공지사항 삭제 성공",
-            description: "공지사항이 성공적으로 삭제되었습니다.",
-          });
-          
-          // 공지사항 목록 새로고침
-          await loadNotices();
-        } else {
-          throw new Error('모든 삭제 시도가 실패했습니다');
-        }
-      } catch (error) {
-        console.error('공지사항 삭제 실패:', error);
-        toast({
-          title: "공지사항 삭제 실패",
-          description: "공지사항을 삭제하는 중 오류가 발생했습니다.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
       }
+      
+      if (success) {
+        toast({
+          title: "공지사항 삭제 성공",
+          description: "공지사항이 성공적으로 삭제되었습니다.",
+        });
+        
+        // 공지사항 목록 새로고침
+        await loadNotices();
+      } else {
+        throw new Error('모든 삭제 시도가 실패했습니다');
+      }
+    } catch (error: any) {
+      console.error('공지사항 삭제 실패:', error);
+      toast({
+        title: "공지사항 삭제 실패",
+        description: `공지사항을 삭제하는 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -377,7 +596,7 @@ const NoticesManage: React.FC = () => {
   const addNoticeDialog = () => {
     return (
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>새 공지사항 추가</DialogTitle>
             <p className="text-sm text-gray-500">
@@ -426,12 +645,89 @@ const NoticesManage: React.FC = () => {
               />
               <Label htmlFor="isImportant">중요 공지로 표시</Label>
             </div>
+
+            {/* 파일 첨부 섹션 */}
+            <div className="space-y-2 mt-4">
+              <Label>첨부파일</Label>
+              <div className="border border-dashed border-gray-300 rounded-lg p-4">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept={Object.values(SUPPORTED_FILE_TYPES).join(',')}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading || selectedFiles.length + uploadedAttachments.length >= MAX_FILES}
+                  className="w-full"
+                >
+                  {isUploading ? '업로드 중...' : '파일 선택'}
+                </Button>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  지원 형식: 이미지, PDF, Word, Excel, PowerPoint, 텍스트, 압축파일 (최대 {MAX_FILES}개, 각 10MB 이하)
+                </p>
+              </div>
+
+              {/* 선택된 파일 목록 */}
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">선택된 파일</Label>
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-blue-50 rounded border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium">{file.name}</span>
+                        <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeSelectedFile(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 업로드된 첨부파일 목록 */}
+              {uploadedAttachments.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">첨부파일</Label>
+                  {uploadedAttachments.map((attachment) => (
+                    <div key={attachment.id} className="flex items-center justify-between p-2 bg-green-50 rounded border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium">{attachment.originalName}</span>
+                        <span className="text-xs text-gray-500">({formatFileSize(attachment.size)})</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeAttachment(attachment.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline">취소</Button>
             </DialogClose>
-            <Button onClick={handleAddNotice}>추가</Button>
+            <Button onClick={handleAddNotice} disabled={isLoading || isUploading}>
+              {isLoading ? '추가 중...' : '추가'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -441,7 +737,7 @@ const NoticesManage: React.FC = () => {
   const editNoticeDialog = () => {
     return (
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>공지사항 수정</DialogTitle>
             <p className="text-sm text-gray-500">
@@ -487,12 +783,89 @@ const NoticesManage: React.FC = () => {
               />
               <Label htmlFor="editIsImportant">중요 공지로 표시</Label>
             </div>
+
+            {/* 파일 첨부 섹션 */}
+            <div className="space-y-2 mt-4">
+              <Label>첨부파일</Label>
+              <div className="border border-dashed border-gray-300 rounded-lg p-4">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept={Object.values(SUPPORTED_FILE_TYPES).join(',')}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading || selectedFiles.length + uploadedAttachments.length >= MAX_FILES}
+                  className="w-full"
+                >
+                  {isUploading ? '업로드 중...' : '파일 선택'}
+                </Button>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  지원 형식: 이미지, PDF, Word, Excel, PowerPoint, 텍스트, 압축파일 (최대 {MAX_FILES}개, 각 10MB 이하)
+                </p>
+              </div>
+
+              {/* 선택된 파일 목록 */}
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">선택된 파일</Label>
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-blue-50 rounded border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium">{file.name}</span>
+                        <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeSelectedFile(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 업로드된 첨부파일 목록 */}
+              {uploadedAttachments.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">첨부파일</Label>
+                  {uploadedAttachments.map((attachment) => (
+                    <div key={attachment.id} className="flex items-center justify-between p-2 bg-green-50 rounded border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium">{attachment.originalName}</span>
+                        <span className="text-xs text-gray-500">({formatFileSize(attachment.size)})</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeAttachment(attachment.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline">취소</Button>
             </DialogClose>
-            <Button onClick={handleSaveChanges}>저장</Button>
+            <Button onClick={handleSaveChanges} disabled={isLoading || isUploading}>
+              {isLoading ? '저장 중...' : '저장'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -529,6 +902,7 @@ const NoticesManage: React.FC = () => {
                   <TableHead>제목</TableHead>
                   <TableHead>작성자</TableHead>
                   <TableHead>작성일</TableHead>
+                  <TableHead>첨부파일</TableHead>
                   <TableHead>관리</TableHead>
                 </TableRow>
               </TableHeader>
@@ -546,6 +920,15 @@ const NoticesManage: React.FC = () => {
                       <TableCell className="font-medium">{notice.title}</TableCell>
                       <TableCell>{notice.author}</TableCell>
                       <TableCell>{formatDate(notice.createdAt)}</TableCell>
+                      <TableCell>
+                        {notice.attachments && notice.attachments.length > 0 ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                            📎 {notice.attachments.length}개
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">없음</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
                           <Button
@@ -568,7 +951,7 @@ const NoticesManage: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">
+                    <TableCell colSpan={6} className="text-center py-4">
                       공지사항이 없거나 검색 결과가 없습니다.
                     </TableCell>
                   </TableRow>

@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
 import { apiService } from '@/lib/apiService';
 
@@ -15,6 +16,16 @@ const headerStyle = `
   }
 `;
 
+interface AttachmentFile {
+  id: string;
+  name: string;
+  originalName: string;
+  size: number;
+  type: string;
+  url: string;
+  uploadedAt: string;
+}
+
 interface Notice {
   _id?: string;
   id?: string;
@@ -23,6 +34,7 @@ interface Notice {
   author: string;
   createdAt: string;
   isImportant: boolean;
+  attachments?: AttachmentFile[];
 }
 
 const Notices = () => {
@@ -74,7 +86,8 @@ const Notices = () => {
           content: item.content,
           author: item.author,
           createdAt: new Date(item.createdAt).toISOString(),
-          isImportant: item.isImportant
+          isImportant: item.isImportant,
+          attachments: item.attachments || []
         }));
         console.log('변환된 데이터:', formattedData);
         
@@ -112,6 +125,45 @@ const Notices = () => {
     });
   };
 
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (fileType: string): string => {
+    if (fileType.startsWith('image/')) return '🖼️';
+    if (fileType === 'application/pdf') return '📄';
+    if (fileType.includes('word')) return '📝';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📊';
+    if (fileType.includes('powerpoint') || fileType.includes('presentation')) return '📈';
+    if (fileType.startsWith('text/')) return '📃';
+    if (fileType.includes('zip') || fileType.includes('rar')) return '📦';
+    return '📎';
+  };
+
+  const handleFileDownload = (attachment: AttachmentFile) => {
+    try {
+      // Base64 데이터 URL인 경우 다운로드 처리
+      if (attachment.url.startsWith('data:')) {
+        const link = document.createElement('a');
+        link.href = attachment.url;
+        link.download = attachment.originalName || attachment.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        // 일반 URL인 경우
+        window.open(attachment.url, '_blank');
+      }
+    } catch (error) {
+      console.error('파일 다운로드 실패:', error);
+      alert('파일 다운로드에 실패했습니다.');
+    }
+  };
+
   const handleNoticeClick = (notice: Notice) => {
     setSelectedNotice(notice);
   };
@@ -126,7 +178,6 @@ const Notices = () => {
         <section className="bg-mainBlue text-white py-16">
           <div className="container mx-auto px-4">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">공지사항</h1>
-
           </div>
         </section>
         
@@ -160,18 +211,24 @@ const Notices = () => {
                 >
                   <CardContent className="p-6">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-xl font-bold">{notice.title}</h3>
                           {notice.isImportant && (
                             <Badge variant="destructive" className="ml-2">
                               중요
                             </Badge>
                           )}
+                          {notice.attachments && notice.attachments.length > 0 && (
+                            <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-300">
+                              📎 {notice.attachments.length}개 파일
+                            </Badge>
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-col items-start md:items-end text-sm text-gray-500">
                         <span>{formatDate(notice.createdAt)}</span>
+                        <span className="text-xs">{notice.author}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -188,8 +245,8 @@ const Notices = () => {
       
       {/* 공지사항 상세 보기 다이얼로그 */}
       <Dialog open={!!selectedNotice} onOpenChange={(open) => !open && setSelectedNotice(null)}>
-        <DialogContent className="sm:max-w-2xl max-h-[50vh] overflow-hidden">
-          <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden">
+          <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-10">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
@@ -197,8 +254,8 @@ const Notices = () => {
           </DialogClose>
           
           {selectedNotice && (
-            <div className="py-4 pr-2 h-[calc(50vh-80px)] overflow-y-auto scrollbar-thin">
-              <div className="flex items-center gap-2 mb-4">
+            <div className="py-4 pr-6 h-[calc(90vh-120px)] overflow-y-auto">
+              <div className="flex items-center gap-2 mb-6">
                 <h2 className="text-2xl font-bold">{selectedNotice.title}</h2>
                 {selectedNotice.isImportant && (
                   <Badge variant="destructive">중요</Badge>
@@ -206,13 +263,65 @@ const Notices = () => {
               </div>
               
               <div className="flex justify-between items-center text-sm text-gray-500 mb-6 pb-4 border-b">
-                <span>{selectedNotice.author}</span>
+                <span className="font-medium">{selectedNotice.author}</span>
                 <span>{formatDate(selectedNotice.createdAt)}</span>
               </div>
               
-              <div className="whitespace-pre-line text-gray-800">
+              <div className="whitespace-pre-line text-gray-800 mb-8 leading-relaxed">
                 {selectedNotice.content}
               </div>
+
+              {/* 첨부파일 섹션 */}
+              {selectedNotice.attachments && selectedNotice.attachments.length > 0 && (
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-700">
+                    📎 첨부파일 ({selectedNotice.attachments.length}개)
+                  </h3>
+                  <div className="space-y-3">
+                    {selectedNotice.attachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                          <span className="text-2xl flex-shrink-0">
+                            {getFileIcon(attachment.type)}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {attachment.originalName}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatFileSize(attachment.size)} • {attachment.type.split('/')[1]?.toUpperCase() || 'FILE'}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => handleFileDownload(attachment)}
+                          variant="outline"
+                          size="sm"
+                          className="ml-4 flex-shrink-0 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
+                        >
+                          <svg 
+                            className="w-4 h-4 mr-2" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth={2} 
+                              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+                            />
+                          </svg>
+                          다운로드
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
