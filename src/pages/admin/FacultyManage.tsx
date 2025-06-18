@@ -23,6 +23,7 @@ interface Faculty {
   name: string;
   imageUrl: string;
   biography: string;
+  order?: number;
 }
 
 interface FacultyCategory {
@@ -146,7 +147,8 @@ const FacultyManage = () => {
           _id: lecturer._id,
           name: lecturer.name,
           imageUrl: lecturer.imageUrl || '',
-          biography: lecturer.biography || ''
+          biography: lecturer.biography || '',
+          order: lecturer.order
         });
       }
     });
@@ -167,7 +169,7 @@ const FacultyManage = () => {
         categories.push({
           id: '1',
           name: '특별강사진',
-          faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+          faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
         });
       }
       
@@ -182,7 +184,7 @@ const FacultyManage = () => {
         categories.push({
           id: '2',
           name: '서울대 정치외교학부 교수진',
-          faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+          faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
         });
       }
       
@@ -200,12 +202,12 @@ const FacultyManage = () => {
           {
             id: '1',
             name: '특별강사진',
-            faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+            faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
           },
           {
             id: '2',
             name: '서울대 정치외교학부 교수진',
-            faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+            faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
           }
         ]
       }];
@@ -235,12 +237,12 @@ const FacultyManage = () => {
                   {
                     id: '1',
                     name: '특별강사진',
-                    faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+                    faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
                   },
                   {
                     id: '2',
                     name: '서울대 정치외교학부 교수진',
-                    faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+                    faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
                   }
                 ]
               };
@@ -256,7 +258,7 @@ const FacultyManage = () => {
               updatedCategories.push({
                 id: '1',
                 name: '특별강사진',
-                faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+                faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
               });
             }
             
@@ -264,7 +266,7 @@ const FacultyManage = () => {
               updatedCategories.push({
                 id: '2',
                 name: '서울대 정치외교학부 교수진',
-                faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+                faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
               });
             }
             
@@ -284,12 +286,12 @@ const FacultyManage = () => {
               {
                 id: '1',
                 name: '특별강사진',
-                faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+                faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
               },
               {
                 id: '2',
                 name: '서울대 정치외교학부 교수진',
-                faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+                faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
               }
             ]
           }];
@@ -309,12 +311,12 @@ const FacultyManage = () => {
             {
               id: '1',
               name: '특별강사진',
-              faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+              faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
             },
             {
               id: '2',
               name: '서울대 정치외교학부 교수진',
-              faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+              faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
             }
           ]
         }];
@@ -328,12 +330,12 @@ const FacultyManage = () => {
           {
             id: '1',
             name: '특별강사진',
-            faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+            faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
           },
           {
             id: '2',
             name: '서울대 정치외교학부 교수진',
-            faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+            faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
           }
         ]
       }];
@@ -369,12 +371,12 @@ const FacultyManage = () => {
         {
           id: '1',
           name: '특별강사진',
-          faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+          faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
         },
         {
           id: '2',
           name: '서울대 정치외교학부 교수진',
-          faculty: [{ id: '1', name: '', imageUrl: '', biography: '' }]
+          faculty: [{ id: '1', name: '', imageUrl: '', biography: '', order: 0 }]
         }
       ]
     };
@@ -422,7 +424,8 @@ const FacultyManage = () => {
       id: (lastId + 1).toString(),
       name: '',
       imageUrl: '',
-      biography: ''
+      biography: '',
+      order: 0
     };
     
     newTerms[termIndex].categories[categoryIndex].faculty.push(newFaculty);
@@ -468,12 +471,12 @@ const FacultyManage = () => {
     categoryIndex: number,
     facultyIndex: number,
     field: keyof Faculty,
-    value: string
+    value: string | number
   ) => {
     if (!selectedCategory) return;
     
     const newTerms = [...terms];
-    newTerms[termIndex].categories[categoryIndex].faculty[facultyIndex][field] = value;
+    (newTerms[termIndex].categories[categoryIndex].faculty[facultyIndex] as any)[field] = value;
     setTerms(newTerms);
     
     // selectedCategory 업데이트
@@ -687,7 +690,8 @@ const FacultyManage = () => {
             original.biography !== current.biography ||
             original.imageUrl !== current.imageUrl ||
             original.term !== current.term ||
-            original.category !== current.category
+            original.category !== current.category ||
+            original.order !== current.order
           ) {
             changes.updated.push(current);
           }
@@ -737,15 +741,15 @@ const FacultyManage = () => {
       if (changes.created.length > 0) {
         console.log(`${changes.created.length}명의 새 강사 생성 시작...`);
         for (const faculty of changes.created) {
-          const lecturerData = {
-            name: faculty.name,
-            biography: faculty.biography || '',
-            imageUrl: faculty.imageUrl || '',
-            term: faculty.term,
-            category: faculty.category,
-            order: operationCount++,
-            isActive: true
-          };
+                     const lecturerData = {
+             name: faculty.name,
+             biography: faculty.biography || '',
+             imageUrl: faculty.imageUrl || '',
+             term: faculty.term,
+             category: faculty.category,
+             order: faculty.order !== undefined ? faculty.order : operationCount++,
+             isActive: true
+           };
 
           try {
             const response = await apiService.createLecturer(lecturerData);
@@ -777,15 +781,15 @@ const FacultyManage = () => {
         console.log(`${changes.updated.length}명의 강사 업데이트 시작...`);
         for (const faculty of changes.updated) {
           if (faculty._id) {
-            const updateData = {
-              name: faculty.name,
-              biography: faculty.biography || '',
-              imageUrl: faculty.imageUrl || '',
-              term: faculty.term,
-              category: faculty.category,
-              order: operationCount++,
-              isActive: true
-            };
+                         const updateData = {
+               name: faculty.name,
+               biography: faculty.biography || '',
+               imageUrl: faculty.imageUrl || '',
+               term: faculty.term,
+               category: faculty.category,
+               order: faculty.order !== undefined ? faculty.order : operationCount++,
+               isActive: true
+             };
 
             try {
               await apiService.updateLecturer(faculty._id, updateData);
@@ -983,7 +987,7 @@ const FacultyManage = () => {
                               </Button>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               <div className="space-y-2">
                                 <label className="text-sm font-medium">성명 <span className="text-red-500">*</span></label>
                                 <Input
@@ -995,6 +999,22 @@ const FacultyManage = () => {
                                 {faculty.name.trim() === '' && (
                                   <p className="text-xs text-red-500">성명은 필수 입력 항목입니다.</p>
                                 )}
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                  노출 순서 
+                                  {selectedCategory?.name === '특별강사진' && <span className="text-red-500">*</span>}
+                                </label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={faculty.order || 0}
+                                  onChange={(e) => handleFacultyChange(activeTermIndex, activeCategoryIndex, facultyIndex, 'order', parseInt(e.target.value) || 0)}
+                                  placeholder="순서 (0부터 시작)"
+                                />
+                                <p className="text-xs text-gray-500">
+                                  숫자가 낮을수록 먼저 표시됩니다 (0, 1, 2, 3...)
+                                </p>
                               </div>
                               <div className="space-y-2">
                                 <label className="text-sm font-medium">프로필 이미지</label>

@@ -220,7 +220,26 @@ const ScheduleLecturers = () => {
         // 각 기수 내에서 카테고리별로 그룹화
         const categories = Object.keys(termGroups[term]).map(category => ({
           category,
-          lecturers: termGroups[term][category].sort((a, b) => a.order - b.order)
+          lecturers: termGroups[term][category].sort((a, b) => {
+            // 특별강사진의 경우 order 필드를 우선 사용하여 정렬
+            if (category === '특별강사진') {
+              const orderA = a.order !== undefined ? a.order : 999;
+              const orderB = b.order !== undefined ? b.order : 999;
+              // order가 같으면 이름으로 정렬
+              if (orderA === orderB) {
+                return a.name.localeCompare(b.name);
+              }
+              return orderA - orderB;
+            } else {
+              // 다른 카테고리는 기존대로 order 또는 이름으로 정렬
+              const orderA = a.order !== undefined ? a.order : 999;
+              const orderB = b.order !== undefined ? b.order : 999;
+              if (orderA === orderB) {
+                return a.name.localeCompare(b.name);
+              }
+              return orderA - orderB;
+            }
+          })
         }));
         
         // '특별강사진'이 먼저 오도록 카테고리 정렬
