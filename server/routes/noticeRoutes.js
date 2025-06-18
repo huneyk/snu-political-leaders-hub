@@ -40,47 +40,72 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 공지사항 생성 (인증 제거됨)
+// 공지사항 생성
 router.post('/', async (req, res) => {
   try {
-    const { title, content, author, isImportant } = req.body;
+    console.log('=== 공지사항 생성 요청 ===');
+    console.log('전체 요청 데이터:', JSON.stringify(req.body, null, 2));
+    console.log('첨부파일 데이터 타입:', typeof req.body.attachments);
+    console.log('첨부파일 데이터:', req.body.attachments);
     
-    if (!title || !content || !author) {
-      return res.status(400).json({ message: '제목, 내용, 작성자는 필수 항목입니다.' });
-    }
+    const { title, content, author, isImportant, attachments } = req.body;
     
-    const newNotice = new Notice({
+    const notice = new Notice({
       title,
       content,
       author,
-      isImportant: isImportant || false
+      isImportant: isImportant || false,
+      attachments: attachments || []
     });
+
+    console.log('저장할 공지사항 객체:', JSON.stringify(notice, null, 2));
     
-    const savedNotice = await newNotice.save();
+    const savedNotice = await notice.save();
+    console.log('저장된 공지사항:', JSON.stringify(savedNotice, null, 2));
+    
     res.status(201).json(savedNotice);
   } catch (error) {
-    console.error('공지사항 생성 실패:', error);
-    res.status(500).json({ message: '공지사항을 생성하는 중 오류가 발생했습니다.' });
+    console.error('공지사항 생성 오류:', error);
+    res.status(500).json({ message: '공지사항 생성 실패', error: error.message });
   }
 });
 
-// 공지사항 수정 (인증 제거됨)
+// 공지사항 수정
 router.put('/:id', async (req, res) => {
   try {
-    const updatedNotice = await Notice.findByIdAndUpdate(
+    console.log('=== 공지사항 수정 요청 ===');
+    console.log('수정할 ID:', req.params.id);
+    console.log('전체 요청 데이터:', JSON.stringify(req.body, null, 2));
+    console.log('첨부파일 데이터 타입:', typeof req.body.attachments);
+    console.log('첨부파일 데이터:', req.body.attachments);
+    
+    const { title, content, author, isImportant, attachments } = req.body;
+    
+    const updateData = {
+      title,
+      content,
+      author,
+      isImportant: isImportant || false,
+      attachments: attachments || []
+    };
+    
+    console.log('업데이트할 데이터:', JSON.stringify(updateData, null, 2));
+    
+    const notice = await Notice.findByIdAndUpdate(
       req.params.id,
-      req.body,
-      { new: true }
+      updateData,
+      { new: true, runValidators: true }
     );
-    
-    if (!updatedNotice) {
-      return res.status(404).json({ message: '해당 공지사항을 찾을 수 없습니다.' });
+
+    if (!notice) {
+      return res.status(404).json({ message: '공지사항을 찾을 수 없습니다' });
     }
-    
-    res.json(updatedNotice);
+
+    console.log('수정된 공지사항:', JSON.stringify(notice, null, 2));
+    res.json(notice);
   } catch (error) {
-    console.error(`공지사항 ID ${req.params.id} 수정 실패:`, error);
-    res.status(500).json({ message: '공지사항을 수정하는 중 오류가 발생했습니다.' });
+    console.error('공지사항 수정 오류:', error);
+    res.status(500).json({ message: '공지사항 수정 실패', error: error.message });
   }
 });
 
@@ -93,6 +118,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: '해당 공지사항을 찾을 수 없습니다.' });
     }
     
+    console.log('공지사항 삭제 성공:', req.params.id);
     res.json({ message: '공지사항이 성공적으로 삭제되었습니다.' });
   } catch (error) {
     console.error(`공지사항 ID ${req.params.id} 삭제 실패:`, error);

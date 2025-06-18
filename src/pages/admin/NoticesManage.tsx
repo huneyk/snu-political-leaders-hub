@@ -148,7 +148,10 @@ const NoticesManage: React.FC = () => {
 
   // 파일 선택 처리
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('=== 파일 선택 이벤트 발생 ===');
     const files = Array.from(e.target.files || []);
+    console.log('선택된 파일 개수:', files.length);
+    console.log('선택된 파일들:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
     
     // 파일 수 제한 확인
     if (selectedFiles.length + files.length > MAX_FILES) {
@@ -195,7 +198,12 @@ const NoticesManage: React.FC = () => {
     }
 
     if (validFiles.length > 0) {
-      setSelectedFiles(prev => [...prev, ...validFiles]);
+      console.log('유효한 파일들을 selectedFiles에 추가:', validFiles.length, '개');
+      setSelectedFiles(prev => {
+        const newFiles = [...prev, ...validFiles];
+        console.log('selectedFiles 업데이트 완료. 총 파일 개수:', newFiles.length);
+        return newFiles;
+      });
     }
 
     // 파일 입력 초기화
@@ -322,6 +330,12 @@ const NoticesManage: React.FC = () => {
   };
 
   const handleAddNotice = async () => {
+    console.log('=== handleAddNotice 함수 시작 ===');
+    console.log('현재 selectedFiles:', selectedFiles);
+    console.log('selectedFiles.length:', selectedFiles.length);
+    console.log('현재 uploadedAttachments:', uploadedAttachments);
+    console.log('uploadedAttachments.length:', uploadedAttachments.length);
+    
     if (!formData.title || !formData.content || !formData.author) {
       toast({
         title: "입력 오류",
@@ -335,9 +349,16 @@ const NoticesManage: React.FC = () => {
     try {
       // 선택된 파일들 업로드
       let attachments: AttachmentFile[] = [...uploadedAttachments];
+      console.log('초기 attachments 배열:', attachments);
+      
       if (selectedFiles.length > 0) {
+        console.log('selectedFiles가 있음. uploadFiles 호출 예정');
         const newAttachments = await uploadFiles(selectedFiles);
+        console.log('uploadFiles 완료. 업로드된 첨부파일:', newAttachments);
         attachments = [...attachments, ...newAttachments];
+        console.log('최종 attachments 배열:', attachments);
+      } else {
+        console.log('selectedFiles가 비어 있음. 파일 업로드 건너뜀');
       }
 
       // 공지사항 데이터에 첨부파일 정보 포함
@@ -346,11 +367,18 @@ const NoticesManage: React.FC = () => {
         attachments
       };
 
+      console.log('=== 클라이언트: 공지사항 추가 데이터 ===');
+      console.log('formData:', formData);
+      console.log('attachments 개수:', attachments.length);
+      console.log('attachments 내용:', attachments);
+      console.log('최종 noticeData:', noticeData);
+
       // 여러 서로 다른 엔드포인트로 시도
       let success = false;
       
       try {
         // 1. 먼저 apiService로 시도
+        console.log('apiService.addNotice 호출 시작');
         await apiService.addNotice(noticeData);
         success = true;
       } catch (apiError) {
@@ -445,12 +473,19 @@ const NoticesManage: React.FC = () => {
         attachments
       };
 
+      console.log('=== 클라이언트: 공지사항 수정 데이터 ===');
+      console.log('formData:', formData);
+      console.log('attachments 개수:', attachments.length);
+      console.log('attachments 내용:', attachments);
+      console.log('최종 noticeData:', noticeData);
+
       // 공지사항 수정 시도
       const noticeId = selectedNotice._id || selectedNotice.id;
       let success = false;
       
       try {
         // 1. 먼저 apiService로 시도
+        console.log('apiService.updateNotice 호출 시작');
         await apiService.updateNotice(noticeId, noticeData);
         success = true;
       } catch (apiError) {
