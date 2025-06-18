@@ -1491,6 +1491,13 @@ export const apiService = {
   addNotice: async (noticeData: any) => {
     try {
       console.log('새 공지사항 추가 시작');
+      console.log('=== 서버로 전송할 데이터 상세 분석 ===');
+      console.log('noticeData 타입:', typeof noticeData);
+      console.log('noticeData 전체:', noticeData);
+      console.log('attachments 존재 여부:', 'attachments' in noticeData);
+      console.log('attachments 타입:', typeof noticeData.attachments);
+      console.log('attachments 길이:', noticeData.attachments?.length);
+      console.log('attachments 내용:', JSON.stringify(noticeData.attachments, null, 2));
       
       // admin-auth 토큰 추가
       const response = await axios.post(`${baseURL}/notices`, noticeData, {
@@ -1501,6 +1508,7 @@ export const apiService = {
       });
       
       console.log('공지사항 추가 성공:', response.status);
+      console.log('서버 응답 데이터:', response.data);
       return response.data;
     } catch (error) {
       console.error('공지사항 추가 실패:', error);
@@ -1519,6 +1527,13 @@ export const apiService = {
   updateNotice: async (id: string, noticeData: any) => {
     try {
       console.log(`공지사항 수정 시작 (ID: ${id})`);
+      console.log('=== 서버로 전송할 수정 데이터 상세 분석 ===');
+      console.log('noticeData 타입:', typeof noticeData);
+      console.log('noticeData 전체:', noticeData);
+      console.log('attachments 존재 여부:', 'attachments' in noticeData);
+      console.log('attachments 타입:', typeof noticeData.attachments);
+      console.log('attachments 길이:', noticeData.attachments?.length);
+      console.log('attachments 내용:', JSON.stringify(noticeData.attachments, null, 2));
       
       // admin-auth 토큰 추가
       const response = await axios.put(`${baseURL}/notices/${id}`, noticeData, {
@@ -1529,6 +1544,7 @@ export const apiService = {
       });
       
       console.log('공지사항 수정 성공:', response.status);
+      console.log('서버 응답 데이터:', response.data);
       return response.data;
     } catch (error) {
       console.error(`공지사항 수정 실패 (ID: ${id}):`, error);
