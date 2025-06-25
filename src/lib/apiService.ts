@@ -8,7 +8,7 @@
 import axios from 'axios';
 
 // API 서버 URL 설정 - fallback 시스템 구현
-const PRODUCTION_API = 'https://plp-api-server.onrender.com/api'; // 올바른 URL로 고정
+const PRODUCTION_API = 'https://snu-plp-hub-server.onrender.com/api'; // 서버 로그에서 확인된 실제 작동 URL
 const LOCALHOST_API = 'http://localhost:5001/api';
 
 // 개발 환경에 따른 baseURL 설정
@@ -49,7 +49,7 @@ const makeApiRequest = async <T>(
   } else {
     // Production 환경에서는 여러 URL 시도
     const urls = [
-      'https://plp-api-server.onrender.com/api', // 메인 production 서버
+      'https://snu-plp-hub-server.onrender.com/api', // 서버 로그에서 확인된 실제 작동 서버
       'https://plp-backend.onrender.com/api', // 백업 서버 
     ];
     let lastError: any = null;
@@ -1492,7 +1492,7 @@ export const apiService = {
       });
       
       console.log('전체 강사진 데이터 조회 결과 성공');
-      console.log('조회된 강사 수:', data?.length || 0);
+      console.log('조회된 강사 수:', Array.isArray(data) ? data.length : 0);
       
       return data;
     } catch (error) {
