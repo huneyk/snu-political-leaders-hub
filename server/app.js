@@ -60,9 +60,7 @@ app.use('/uploads', express.static(uploadDir));
 console.log('정적 파일 경로 설정됨:', '/uploads ->', uploadDir);
 
 // 정적 파일 제공 (개발 환경에서만)
-if (process.env.NODE_ENV !== 'production') {
-  app.use(express.static(path.join(__dirname, '..', 'build')));
-}
+// Removed static file serving to prevent API conflicts
 
 // 라우트 불러오기
 const usersRoutes = require('./routes/usersRoutes');
@@ -179,6 +177,14 @@ app.use('/api/*', (req, res) => {
   });
 });
 
+// 루트가 아닌 모든 경로에 대해 404 반환 (API 서버이므로)
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    message: 'API 서버입니다. /api/* 경로만 지원됩니다.',
+    path: req.originalUrl 
+  });
+});
+
 // 전역 에러 핸들링 미들웨어
 app.use((err, req, res, next) => {
   console.error('서버 오류:', err);
@@ -195,12 +201,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 클라이언트 앱 제공 (SPA 지원) - 개발 환경에서만
-if (process.env.NODE_ENV !== 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'build', 'index.html'));
-  });
-}
+// SPA support disabled for API-only server
+// Removed catch-all route to prevent API conflicts
 
 // 서버 시작
 const PORT = process.env.PORT || 5001;

@@ -83,8 +83,13 @@ router.put('/:id', isAdmin, async (req, res) => {
 // 기본 입학 정보 업데이트 (관리자 전용) - 기존 PUT 엔드포인트와의 호환성 유지
 router.put('/', isAdmin, async (req, res) => {
   try {
+    console.log('입학 정보 업데이트 요청 받음');
+    console.log('요청 데이터:', JSON.stringify(req.body, null, 2));
+    console.log('endYear 값:', req.body.endYear);
+    
     // 현재 활성화된 입학 정보 찾기
     const currentAdmission = await Admission.findOne({ isActive: true });
+    console.log('기존 입학 정보 ID:', currentAdmission?._id);
     
     if (currentAdmission) {
       // 기존 데이터 업데이트
@@ -97,15 +102,18 @@ router.put('/', isAdmin, async (req, res) => {
         { new: true }
       );
       
+      console.log('업데이트 완료, endYear:', updatedAdmission.endYear);
       res.json(updatedAdmission);
     } else {
       // 데이터가 없으면 새로 생성
+      console.log('새 입학 정보 생성');
       const newAdmission = new Admission({
         ...req.body,
         isActive: true
       });
       
       const savedAdmission = await newAdmission.save();
+      console.log('새 데이터 생성 완료, endYear:', savedAdmission.endYear);
       res.status(201).json(savedAdmission);
     }
   } catch (error) {

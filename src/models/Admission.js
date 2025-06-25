@@ -74,6 +74,18 @@ const admissionSchema = new mongoose.Schema({
       message: '월은 1부터 12 사이의 숫자여야 합니다.'
     }
   },
+  endYear: {
+    type: String,
+    required: false,
+    trim: true,
+    validate: {
+      validator: function(v) {
+        if (!v) return true; // 선택적 필드이므로 빈 값도 허용
+        return /^\d{4}$/.test(v);
+      },
+      message: '종료 연도는 4자리 숫자여야 합니다.'
+    }
+  },
   capacity: {
     type: String,
     required: true,

@@ -173,6 +173,7 @@ router.put('/', /* authenticateToken, */ processTermField, async (req, res) => {
     const { _id, isActive, ...updateData } = req.body;
     
     console.log('Updating admission with ID:', _id, 'Data:', req.body);
+    console.log('endYear value:', req.body.endYear);
     
     if (!_id) {
       return res.status(400).json({ message: 'ID가 필요합니다.' });
@@ -195,6 +196,7 @@ router.put('/', /* authenticateToken, */ processTermField, async (req, res) => {
     }
     
     console.log('Updated admission info:', updatedAdmissionInfo);
+    console.log('Final endYear value:', updatedAdmissionInfo.endYear);
     res.json(updatedAdmissionInfo);
   } catch (error) {
     console.error('입학 정보 업데이트 실패:', error);
