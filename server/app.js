@@ -59,8 +59,10 @@ if (!fs.existsSync(uploadDir)) {
 app.use('/uploads', express.static(uploadDir));
 console.log('정적 파일 경로 설정됨:', '/uploads ->', uploadDir);
 
-// 정적 파일 제공
-app.use(express.static(path.join(__dirname, '..', 'build')));
+// 정적 파일 제공 (개발 환경에서만)
+if (process.env.NODE_ENV !== 'production') {
+  app.use(express.static(path.join(__dirname, '..', 'build')));
+}
 
 // 라우트 불러오기
 const usersRoutes = require('./routes/usersRoutes');
@@ -193,10 +195,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 클라이언트 앱 제공 (SPA 지원)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'build', 'index.html'));
-});
+// 클라이언트 앱 제공 (SPA 지원) - 개발 환경에서만
+if (process.env.NODE_ENV !== 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'build', 'index.html'));
+  });
+}
 
 // 서버 시작
 const PORT = process.env.PORT || 5001;
