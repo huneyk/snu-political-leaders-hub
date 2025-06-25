@@ -27,6 +27,7 @@ interface AdmissionInfo {
   year: string;
   startMonth: string;
   endMonth: string;
+  endYear: string;
   capacity: string;
   qualificationContent: string;
   targets: Item[];
@@ -52,6 +53,7 @@ const AdmissionManage = () => {
     year: '2025',
     startMonth: '3',
     endMonth: '8',
+    endYear: '2025',
     capacity: '30',
     qualificationContent: '다음 중 하나 이상에 해당하는 전·현직자',
     targets: [
@@ -259,7 +261,13 @@ const AdmissionManage = () => {
                 onChange={(e) => handleBasicInfoChange('startMonth', e.target.value)}
                 className="w-16"
               />
-              <span>~</span>
+              <span>월 ~</span>
+              <Input 
+                value={admissionInfo.endYear}
+                onChange={(e) => handleBasicInfoChange('endYear', e.target.value)}
+                className="w-20"
+              />
+              <span>년</span>
               <Input 
                 value={admissionInfo.endMonth}
                 onChange={(e) => handleBasicInfoChange('endMonth', e.target.value)}

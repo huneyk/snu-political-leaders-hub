@@ -18,6 +18,7 @@ const admissionSchema = new mongoose.Schema({
   year: String,
   startMonth: String,
   endMonth: String,
+  endYear: String,
   capacity: String,
   qualificationContent: String,
   targets: [targetSchema],

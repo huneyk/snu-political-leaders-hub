@@ -20,6 +20,7 @@ interface AdmissionInfo {
   year: string;
   startMonth: string;
   endMonth: string;
+  endYear: string;
   capacity: string;
   qualificationContent: string;
   targets: Item[];
@@ -116,7 +117,7 @@ const AdmissionInfo = () => {
             >
               <motion.div variants={itemVariants} className="mb-12 text-center">
                 <h2 className="text-3xl font-bold text-mainBlue mb-4">
-                  {admissionInfo.title} {admissionInfo.term}기 ({admissionInfo.year}년 {admissionInfo.startMonth}~{admissionInfo.endMonth}월) 지원 안내
+                  {admissionInfo.title} {admissionInfo.term}기 ({admissionInfo.year}년 {admissionInfo.startMonth}월 ~ {admissionInfo.endYear || admissionInfo.year}년 {admissionInfo.endMonth}월) 지원 안내
                 </h2>
               </motion.div>
 
