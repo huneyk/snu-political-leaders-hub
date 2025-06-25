@@ -314,19 +314,52 @@ const ScheduleCalendar: React.FC = () => {
       // 선택된 기수의 모든 일정 가져오기
       const termSchedules = await apiService.getSchedulesByTerm(selectedTerm);
       
-      if (termSchedules && termSchedules.length > 0) {
-        setDownloadedSchedules(termSchedules);
+      // 데이터 유효성 검사 및 배열 변환
+      let validSchedules: Schedule[] = [];
+      
+      if (termSchedules) {
+        console.log('API 응답 데이터 타입:', typeof termSchedules);
+        console.log('API 응답 데이터 구조:', termSchedules);
+        
+        if (Array.isArray(termSchedules)) {
+          validSchedules = termSchedules;
+        } else if (typeof termSchedules === 'object' && termSchedules !== null) {
+          // 객체인 경우 배열로 변환 시도
+          if (termSchedules.data && Array.isArray(termSchedules.data)) {
+            validSchedules = termSchedules.data;
+          } else if (termSchedules.schedules && Array.isArray(termSchedules.schedules)) {
+            validSchedules = termSchedules.schedules;
+          } else {
+            // 객체의 값들을 배열로 변환
+            const values = Object.values(termSchedules);
+            if (values.length > 0 && Array.isArray(values[0])) {
+              validSchedules = values[0] as Schedule[];
+            } else {
+              validSchedules = values.filter(item => 
+                item && typeof item === 'object' && 
+                (item as any)._id && (item as any).title && (item as any).date
+              ) as Schedule[];
+            }
+          }
+        }
+      }
+      
+      console.log('변환된 유효한 일정 데이터:', validSchedules);
+      console.log('유효한 일정 개수:', validSchedules.length);
+      
+      if (validSchedules && validSchedules.length > 0) {
+        setDownloadedSchedules(validSchedules);
         setIsDialogOpen(true);
         
         toast({
           title: "다운로드 완료",
-          description: `${selectedTerm}기 일정 ${termSchedules.length}개를 불러왔습니다.`,
+          description: `${selectedTerm}기 일정 ${validSchedules.length}개를 불러왔습니다.`,
           variant: "default"
         });
       } else {
         toast({
           title: "일정 없음",
-          description: `${selectedTerm}기에 등록된 일정이 없습니다.`,
+          description: `${selectedTerm}기에 등록된 일정이 없거나 데이터 형식에 문제가 있습니다.`,
           variant: "default"
         });
       }
@@ -344,7 +377,7 @@ const ScheduleCalendar: React.FC = () => {
   
   // Excel 파일 다운로드 함수
   const downloadExcel = () => {
-    if (downloadedSchedules.length === 0) {
+    if (!Array.isArray(downloadedSchedules) || downloadedSchedules.length === 0) {
       toast({
         title: "데이터 없음",
         description: "다운로드할 일정이 없습니다.",
@@ -368,6 +401,7 @@ const ScheduleCalendar: React.FC = () => {
         
         // 시간 문자열을 24시간 형식으로 변환하여 비교
         const parseTime = (timeStr: string) => {
+          // "오후 2:00", "14:00", "2:00 PM" 등 다양한 형식 처리
           const cleanTime = timeStr.trim();
           
           if (cleanTime.includes('오후') || cleanTime.includes('PM')) {
@@ -379,6 +413,7 @@ const ScheduleCalendar: React.FC = () => {
             const [hour, minute] = time.split(':').map(Number);
             return (hour === 12 ? 0 : hour) * 60 + (minute || 0);
           } else {
+            // 24시간 형식 또는 기본 형식
             const [hour, minute] = cleanTime.split(':').map(Number);
             return (hour || 0) * 60 + (minute || 0);
           }
@@ -695,7 +730,7 @@ const ScheduleCalendar: React.FC = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {downloadedSchedules
+                              {Array.isArray(downloadedSchedules) ? downloadedSchedules
                                 .sort((a, b) => {
                                   // 먼저 날짜로 정렬
                                   const dateCompare = compareAsc(new Date(a.date), new Date(b.date));
@@ -781,7 +816,7 @@ const ScheduleCalendar: React.FC = () => {
                                     )}
                                   </td>
                                 </tr>
-                              ))}
+                              )) : []}
                             </tbody>
                           </table>
                         </div>
