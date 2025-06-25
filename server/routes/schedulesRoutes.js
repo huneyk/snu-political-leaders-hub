@@ -31,6 +31,28 @@ router.get('/', async (req, res) => {
   }
 });
 
+// 모든 일정 정보 가져오기 (관리자용 - /all 엔드포인트)
+router.get('/all', async (req, res) => {
+  try {
+    console.log('모든 일정 정보 조회 요청 수신 (/all)');
+    
+    // MongoDB에서 모든 일정 데이터 가져오기 (isActive 필터 없이)
+    const schedules = await Schedule.find({}).sort({ date: 1 });
+    
+    // 데이터가 없는 경우 처리
+    if (!schedules || schedules.length === 0) {
+      console.log('일정 데이터가 없습니다.');
+      return res.json([]); // 빈 배열 반환
+    }
+    
+    console.log(`모든 일정 정보 조회 성공: ${schedules.length}개 항목 발견`);
+    res.json(schedules);
+  } catch (error) {
+    console.error('모든 일정 정보 조회 실패:', error);
+    res.status(500).json({ message: '일정을 가져오는 중 오류가 발생했습니다.', error: error.message });
+  }
+});
+
 // ID로 일정 조회 (공개)
 router.get('/:id', async (req, res) => {
   try {

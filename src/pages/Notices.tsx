@@ -72,7 +72,7 @@ const Notices = () => {
     console.log('공지사항 로딩 시작');
     try {
       // MongoDB API를 통해 공지사항 데이터 가져오기
-      console.log('API 호출 시작: ', `${process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api'}/notices`);
+      console.log('API 호출 시작: ', `${process.env.NODE_ENV === 'production' ? '/api' : 'https://snu-plp-hub-server.onrender.com/api'}/notices`);
       const data = await apiService.getNotices();
       console.log('API 호출 결과:', data);
       

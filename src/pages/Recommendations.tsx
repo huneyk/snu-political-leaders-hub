@@ -30,26 +30,20 @@ const Recommendations = () => {
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
 
-  // MongoDB에서 추천사 데이터 가져오기 - fetch API 사용
+  // MongoDB에서 추천사 데이터 가져오기 - apiService 사용
   const fetchRecommendations = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // fetch API로 데이터 가져오기
-      const response = await fetch(`${API_URL}/content/recommendations?t=${Date.now()}`); // 캐시 방지 타임스탬프 추가
+      console.log('MongoDB에서 추천의 글 데이터 가져오기 시도...');
       
-      // 응답 상태 확인
-      if (!response.ok) {
-        throw new Error(`서버 오류: ${response.status}`);
-      }
-      
-      // JSON 데이터 파싱
-      const data = await response.json();
+      // apiService를 사용하여 데이터 가져오기
+      const data = await apiService.getRecommendations();
       console.log('Recommendations API Response:', data);
       
       if (data && Array.isArray(data)) {
-        // 데이터 설정 (캐싱 제거)
+        // 데이터 설정
         setRecommendations(data);
         
         // 섹션 제목 설정 (첫 번째 항목에서 가져옴)

@@ -7,12 +7,47 @@
 
 import axios from 'axios';
 
-// 기본 URL 설정 - 서버 URL 직접 지정
+// API 서버 URL 설정 - fallback 시스템 구현
+const PRODUCTION_API = 'https://snu-plp-hub-server.onrender.com/api';
+const LOCALHOST_API = 'http://localhost:5001/api';
+
+// 개발 환경에 따른 baseURL 설정
 const baseURL = import.meta.env.MODE === 'production' 
-  ? 'https://snu-plp-hub-server.onrender.com/api' // api.plpsnu.ne.kr 설정이 완료되면 나중에 다시 변경
-  : 'http://localhost:5001/api';
-console.log('🔗 API 기본 URL:', baseURL);
-console.log('🔧 현재 환경:', import.meta.env.MODE);
+  ? PRODUCTION_API 
+  : LOCALHOST_API;
+
+// API 요청 시 자동 fallback 처리하는 함수
+const makeApiRequest = async <T>(
+  endpoint: string, 
+  options: any = {}
+): Promise<T> => {
+  const urls = [
+    PRODUCTION_API, 
+    'https://plpsnu.ne.kr/api',  // 커스텀 도메인도 시도
+    LOCALHOST_API
+  ];
+  let lastError: any = null;
+
+  for (const baseUrl of urls) {
+    try {
+      console.log(`🔗 Trying API: ${baseUrl}${endpoint}`);
+      const response = await axios({
+        ...options,
+        url: `${baseUrl}${endpoint}`,
+        timeout: 10000, // 10초 타임아웃 (Render는 cold start가 있을 수 있음)
+      });
+      console.log(`✅ Success with: ${baseUrl}`);
+      return response.data;
+    } catch (error) {
+      console.warn(`❌ Failed with ${baseUrl}:`, error instanceof Error ? error.message : 'Unknown error');
+      lastError = error;
+      continue;
+    }
+  }
+
+  console.error('🚨 All API endpoints failed');
+  throw lastError;
+};
 
 // API 요청 시 기본 헤더 설정
 const apiConfig = {
@@ -93,8 +128,8 @@ export const apiService = {
   getRecommendations: async () => {
     try {
       console.log('추천의 글 데이터 가져오기 시작');
-      // 경로 수정: /api/recommendations -> /api/content/recommendations/all
-      const response = await axios.get(`${baseURL}/content/recommendations/all`);
+      // 올바른 경로 사용: /api/recommendations
+      const response = await axios.get(`${baseURL}/recommendations`);
       console.log('추천의 글 데이터 로드 완료:', response.data);
       return response.data;
     } catch (error) {
@@ -1491,6 +1526,13 @@ export const apiService = {
   addNotice: async (noticeData: any) => {
     try {
       console.log('새 공지사항 추가 시작');
+      console.log('=== 서버로 전송할 데이터 상세 분석 ===');
+      console.log('noticeData 타입:', typeof noticeData);
+      console.log('noticeData 전체:', noticeData);
+      console.log('attachments 존재 여부:', 'attachments' in noticeData);
+      console.log('attachments 타입:', typeof noticeData.attachments);
+      console.log('attachments 길이:', noticeData.attachments?.length);
+      console.log('attachments 내용:', JSON.stringify(noticeData.attachments, null, 2));
       
       // admin-auth 토큰 추가
       const response = await axios.post(`${baseURL}/notices`, noticeData, {
@@ -1501,6 +1543,7 @@ export const apiService = {
       });
       
       console.log('공지사항 추가 성공:', response.status);
+      console.log('서버 응답 데이터:', response.data);
       return response.data;
     } catch (error) {
       console.error('공지사항 추가 실패:', error);
@@ -1519,6 +1562,13 @@ export const apiService = {
   updateNotice: async (id: string, noticeData: any) => {
     try {
       console.log(`공지사항 수정 시작 (ID: ${id})`);
+      console.log('=== 서버로 전송할 수정 데이터 상세 분석 ===');
+      console.log('noticeData 타입:', typeof noticeData);
+      console.log('noticeData 전체:', noticeData);
+      console.log('attachments 존재 여부:', 'attachments' in noticeData);
+      console.log('attachments 타입:', typeof noticeData.attachments);
+      console.log('attachments 길이:', noticeData.attachments?.length);
+      console.log('attachments 내용:', JSON.stringify(noticeData.attachments, null, 2));
       
       // admin-auth 토큰 추가
       const response = await axios.put(`${baseURL}/notices/${id}`, noticeData, {
@@ -1529,6 +1579,7 @@ export const apiService = {
       });
       
       console.log('공지사항 수정 성공:', response.status);
+      console.log('서버 응답 데이터:', response.data);
       return response.data;
     } catch (error) {
       console.error(`공지사항 수정 실패 (ID: ${id}):`, error);
@@ -1574,14 +1625,18 @@ export const apiService = {
   // 입학정보(Admission) 관련 API
   getAdmission: async () => {
     try {
-      const response = await axios.get(`${baseURL}/admission`);
-      if (response.data && response.data.term) {
+      const data = await makeApiRequest('/admissions', {
+        method: 'GET'
+      });
+      console.log('Admission API response:', data);
+      console.log('endYear from API response:', data?.endYear);
+      if (data && data.term) {
         // Ensure term is always returned as a number
-        response.data.term = typeof response.data.term === 'string' 
-          ? parseInt(response.data.term.replace(/\D/g, ''), 10) 
-          : response.data.term;
+        data.term = typeof data.term === 'string' 
+          ? parseInt(data.term.replace(/\D/g, ''), 10) 
+          : data.term;
       }
-      return response.data;
+      return data;
     } catch (error) {
       console.error('Error fetching admission data:', error);
       throw error;
@@ -1607,10 +1662,12 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      const response = await axios.put(`${baseURL}/admission`, admissionData, {
+      const data = await makeApiRequest('/admissions', {
+        method: 'PUT',
+        data: admissionData,
         headers
       });
-      return response.data;
+      return data;
     } catch (error) {
       console.error('Error updating admission data:', error);
       throw error;
@@ -1636,10 +1693,12 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      const response = await axios.post(`${baseURL}/admission`, admissionData, {
+      const data = await makeApiRequest('/admissions', {
+        method: 'POST',
+        data: admissionData,
         headers
       });
-      return response.data;
+      return data;
     } catch (error) {
       console.error('Error creating admission data:', error);
       throw error;

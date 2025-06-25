@@ -34,32 +34,21 @@ const Greeting = () => {
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
 
-  // 인사말 데이터 가져오기 - fetch API 사용
+  // 인사말 데이터 가져오기 - apiService 사용
   const fetchGreeting = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // 캐싱 로직 제거 - 항상 최신 데이터 불러오기
+      console.log('MongoDB에서 인사말 데이터 가져오기 시도...');
       
-      // fetch API로 데이터 가져오기
-      const response = await fetch(`${API_URL}/greeting?t=${Date.now()}`); // 캐시 방지를 위한 타임스탬프 추가
-      
-      // 응답 상태 확인
-      if (!response.ok) {
-        throw new Error(`서버 오류: ${response.status}`);
-      }
-      
-      // JSON 데이터 파싱
-      const data = await response.json();
+      // apiService를 사용하여 데이터 가져오기
+      const data = await apiService.getGreeting();
       console.log('Greeting API Response:', data);
       
       if (data) {
         // 데이터 설정
         setGreeting(data);
-        // 캐싱 로직 제거 (또는 주석 처리)
-        // localStorage.setItem('greeting', JSON.stringify(data));
-        // localStorage.setItem('greetingTime', Date.now().toString());
       } else {
         throw new Error('데이터가 없습니다.');
       }

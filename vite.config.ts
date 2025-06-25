@@ -12,14 +12,16 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['@radix-ui/react-slot', '@radix-ui/react-dialog'],
         },
       },
     },
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     host: "::",
@@ -29,7 +31,7 @@ export default defineConfig({
       '/api': {
         target: 'https://snu-plp-hub-server.onrender.com',
         changeOrigin: true,
-        secure: false,
+        secure: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
@@ -44,5 +46,8 @@ export default defineConfig({
         }
       },
     },
+  },
+  define: {
+    __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
   },
 });

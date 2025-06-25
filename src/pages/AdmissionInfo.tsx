@@ -49,6 +49,7 @@ const AdmissionInfo = () => {
         // MongoDB에서 데이터 로드
         const data = await apiService.getAdmission();
         console.log('Admission data from API:', data);
+        console.log('endYear from API:', data?.endYear);
         setAdmissionInfo(data);
         setError(null);
       } catch (err) {

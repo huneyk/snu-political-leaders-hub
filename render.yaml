@@ -10,7 +10,10 @@ services:
         value: production
       - key: MONGODB_URI
         sync: false
+      - key: PORT
+        value: 10000
     autoDeploy: true
+    healthCheckPath: /api
 
   # 프론트엔드 서비스
   - type: web
@@ -23,6 +26,10 @@ services:
       - path: /*
         name: Cache-Control
         value: no-cache
+      # CORS 헤더 추가
+      - path: /*
+        name: Access-Control-Allow-Origin
+        value: "*"
     routes:
       # SPA를 위한 모든 경로를 index.html로 리다이렉트
       - type: rewrite
@@ -30,6 +37,8 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://snu-plp-hub-server.onrender.com
+        value: https://snu-plp-hub-server.onrender.com/api
+      - key: NODE_ENV
+        value: production
     autoDeploy: true
 
