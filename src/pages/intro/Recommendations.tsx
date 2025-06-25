@@ -62,70 +62,118 @@ const Recommendations = () => {
       
       console.log('===== Recommendations.tsx: MongoDB에서 추천사 데이터 로드 시도 =====');
       
-      // 캐시 무시하고 항상 서버에서 데이터 가져오기
-      console.log('서버에서 최신 데이터 가져오기...');
-      
-      console.log('apiService.getRecommendations() 호출 시작...');
-      // apiService 사용하여 데이터 가져오기
-      const data = await apiService.getRecommendations();
-      console.log('===== Recommendations.tsx: 추천사 데이터 로드 완료 =====');
-      console.log('데이터:', data);
-      console.log('데이터 타입:', typeof data);
-      console.log('데이터가 배열인가?', Array.isArray(data));
-      if (Array.isArray(data)) {
-        console.log('배열 길이:', data.length);
-      }
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        console.log('MongoDB에서 추천사 데이터 로드 성공:', data);
-        
-        // 섹션 제목 설정 (모든 추천글은 동일한 섹션 제목 사용)
-        if (data[0].sectionTitle) {
-          setSectionTitle(data[0].sectionTitle);
+      try {
+        // apiService 사용하여 데이터 가져오기
+        console.log('apiService.getRecommendations() 호출 시작...');
+        const data = await apiService.getRecommendations();
+        console.log('===== Recommendations.tsx: 추천사 데이터 로드 완료 =====');
+        console.log('데이터:', data);
+        console.log('데이터 타입:', typeof data);
+        console.log('데이터가 배열인가?', Array.isArray(data));
+        if (Array.isArray(data)) {
+          console.log('배열 길이:', data.length);
         }
         
-        // MongoDB 데이터를 프론트엔드 형식으로 변환
-        const formattedData = data.map((item: any) => ({
-          _id: item._id || '',
-          title: item.title || '',
-          text: item.content || item.text || '',
-          author: item.name || item.author || '',
-          position: item.position || item.affiliation || '',
-          imageUrl: item.imageUrl || item.photo || '/images/default-profile.jpg',
-          photoUrl: item.imageUrl || item.photo || '/images/default-profile.jpg'
-        }));
+        if (data && Array.isArray(data) && data.length > 0) {
+          console.log('MongoDB에서 추천사 데이터 로드 성공:', data);
+          
+          // 섹션 제목 설정 (모든 추천글은 동일한 섹션 제목 사용)
+          if (data[0].sectionTitle) {
+            setSectionTitle(data[0].sectionTitle);
+          }
+          
+          // MongoDB 데이터를 프론트엔드 형식으로 변환
+          const formattedData = data.map((item: any) => ({
+            _id: item._id || '',
+            title: item.title || '',
+            text: item.content || item.text || '',
+            author: item.name || item.author || '',
+            position: item.position || item.affiliation || '',
+            imageUrl: item.imageUrl || item.photo || '/images/default-profile.jpg',
+            photoUrl: item.imageUrl || item.photo || '/images/default-profile.jpg'
+          }));
+          
+          console.log('변환된 추천사 데이터:', formattedData);
+          setRecommendations(formattedData);
+          
+          // 로컬스토리지에 백업 저장
+          try {
+            localStorage.setItem('recommendations', JSON.stringify(formattedData));
+            localStorage.setItem('recommendationsTime', Date.now().toString());
+            console.log('추천사 데이터 로컬스토리지에 백업 완료');
+          } catch (storageError) {
+            console.warn('로컬스토리지 백업 실패:', storageError);
+          }
+          
+          setError(null);
+        } else {
+          console.log('MongoDB에서 데이터를 찾을 수 없습니다. 로컬 데이터를 사용합니다.');
+          throw new Error('데이터 형식 오류');
+        }
+      } catch (apiError) {
+        console.error('apiService.getRecommendations() 호출 중 오류:', apiError);
         
-        console.log('변환된 추천사 데이터:', formattedData);
-        setRecommendations(formattedData);
+        // 여러 경로로 시도 - Benefits 페이지와 동일한 방식
+        console.log('직접 API 호출 시도 (fetch)');
+        const response = await fetch(`/api/recommendations`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         
-        // 로컬스토리지에 백업 저장
-        try {
-          localStorage.setItem('recommendations', JSON.stringify(formattedData));
-          localStorage.setItem('recommendationsTime', Date.now().toString());
-          console.log('추천사 데이터 로컬스토리지에 백업 완료');
-        } catch (storageError) {
-          console.warn('로컬스토리지 백업 실패:', storageError);
+        console.log('응답 상태:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          throw new Error(`서버 오류: ${response.status}`);
         }
         
-        setError(null);
-      } else {
-        console.log('MongoDB에서 데이터를 찾을 수 없습니다. 로컬 데이터를 사용합니다.');
-        loadFromLocalStorage();
+        const data = await response.json();
+        console.log('추천사 데이터 로드 완료 (fetch 방식):', data);
+        
+        if (data && Array.isArray(data)) {
+          // 섹션 제목 설정
+          if (data[0]?.sectionTitle) {
+            setSectionTitle(data[0].sectionTitle);
+          }
+          
+          // MongoDB 데이터를 프론트엔드 형식으로 변환
+          const formattedData = data.map((item: any) => ({
+            _id: item._id || '',
+            title: item.title || '',
+            text: item.content || item.text || '',
+            author: item.name || item.author || '',
+            position: item.position || item.affiliation || '',
+            imageUrl: item.imageUrl || item.photo || '/images/default-profile.jpg',
+            photoUrl: item.imageUrl || item.photo || '/images/default-profile.jpg'
+          }));
+          
+          setRecommendations(formattedData);
+          setError(null);
+        } else {
+          console.log('데이터가 없거나 배열이 아닙니다.');
+          throw new Error('데이터 형식 오류');
+        }
       }
     } catch (err) {
       console.error('===== Recommendations.tsx: 추천사를 불러오는 중 오류 발생 =====');
       console.error('오류 세부 정보:', err);
       
-      if (axios?.isAxiosError && axios.isAxiosError(err)) {
-        console.error('Axios 오류 세부 정보:', {
-          status: err.response?.status,
-          statusText: err.response?.statusText,
-          data: err.response?.data,
-          message: err.message
-        });
-      }
-      
       setError('추천사를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      
+      // 로컬 스토리지에서 데이터 로드 시도
+      const cachedRecommendations = localStorage.getItem('recommendations');
+      if (cachedRecommendations) {
+        try {
+          const parsedData = JSON.parse(cachedRecommendations);
+          setRecommendations(parsedData);
+          setSectionTitle(parsedData[0]?.sectionTitle || '추천의 글');
+        } catch (cacheErr) {
+          console.error('캐시된 데이터 파싱 오류:', cacheErr);
+        }
+      }
       
       // recommendations_backup 확인
       try {
@@ -149,7 +197,7 @@ const Recommendations = () => {
         console.warn('백업 복원 실패:', storageError);
       }
       
-      // 오류 발생 시에도 로컬스토리지에서 폴백 데이터 로드
+      // 최종 폴백으로 로컬 데이터 로드
       loadFromLocalStorage();
     } finally {
       setIsLoading(false);
