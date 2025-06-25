@@ -128,12 +128,127 @@ export const apiService = {
   getRecommendations: async () => {
     try {
       console.log('추천의 글 데이터 가져오기 시작');
-      // 올바른 경로 사용: /api/recommendations
-      const response = await axios.get(`${baseURL}/recommendations`);
-      console.log('추천의 글 데이터 로드 완료:', response.data);
-      return response.data;
+      
+      let response;
+      let lastError;
+      
+      // 여러 API 경로를 시도
+      const apiPaths = [
+        `${baseURL}/recommendations`,
+        `${baseURL}/content/recommendations`
+      ];
+      
+      for (const apiPath of apiPaths) {
+        try {
+          console.log(`추천사 API 경로 시도: ${apiPath}`);
+          
+          const config = {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            withCredentials: false,
+            timeout: 10000
+          };
+          
+          response = await axios.get(apiPath, config);
+          console.log(`✅ 추천사 API 성공: ${apiPath}`);
+          break;
+        } catch (error) {
+          console.warn(`❌ 추천사 API 실패: ${apiPath}`, error instanceof Error ? error.message : 'Unknown error');
+          lastError = error;
+          continue;
+        }
+      }
+      
+      if (!response) {
+        throw lastError || new Error('모든 API 경로 시도 실패');
+      }
+      
+      console.log('추천사 API 응답 상태:', response.status);
+      console.log('추천사 API 응답 데이터:', response.data);
+      console.log('응답 데이터 타입:', typeof response.data);
+      console.log('응답이 배열인가?:', Array.isArray(response.data));
+      
+      // 데이터 형식 검증
+      if (!response.data) {
+        throw new Error('API 응답이 null 또는 undefined입니다.');
+      }
+      
+      if (!Array.isArray(response.data)) {
+        console.warn('API 응답이 배열이 아닙니다. 배열로 변환 시도...');
+        
+        // 객체인 경우 배열로 변환 시도
+        if (typeof response.data === 'object') {
+          if (response.data.data && Array.isArray(response.data.data)) {
+            response.data = response.data.data;
+          } else if (response.data.recommendations && Array.isArray(response.data.recommendations)) {
+            response.data = response.data.recommendations;
+          } else {
+            // 단일 객체인 경우 배열로 감싸기
+            response.data = [response.data];
+          }
+        } else {
+          throw new Error('올바른 형식의 데이터가 아닙니다.');
+        }
+      }
+      
+      console.log(`추천사 데이터 로드 완료: ${response.data.length}개 항목`);
+      
+      // 각 항목의 필수 필드 검증
+      const validatedData = response.data.filter((item: any) => {
+        if (!item || typeof item !== 'object') {
+          console.warn('유효하지 않은 추천사 항목:', item);
+          return false;
+        }
+        
+        // 최소한 제목이나 내용이 있어야 함
+        if (!item.title && !item.content && !item.text) {
+          console.warn('제목과 내용이 모두 없는 추천사 항목:', item);
+          return false;
+        }
+        
+        return true;
+      });
+      
+      console.log(`유효한 추천사 데이터: ${validatedData.length}개 항목`);
+      
+      // 백업: 로컬스토리지에 최신 데이터 저장
+      try {
+        localStorage.setItem('recommendations_backup', JSON.stringify(validatedData));
+        localStorage.setItem('recommendations_backup_time', Date.now().toString());
+        console.log('추천사 데이터 로컬스토리지에 백업 완료');
+      } catch (storageError) {
+        console.warn('로컬스토리지 백업 실패:', storageError);
+      }
+      
+      return validatedData;
     } catch (error) {
-      console.error('추천의 글 로드 실패:', error);
+      console.error('❌❌❌ 추천의 글 로드 실패 ❌❌❌');
+      console.error('Error details:', error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      
+      // 로컬스토리지에서 백업 데이터 시도
+      try {
+        const backup = localStorage.getItem('recommendations_backup');
+        if (backup) {
+          console.log('로컬스토리지에서 추천사 백업 데이터 복원');
+          const parsedData = JSON.parse(backup);
+          return parsedData;
+        }
+      } catch (storageError) {
+        console.warn('로컬스토리지 복원 실패:', storageError);
+      }
+      
+      // 에러를 다시 throw하여 컴포넌트에서 처리할 수 있도록 함
       throw error;
     }
   },

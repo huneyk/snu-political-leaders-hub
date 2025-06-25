@@ -60,9 +60,10 @@ const Recommendations = () => {
       setIsLoading(true);
       setError(null);
       
-      // 직접 API 호출로 전환 (apiService 대신)
-      const response = await axios.get(`${API_BASE_URL}/content/recommendations`);
-      const data = response.data;
+      console.log('추천사 데이터 로드 시작');
+      
+      // apiService를 사용하여 추천사 데이터 가져오기
+      const data = await apiService.getRecommendations();
       
       if (data && Array.isArray(data) && data.length > 0) {
         console.log('MongoDB에서 추천의 글 데이터 로드 성공:', data);
@@ -76,22 +77,27 @@ const Recommendations = () => {
         const formattedData = data.map((item: any) => ({
           _id: item._id || '',
           title: item.title || '',
-          text: item.content || '',
-          author: item.name || '',
+          text: item.content || item.text || '',
+          author: item.name || item.author || '',
           position: item.position || '',
-          photoUrl: processImageUrl(item.imageUrl || '')
+          photoUrl: processImageUrl(item.imageUrl || item.photoUrl || '')
         }));
         
         setRecommendations(formattedData);
       } else {
         console.warn('MongoDB에서 가져온 추천의 글 데이터가 없습니다.');
-        setError('추천의 글 데이터가 없습니다.');
         // API 응답이 비어있는 경우 localStorage에서 데이터 로드 시도
         loadFromLocalStorage();
       }
     } catch (error) {
-      console.error('MongoDB에서 추천의 글 로드 실패:', error);
-      setError('서버에서 데이터를 불러오는 중 오류가 발생했습니다.');
+      console.error('추천사를 불러오는 중 오류가 발생했습니다:', error);
+      
+      // 에러 메시지 설정
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('서버에서 데이터를 불러오는 중 오류가 발생했습니다.');
+      }
       
       // API 오류 시 localStorage에서 데이터 로드 시도
       loadFromLocalStorage();
