@@ -312,7 +312,32 @@ const ScheduleCalendar: React.FC = () => {
       console.log(`${selectedTerm}기 전체 일정 다운로드 시작`);
       
       // 선택된 기수의 모든 일정 가져오기
-      const termSchedules = await apiService.getSchedulesByTerm(selectedTerm);
+      let termSchedules;
+      try {
+        termSchedules = await apiService.getSchedulesByTerm(selectedTerm);
+      } catch (apiError) {
+        console.error('기본 API 호출 실패, 대체 방법 시도:', apiError);
+        
+        // 대체 방법: 전체 일정을 가져와서 클라이언트에서 필터링
+        try {
+          console.log('전체 일정을 가져와서 클라이언트에서 필터링 시도');
+          const allSchedules = await apiService.getSchedulesAll();
+          
+          if (Array.isArray(allSchedules)) {
+            termSchedules = allSchedules.filter(schedule => 
+              schedule.term === selectedTerm || 
+              schedule.term === parseInt(selectedTerm) ||
+              schedule.term?.toString() === selectedTerm
+            );
+            console.log(`클라이언트 필터링 결과: ${termSchedules.length}개`);
+          } else {
+            throw new Error('전체 일정 데이터가 배열이 아닙니다');
+          }
+        } catch (fallbackError) {
+          console.error('대체 방법도 실패:', fallbackError);
+          throw fallbackError;
+        }
+      }
       
       // 데이터 유효성 검사 및 배열 변환
       let validSchedules: Schedule[] = [];

@@ -949,6 +949,7 @@ export const apiService = {
         : `http://localhost:5001/api/schedules/term/${termNumber}`;
       
       console.log('요청 URL:', apiUrl);
+      console.log('현재 환경:', import.meta.env.MODE);
       
       const config = {
         headers: {
@@ -959,12 +960,37 @@ export const apiService = {
         timeout: 10000
       };
       
+      console.log('요청 설정:', config);
+      
       const response = await axios.get(apiUrl, config);
-      console.log(`${termNumber}기 일정 조회 성공: ${response.data.length}개`);
+      console.log(`API 응답 상태:`, response.status);
+      console.log(`API 응답 헤더:`, response.headers);
+      console.log(`${termNumber}기 일정 조회 성공:`, response.data);
+      console.log(`응답 데이터 타입:`, typeof response.data);
+      console.log(`응답이 배열인가?:`, Array.isArray(response.data));
+      console.log(`응답 데이터 길이:`, response.data?.length);
+      
+      if (Array.isArray(response.data) && response.data.length > 0) {
+        console.log(`첫 번째 일정 샘플:`, response.data[0]);
+      }
       
       return response.data;
     } catch (error) {
       console.error(`${termNumber}기 일정 조회 실패:`, error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('Axios 에러 세부정보:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method
+          }
+        });
+      }
+      
       throw error;
     }
   },
