@@ -33,23 +33,28 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: '이메일 또는 비밀번호가 일치하지 않습니다.' });
     }
     
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await user.comparePassword(password);
     
     if (!isPasswordValid) {
       return res.status(401).json({ message: '이메일 또는 비밀번호가 일치하지 않습니다.' });
     }
     
+    // role 또는 isAdmin 필드를 확인하여 관리자 권한 결정
+    const isAdmin = user.role === 'admin' || user.isAdmin === true;
+    
     const token = jwt.sign({ 
       id: user._id, 
       email: user.email,
-      isAdmin: user.isAdmin 
+      isAdmin: isAdmin,
+      role: user.role || (isAdmin ? 'admin' : 'user')
     }, process.env.JWT_SECRET, { expiresIn: '1d' });
     
     res.json({ 
       token,
       user: {
         email: user.email,
-        isAdmin: user.isAdmin
+        isAdmin: isAdmin,
+        role: user.role || (isAdmin ? 'admin' : 'user')
       }
     });
   } catch (error) {

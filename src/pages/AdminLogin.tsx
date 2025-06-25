@@ -22,7 +22,7 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     console.log('로그인 시도:', { username });
-    console.log('API 엔드포인트:', `${API_BASE_URL}/auth/login`);
+    console.log('API 엔드포인트:', `/api/auth/login`);
     
     try {
       // API를 통한 실제 로그인 처리
@@ -45,19 +45,34 @@ const AdminLogin = () => {
       
       console.log('응답 상태:', response.status, response.statusText);
       
-      // 간단한 처리: 200 상태 코드면 무조건 로그인 성공으로 처리
       if (response.status === 200) {
         console.log('로그인 성공: 상태 코드 200');
         
-        // 임시 토큰 생성
-        const tempToken = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        // 실제 응답 데이터 받기
+        const responseData = await response.json();
+        console.log('응답 데이터:', responseData);
+        
+        // 서버에서 받은 실제 토큰 사용
+        const token = responseData.token;
+        const user = responseData.user;
+        
+        // 관리자 권한 확인
+        if (!user.isAdmin && user.role !== 'admin') {
+          toast({
+            title: "로그인 실패",
+            description: "관리자 권한이 없습니다.",
+            variant: "destructive",
+          });
+          return;
+        }
         
         // 로컬 스토리지에 저장
-        localStorage.setItem('adminToken', tempToken);
+        localStorage.setItem('adminToken', token);
         localStorage.setItem('adminAuth', 'true');
+        localStorage.setItem('adminUser', JSON.stringify(user));
         
         // 로그인 처리
-        login(tempToken);
+        login(token);
         
         toast({
           title: "로그인 성공",
@@ -74,14 +89,9 @@ const AdminLogin = () => {
       let errorMessage = "로그인에 실패했습니다.";
       
       try {
-        const errorText = await response.text();
-        console.log('오류 응답:', errorText);
-        
-        if (errorText && errorText.includes('password')) {
-          errorMessage = "비밀번호가 일치하지 않습니다.";
-        } else if (errorText && errorText.includes('not found')) {
-          errorMessage = "계정을 찾을 수 없습니다.";
-        }
+        const errorData = await response.json();
+        console.log('오류 응답:', errorData);
+        errorMessage = errorData.message || errorMessage;
       } catch (e) {
         console.error('오류 응답 처리 실패:', e);
       }

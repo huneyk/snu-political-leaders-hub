@@ -29,10 +29,9 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'https://snu-plp-hub-server.onrender.com',
+        target: 'http://localhost:5001',
         changeOrigin: true,
-        secure: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        secure: false,
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
             console.log('프록시 오류:', err);
