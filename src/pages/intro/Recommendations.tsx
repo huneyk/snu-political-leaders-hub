@@ -62,6 +62,22 @@ const Recommendations = () => {
       
       console.log('MongoDB에서 추천의 글 데이터 로드 시도...');
       
+      // 먼저 로컬스토리지에서 백업 데이터 확인
+      const backupData = localStorage.getItem('recommendations');
+      if (backupData) {
+        try {
+          const parsedBackup = JSON.parse(backupData);
+          if (Array.isArray(parsedBackup) && parsedBackup.length > 0) {
+            console.log('로컬스토리지에서 추천사 백업 데이터 로드:', parsedBackup);
+            setRecommendations(parsedBackup);
+            setIsLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.warn('로컬스토리지 백업 데이터 파싱 실패:', e);
+        }
+      }
+      
       // apiService를 사용하여 추천사 데이터 가져오기
       const data = await apiService.getRecommendations();
       
