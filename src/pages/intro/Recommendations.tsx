@@ -214,14 +214,6 @@ const Recommendations = () => {
             </div>
           ) : (
             <>
-              <div className="flex justify-end mb-6">
-                <button 
-                  onClick={handleRetry}
-                  className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300 transition-colors"
-                >
-                  새로고침
-                </button>
-              </div>
               <motion.div 
                 className="grid gap-8 md:gap-12 max-w-4xl mx-auto"
                 variants={containerVariants}
