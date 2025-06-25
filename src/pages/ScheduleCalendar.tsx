@@ -311,62 +311,28 @@ const ScheduleCalendar: React.FC = () => {
     try {
       console.log(`${selectedTerm}기 전체 일정 다운로드 시작`);
       
-      // 선택된 기수의 모든 일정 가져오기
-      let termSchedules;
-      try {
-        termSchedules = await apiService.getSchedulesByTerm(selectedTerm);
-      } catch (apiError) {
-        console.error('기본 API 호출 실패, 대체 방법 시도:', apiError);
+      // 현재 페이지에 로드된 모든 일정에서 선택된 기수 필터링
+      const termSchedules = schedules.filter(schedule => {
+        // term 필드가 문자열이거나 숫자일 수 있으므로 여러 방식으로 비교
+        const scheduleTermStr = schedule.term?.toString();
+        const selectedTermStr = selectedTerm.toString();
+        const scheduleTermNum = parseInt(schedule.term?.toString() || '0');
+        const selectedTermNum = parseInt(selectedTerm);
         
-        // 대체 방법: 전체 일정을 가져와서 클라이언트에서 필터링
-        try {
-          console.log('전체 일정을 가져와서 클라이언트에서 필터링 시도');
-          const allSchedules = await apiService.getSchedulesAll();
-          
-          if (Array.isArray(allSchedules)) {
-            termSchedules = allSchedules.filter(schedule => 
-              schedule.term === selectedTerm || 
-              schedule.term === parseInt(selectedTerm) ||
-              schedule.term?.toString() === selectedTerm
-            );
-            console.log(`클라이언트 필터링 결과: ${termSchedules.length}개`);
-          } else {
-            throw new Error('전체 일정 데이터가 배열이 아닙니다');
-          }
-        } catch (fallbackError) {
-          console.error('대체 방법도 실패:', fallbackError);
-          throw fallbackError;
-        }
-      }
+        return scheduleTermStr === selectedTermStr || 
+               scheduleTermNum === selectedTermNum ||
+               String(schedule.term) === selectedTerm ||
+               Number(schedule.term) === selectedTermNum;
+      });
+      
+      console.log(`페이지에 로드된 전체 일정: ${schedules.length}개`);
+      console.log(`${selectedTerm}기로 필터링된 일정: ${termSchedules.length}개`);
       
       // 데이터 유효성 검사 및 배열 변환
       let validSchedules: Schedule[] = [];
       
-      if (termSchedules) {
-        console.log('API 응답 데이터 타입:', typeof termSchedules);
-        console.log('API 응답 데이터 구조:', termSchedules);
-        
-        if (Array.isArray(termSchedules)) {
-          validSchedules = termSchedules;
-        } else if (typeof termSchedules === 'object' && termSchedules !== null) {
-          // 객체인 경우 배열로 변환 시도
-          if (termSchedules.data && Array.isArray(termSchedules.data)) {
-            validSchedules = termSchedules.data;
-          } else if (termSchedules.schedules && Array.isArray(termSchedules.schedules)) {
-            validSchedules = termSchedules.schedules;
-          } else {
-            // 객체의 값들을 배열로 변환
-            const values = Object.values(termSchedules);
-            if (values.length > 0 && Array.isArray(values[0])) {
-              validSchedules = values[0] as Schedule[];
-            } else {
-              validSchedules = values.filter(item => 
-                item && typeof item === 'object' && 
-                (item as any)._id && (item as any).title && (item as any).date
-              ) as Schedule[];
-            }
-          }
-        }
+      if (termSchedules && Array.isArray(termSchedules)) {
+        validSchedules = termSchedules;
       }
       
       console.log('변환된 유효한 일정 데이터:', validSchedules);
@@ -384,7 +350,7 @@ const ScheduleCalendar: React.FC = () => {
       } else {
         toast({
           title: "일정 없음",
-          description: `${selectedTerm}기에 등록된 일정이 없거나 데이터 형식에 문제가 있습니다.`,
+          description: `${selectedTerm}기에 등록된 일정이 없습니다. 페이지에 로드된 모든 일정: ${schedules.length}개`,
           variant: "default"
         });
       }
