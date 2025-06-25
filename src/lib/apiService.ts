@@ -8,7 +8,7 @@
 import axios from 'axios';
 
 // API 서버 URL 설정 - fallback 시스템 구현
-const PRODUCTION_API = import.meta.env.VITE_API_URL || 'https://snu-political-leaders-hub-1.onrender.com/api';
+const PRODUCTION_API = import.meta.env.VITE_API_URL || 'https://plp-api-server.onrender.com/api';
 const LOCALHOST_API = 'http://localhost:5001/api';
 
 // 개발 환경에 따른 baseURL 설정
