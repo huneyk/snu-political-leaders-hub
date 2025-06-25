@@ -170,14 +170,33 @@ export const apiService = {
       console.log('▶️▶️▶️ getRecommendations 함수 호출 시작 ▶️▶️▶️');
       console.log('현재 환경:', import.meta.env.MODE);
       
-      // 캐시 무시를 위한 타임스탬프 추가
-      const timestamp = Date.now();
-      const data = await makeApiRequest(`/recommendations?t=${timestamp}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      let data;
+      
+      // 먼저 /api/recommendations 경로로 시도
+      try {
+        console.log('🔄 첫 번째 경로 시도: /recommendations');
+        const timestamp = Date.now();
+        data = await makeApiRequest(`/recommendations?t=${timestamp}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        console.log('✅ 첫 번째 경로 성공 (/recommendations)');
+      } catch (firstPathError) {
+        console.warn('⚠️ 첫 번째 경로 실패:', firstPathError);
+        console.warn('⚠️ 두 번째 경로 시도: /content/recommendations');
+        
+        // 첫 번째 경로 실패 시 두 번째 경로 시도
+        const timestamp = Date.now();
+        data = await makeApiRequest(`/content/recommendations?t=${timestamp}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        console.log('✅ 두 번째 경로 성공 (/content/recommendations)');
+      }
       
       console.log('✅ 추천사 API 응답 성공');
       console.log('응답 데이터:', data);
@@ -194,13 +213,16 @@ export const apiService = {
         localStorage.removeItem('recommendations_backup');
         localStorage.removeItem('recommendations_backup_time');
         
-        // 데이터 압축 저장 (필수 필드만)
+        // 데이터 압축 저장 (MongoDB 스키마에 맞는 필수 필드만)
         const compactData = Array.isArray(data) ? data.map(item => ({
           _id: item._id,
+          sectionTitle: item.sectionTitle,
           title: item.title,
-          content: item.content || item.text,
           name: item.name,
           position: item.position,
+          content: item.content,
+          imageUrl: item.imageUrl,
+          order: item.order,
           isActive: item.isActive
         })) : data;
         
