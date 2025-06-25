@@ -939,6 +939,36 @@ export const apiService = {
     }
   },
 
+  // 기수별 일정 조회 API
+  getSchedulesByTerm: async (termNumber: string) => {
+    try {
+      console.log(`기수별 일정 조회 시작: ${termNumber}기`);
+      
+      const apiUrl = import.meta.env.MODE === 'production' 
+        ? `https://snu-plp-hub-server.onrender.com/api/schedules/term/${termNumber}`
+        : `http://localhost:5001/api/schedules/term/${termNumber}`;
+      
+      console.log('요청 URL:', apiUrl);
+      
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        withCredentials: false,
+        timeout: 10000
+      };
+      
+      const response = await axios.get(apiUrl, config);
+      console.log(`${termNumber}기 일정 조회 성공: ${response.data.length}개`);
+      
+      return response.data;
+    } catch (error) {
+      console.error(`${termNumber}기 일정 조회 실패:`, error);
+      throw error;
+    }
+  },
+
   // 일정 생성 API
   createSchedule: async (scheduleData: any, token: string) => {
     try {

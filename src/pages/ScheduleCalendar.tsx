@@ -11,6 +11,10 @@ import { useNavigate } from 'react-router-dom';
 import ScrollReveal from '@/components/ScrollReveal';
 import { apiService } from '@/lib/apiService';
 import { toast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Download, Calendar as CalendarIcon, Clock, MapPin, FileText, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 // 일정 인터페이스 정의
 interface Schedule {
@@ -34,6 +38,9 @@ const ScheduleCalendar: React.FC = () => {
   const [availableTerms, setAvailableTerms] = useState<string[]>(["1"]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const [downloadedSchedules, setDownloadedSchedules] = useState<Schedule[]>([]);
+  const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const navigate = useNavigate();
   
   // MongoDB에서 일정 데이터 로드
@@ -289,6 +296,148 @@ const ScheduleCalendar: React.FC = () => {
     }
   };
   
+  // 전체 일정 다운로드 함수
+  const downloadAllSchedules = async () => {
+    if (!selectedTerm) {
+      toast({
+        title: "오류",
+        description: "기수를 먼저 선택해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsDownloading(true);
+    try {
+      console.log(`${selectedTerm}기 전체 일정 다운로드 시작`);
+      
+      // 선택된 기수의 모든 일정 가져오기
+      const termSchedules = await apiService.getSchedulesByTerm(selectedTerm);
+      
+      if (termSchedules && termSchedules.length > 0) {
+        setDownloadedSchedules(termSchedules);
+        setIsDialogOpen(true);
+        
+        toast({
+          title: "다운로드 완료",
+          description: `${selectedTerm}기 일정 ${termSchedules.length}개를 불러왔습니다.`,
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "일정 없음",
+          description: `${selectedTerm}기에 등록된 일정이 없습니다.`,
+          variant: "default"
+        });
+      }
+    } catch (error) {
+      console.error('전체 일정 다운로드 실패:', error);
+      toast({
+        title: "다운로드 실패",
+        description: "일정을 불러오는 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+  
+  // Excel 파일 다운로드 함수
+  const downloadExcel = () => {
+    if (downloadedSchedules.length === 0) {
+      toast({
+        title: "데이터 없음",
+        description: "다운로드할 일정이 없습니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // 데이터를 날짜와 시간 순으로 정렬
+      const sortedSchedules = [...downloadedSchedules].sort((a, b) => {
+        // 먼저 날짜로 정렬
+        const dateCompare = compareAsc(new Date(a.date), new Date(b.date));
+        if (dateCompare !== 0) {
+          return dateCompare;
+        }
+        
+        // 날짜가 같으면 시간으로 정렬
+        const timeA = a.time || '00:00';
+        const timeB = b.time || '00:00';
+        
+        // 시간 문자열을 24시간 형식으로 변환하여 비교
+        const parseTime = (timeStr: string) => {
+          const cleanTime = timeStr.trim();
+          
+          if (cleanTime.includes('오후') || cleanTime.includes('PM')) {
+            const time = cleanTime.replace(/오후|PM/g, '').trim();
+            const [hour, minute] = time.split(':').map(Number);
+            return (hour === 12 ? 12 : hour + 12) * 60 + (minute || 0);
+          } else if (cleanTime.includes('오전') || cleanTime.includes('AM')) {
+            const time = cleanTime.replace(/오전|AM/g, '').trim();
+            const [hour, minute] = time.split(':').map(Number);
+            return (hour === 12 ? 0 : hour) * 60 + (minute || 0);
+          } else {
+            const [hour, minute] = cleanTime.split(':').map(Number);
+            return (hour || 0) * 60 + (minute || 0);
+          }
+        };
+        
+        return parseTime(timeA) - parseTime(timeB);
+      });
+
+      // Excel 데이터 형식으로 변환
+      const excelData = sortedSchedules.map((schedule, index) => ({
+        '순번': index + 1,
+        '날짜': formatDate(schedule.date),
+        '시간': schedule.time || '-',
+        '제목': schedule.title,
+        '카테고리': getCategoryName(schedule.category),
+        '장소': schedule.location || '-',
+        '내용': schedule.description || '-'
+      }));
+
+      // 워크북 생성
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+      // 컬럼 너비 설정
+      const columnWidths = [
+        { wch: 8 },   // 순번
+        { wch: 15 },  // 날짜
+        { wch: 12 },  // 시간
+        { wch: 30 },  // 제목
+        { wch: 12 },  // 카테고리
+        { wch: 20 },  // 장소
+        { wch: 40 }   // 내용
+      ];
+      worksheet['!cols'] = columnWidths;
+
+      // 워크시트를 워크북에 추가
+      XLSX.utils.book_append_sheet(workbook, worksheet, `제${selectedTerm}기 일정`);
+
+      // 파일명 생성
+      const fileName = `서울대PLP_제${selectedTerm}기_전체일정_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // 파일 다운로드
+      XLSX.writeFile(workbook, fileName);
+
+      toast({
+        title: "Excel 다운로드 완료",
+        description: `${fileName} 파일이 다운로드되었습니다.`,
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Excel 다운로드 실패:', error);
+      toast({
+        title: "Excel 다운로드 실패",
+        description: "파일 생성 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    }
+  };
+  
   return (
     <>
       <Header />
@@ -496,6 +645,165 @@ const ScheduleCalendar: React.FC = () => {
                     )}
                   </CardContent>
                 </Card>
+              </div>
+              
+              {/* 전체 일정 다운로드 버튼 */}
+              <div className="mt-8 text-center">
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      onClick={downloadAllSchedules}
+                      disabled={isDownloading || !selectedTerm}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-lg font-medium"
+                    >
+                      {isDownloading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                          다운로드 중...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-5 w-5" />
+                          제 {selectedTerm}기 전체 일정 보기
+                        </>
+                      )}
+                    </Button>
+                  </DialogTrigger>
+                  
+                  <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-bold text-blue-800">
+                        제 {selectedTerm}기 전체 일정 ({downloadedSchedules.length}개)
+                      </DialogTitle>
+                      <DialogDescription>
+                        선택한 기수의 모든 일정을 표로 정리한 내용입니다.
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="mt-4">
+                      {downloadedSchedules.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full border-collapse border border-gray-300">
+                            <thead>
+                              <tr className="bg-blue-50">
+                                <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-blue-800">날짜</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-blue-800">시간</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-blue-800">제목</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-blue-800">카테고리</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-blue-800">장소</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-blue-800">내용</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {downloadedSchedules
+                                .sort((a, b) => {
+                                  // 먼저 날짜로 정렬
+                                  const dateCompare = compareAsc(new Date(a.date), new Date(b.date));
+                                  if (dateCompare !== 0) {
+                                    return dateCompare;
+                                  }
+                                  
+                                  // 날짜가 같으면 시간으로 정렬
+                                  const timeA = a.time || '00:00';
+                                  const timeB = b.time || '00:00';
+                                  
+                                  // 시간 문자열을 24시간 형식으로 변환하여 비교
+                                  const parseTime = (timeStr: string) => {
+                                    // "오후 2:00", "14:00", "2:00 PM" 등 다양한 형식 처리
+                                    const cleanTime = timeStr.trim();
+                                    
+                                    if (cleanTime.includes('오후') || cleanTime.includes('PM')) {
+                                      const time = cleanTime.replace(/오후|PM/g, '').trim();
+                                      const [hour, minute] = time.split(':').map(Number);
+                                      return (hour === 12 ? 12 : hour + 12) * 60 + (minute || 0);
+                                    } else if (cleanTime.includes('오전') || cleanTime.includes('AM')) {
+                                      const time = cleanTime.replace(/오전|AM/g, '').trim();
+                                      const [hour, minute] = time.split(':').map(Number);
+                                      return (hour === 12 ? 0 : hour) * 60 + (minute || 0);
+                                    } else {
+                                      // 24시간 형식 또는 기본 형식
+                                      const [hour, minute] = cleanTime.split(':').map(Number);
+                                      return (hour || 0) * 60 + (minute || 0);
+                                    }
+                                  };
+                                  
+                                  return parseTime(timeA) - parseTime(timeB);
+                                })
+                                .map((schedule, index) => (
+                                <tr key={schedule._id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                                  <td className="border border-gray-300 px-4 py-3 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                      <CalendarIcon className="h-4 w-4 mr-2 text-blue-500" />
+                                      {formatDate(schedule.date)}
+                                    </div>
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-3 whitespace-nowrap">
+                                    {schedule.time ? (
+                                      <div className="flex items-center">
+                                        <Clock className="h-4 w-4 mr-2 text-blue-500" />
+                                        {schedule.time}
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-3 font-medium">
+                                    {schedule.title}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-3">
+                                    <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                      {getCategoryName(schedule.category)}
+                                    </span>
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-3">
+                                    {schedule.location ? (
+                                      <div className="flex items-center">
+                                        <MapPin className="h-4 w-4 mr-2 text-blue-500" />
+                                        {schedule.location}
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-3 max-w-xs">
+                                    {schedule.description ? (
+                                      <div className="flex items-start">
+                                        <FileText className="h-4 w-4 mr-2 text-blue-500 mt-0.5 flex-shrink-0" />
+                                        <div className="whitespace-pre-line text-sm break-words">
+                                          {schedule.description.length > 100 
+                                            ? `${schedule.description.substring(0, 100)}...` 
+                                            : schedule.description
+                                          }
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="text-center py-8 text-gray-500">다운로드된 일정이 없습니다.</p>
+                      )}
+                    </div>
+                    
+                    {/* Excel 다운로드 버튼 */}
+                    {downloadedSchedules.length > 0 && (
+                      <div className="mt-6 pt-4 border-t border-gray-200 text-center">
+                        <Button 
+                          onClick={downloadExcel}
+                          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-base font-medium"
+                        >
+                          <FileSpreadsheet className="mr-2 h-5 w-5" />
+                          Excel로 다운로드 하기
+                        </Button>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </div>
             </>
           )}

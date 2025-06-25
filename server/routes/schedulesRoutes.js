@@ -69,6 +69,26 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// 기수별 일정 조회 (공개)
+router.get('/term/:termNumber', async (req, res) => {
+  try {
+    const termNumber = req.params.termNumber;
+    console.log(`기수별 일정 조회 요청: ${termNumber}기`);
+    
+    // MongoDB에서 해당 기수의 일정 데이터 가져오기
+    const schedules = await Schedule.find({ 
+      term: termNumber, 
+      isActive: true 
+    }).sort({ date: 1 });
+    
+    console.log(`${termNumber}기 일정 조회 성공: ${schedules.length}개 항목 발견`);
+    res.json(schedules);
+  } catch (error) {
+    console.error('기수별 일정 조회 실패:', error);
+    res.status(500).json({ message: '기수별 일정을 가져오는 중 오류가 발생했습니다.', error: error.message });
+  }
+});
+
 // 일정 정보 추가 (관리자 전용)
 router.post('/', isAdmin, async (req, res) => {
   try {
