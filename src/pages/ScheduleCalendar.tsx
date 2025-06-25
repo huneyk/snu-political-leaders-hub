@@ -240,7 +240,7 @@ const ScheduleCalendar: React.FC = () => {
     }
   });
   
-  // 오늘 날짜 이후의 일정만 필터링하고 날짜순으로 정렬
+  // 오늘 날짜 이후의 일정만 필터링하고 날짜+시간순으로 정렬
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
@@ -255,7 +255,37 @@ const ScheduleCalendar: React.FC = () => {
     })
     .sort((a, b) => {
       try {
-        return compareAsc(new Date(a.date), new Date(b.date));
+        // 먼저 날짜로 정렬
+        const dateCompare = compareAsc(new Date(a.date), new Date(b.date));
+        if (dateCompare !== 0) {
+          return dateCompare;
+        }
+        
+        // 날짜가 같으면 시간으로 정렬
+        const timeA = a.time || '00:00';
+        const timeB = b.time || '00:00';
+        
+        // 시간 문자열을 24시간 형식으로 변환하여 비교
+        const parseTime = (timeStr: string) => {
+          // "오후 2:00", "14:00", "2:00 PM" 등 다양한 형식 처리
+          const cleanTime = timeStr.trim();
+          
+          if (cleanTime.includes('오후') || cleanTime.includes('PM')) {
+            const time = cleanTime.replace(/오후|PM/g, '').trim();
+            const [hour, minute] = time.split(':').map(Number);
+            return (hour === 12 ? 12 : hour + 12) * 60 + (minute || 0);
+          } else if (cleanTime.includes('오전') || cleanTime.includes('AM')) {
+            const time = cleanTime.replace(/오전|AM/g, '').trim();
+            const [hour, minute] = time.split(':').map(Number);
+            return (hour === 12 ? 0 : hour) * 60 + (minute || 0);
+          } else {
+            // 24시간 형식 또는 기본 형식
+            const [hour, minute] = cleanTime.split(':').map(Number);
+            return (hour || 0) * 60 + (minute || 0);
+          }
+        };
+        
+        return parseTime(timeA) - parseTime(timeB);
       } catch (error) {
         return 0;
       }

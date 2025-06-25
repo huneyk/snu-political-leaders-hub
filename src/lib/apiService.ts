@@ -68,6 +68,13 @@ const makeApiRequest = async <T>(
           }
         });
         console.log(`✅ Success with: ${baseUrl}`);
+        
+        // HTML 응답 감지 및 에러 처리
+        if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+          console.error('❌ API가 HTML 페이지를 반환했습니다. 서버 라우팅 문제일 수 있습니다.');
+          throw new Error('API returned HTML instead of JSON data');
+        }
+        
         return response.data;
       } catch (error) {
         console.warn(`❌ Failed with ${baseUrl}:`, error instanceof Error ? error.message : 'Unknown error');
@@ -168,10 +175,7 @@ export const apiService = {
       const data = await makeApiRequest(`/recommendations?t=${timestamp}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+          'Content-Type': 'application/json'
         }
       });
       
@@ -184,13 +188,36 @@ export const apiService = {
         console.log('배열 길이:', data.length);
       }
       
-      // 백업: 로컬스토리지에 최신 데이터 저장
+      // 백업: 로컬스토리지에 최신 데이터 저장 (용량 최적화)
       try {
-        localStorage.setItem('recommendations_backup', JSON.stringify(data));
+        // 기존 백업 데이터 정리
+        localStorage.removeItem('recommendations_backup');
+        localStorage.removeItem('recommendations_backup_time');
+        
+        // 데이터 압축 저장 (필수 필드만)
+        const compactData = Array.isArray(data) ? data.map(item => ({
+          _id: item._id,
+          title: item.title,
+          content: item.content || item.text,
+          name: item.name,
+          position: item.position,
+          isActive: item.isActive
+        })) : data;
+        
+        localStorage.setItem('recommendations_backup', JSON.stringify(compactData));
         localStorage.setItem('recommendations_backup_time', Date.now().toString());
         console.log('추천사 데이터 로컬스토리지에 백업 완료');
       } catch (storageError) {
         console.warn('로컬스토리지 백업 실패:', storageError);
+        // 용량 초과 시 기존 데이터 정리 후 재시도
+        try {
+          localStorage.clear();
+          const compactData = Array.isArray(data) ? data.slice(0, 3) : data; // 최대 3개만 저장
+          localStorage.setItem('recommendations_backup', JSON.stringify(compactData));
+          console.log('로컬스토리지 정리 후 백업 완료');
+        } catch (retryError) {
+          console.warn('로컬스토리지 백업 재시도 실패:', retryError);
+        }
       }
       
       return data;
@@ -334,13 +361,34 @@ export const apiService = {
         }
       }
       
-      // 백업: 로컬스토리지에 최신 데이터 저장
+      // 백업: 로컬스토리지에 최신 데이터 저장 (용량 최적화)
       try {
-        localStorage.setItem('objectives_backup', JSON.stringify(data));
+        // 기존 백업 데이터 정리
+        localStorage.removeItem('objectives_backup');
+        localStorage.removeItem('objectives_backup_time');
+        
+        // 데이터 압축 저장 (필수 필드만)
+        const compactData = Array.isArray(data) ? data.map(item => ({
+          _id: item._id,
+          title: item.title,
+          description: item.description,
+          sectionTitle: item.sectionTitle,
+          isActive: item.isActive
+        })) : data;
+        
+        localStorage.setItem('objectives_backup', JSON.stringify(compactData));
         localStorage.setItem('objectives_backup_time', Date.now().toString());
         console.log('목표 데이터 로컬스토리지에 백업 완료');
       } catch (storageError) {
         console.warn('로컬스토리지 백업 실패:', storageError);
+        // 용량 초과 시 기존 데이터 정리 후 재시도
+        try {
+          const compactData = Array.isArray(data) ? data.slice(0, 5) : data; // 최대 5개만 저장
+          localStorage.setItem('objectives_backup', JSON.stringify(compactData));
+          console.log('로컬스토리지 정리 후 백업 완료');
+        } catch (retryError) {
+          console.warn('로컬스토리지 백업 재시도 실패:', retryError);
+        }
       }
       
       return data;
