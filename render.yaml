@@ -1,7 +1,7 @@
 services:
-  # 백엔드 서비스 (먼저 배포)
+  # 백엔드 서비스 (Node.js API 서버)
   - type: web
-    name: snu-plp-hub-backend
+    name: plp-backend
     env: node
     buildCommand: cd server && npm install
     startCommand: cd server && npm start
@@ -13,11 +13,10 @@ services:
       - key: PORT
         value: 10000
     autoDeploy: true
-    healthCheckPath: /api/recommendations
 
-  # 프론트엔드 서비스
+  # 프론트엔드 서비스 (정적 사이트)
   - type: web
-    name: snu-political-leaders-hub-frontend
+    name: plp-frontend
     env: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
@@ -31,18 +30,13 @@ services:
         name: Access-Control-Allow-Origin
         value: "*"
     routes:
-      # API 요청은 백엔드로 프록시
-      - type: redirect
-        source: /api/*
-        destination: https://snu-plp-hub-backend.onrender.com/api/*
-        status: 307
       # SPA를 위한 모든 경로를 index.html로 리다이렉트
       - type: rewrite
         source: /*
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://snu-plp-hub-backend.onrender.com/api
+        value: https://plp-backend.onrender.com/api
       - key: NODE_ENV
         value: production
     autoDeploy: true

@@ -8,7 +8,7 @@
 import axios from 'axios';
 
 // API 서버 URL 설정 - fallback 시스템 구현
-const PRODUCTION_API = import.meta.env.VITE_API_URL || 'https://snu-plp-hub-backend.onrender.com/api';
+const PRODUCTION_API = import.meta.env.VITE_API_URL || 'https://plp-backend.onrender.com/api';
 const LOCALHOST_API = 'http://localhost:5001/api';
 
 // 개발 환경에 따른 baseURL 설정
@@ -28,7 +28,7 @@ const makeApiRequest = async <T>(
 ): Promise<T> => {
   const urls = [
     PRODUCTION_API, 
-    'https://snu-plp-hub-backend.onrender.com/api', // 새로운 백엔드 URL
+    'https://plp-backend.onrender.com/api', // 새로운 백엔드 URL
     'https://plpsnu.ne.kr/api',  // 커스텀 도메인도 시도
     LOCALHOST_API
   ];
@@ -140,6 +140,23 @@ export const apiService = {
     try {
       console.log('추천의 글 데이터 가져오기 시작');
       
+      // 프로덕션에서는 즉시 로컬스토리지 사용 (API 문제 회피)
+      if (import.meta.env.MODE === 'production') {
+        console.log('프로덕션 환경: 로컬스토리지에서 추천사 데이터 로드');
+        const localData = localStorage.getItem('recommendations');
+        if (localData) {
+          try {
+            const parsedData = JSON.parse(localData);
+            if (Array.isArray(parsedData) && parsedData.length > 0) {
+              console.log('로컬스토리지에서 추천사 데이터 로드 성공:', parsedData);
+              return parsedData;
+            }
+          } catch (e) {
+            console.warn('로컬스토리지 데이터 파싱 실패:', e);
+          }
+        }
+      }
+      
       // makeApiRequest 함수를 사용하여 자동 fallback 처리
       const data = await makeApiRequest('/recommendations', {
         method: 'GET',
@@ -162,27 +179,35 @@ export const apiService = {
       
       // 응답이 HTML 문자열인지 확인
       if (typeof data === 'string') {
-        if (data.includes('<!DOCTYPE html>') || data.includes('<html>')) {
-          console.error('HTML 응답 받음:', data.substring(0, 200));
-          throw new Error('올바른 형식의 데이터가 아닙니다.');
-        }
-        
-        // JSON 문자열인 경우 파싱 시도
-        try {
-          const parsedData = JSON.parse(data);
-          return await this.validateAndProcessRecommendations(parsedData);
-        } catch (parseError) {
-          console.error('JSON 파싱 실패:', parseError);
-          throw new Error('올바른 형식의 데이터가 아닙니다.');
+        if (data.includes('<!DOCTYPE html>') || data.includes('<html')) {
+          console.log('HTML 응답 받음:', data.substring(0, 100));
+          throw new Error('HTML 응답을 받았습니다. API 서버 문제입니다.');
         }
       }
       
-      // 정상적인 객체/배열 데이터 처리
-      return await this.validateAndProcessRecommendations(data);
+      // 배열이 아닌 경우 처리
+      if (!Array.isArray(data)) {
+        console.error('응답이 배열이 아닙니다:', data);
+        throw new Error('올바른 형식의 데이터가 아닙니다.');
+      }
+      
+      // 데이터 검증 및 처리
+      const validatedData = validateAndProcessRecommendations(data);
+      
+      // 성공한 데이터를 로컬스토리지에 저장
+      try {
+        localStorage.setItem('recommendations', JSON.stringify(validatedData));
+        console.log('추천사 데이터를 로컬스토리지에 저장했습니다.');
+      } catch (e) {
+        console.warn('로컬스토리지 저장 실패:', e);
+      }
+      
+      return validatedData;
       
     } catch (error) {
-      console.error('추천사를 불러오는 중 오류가 발생했습니다:', error);
+      console.error('추천사 API 오류:', error);
       
+      // API 실패 시 로컬스토리지에서 백업 데이터 로드
       // 로컬스토리지에서 백업 데이터 시도 (fallback)
       try {
         const backup = localStorage.getItem('recommendations_backup');
