@@ -139,87 +139,23 @@ export const apiService = {
   getRecommendations: async () => {
     try {
       console.log('추천의 글 데이터 가져오기 시작');
+      console.log('요청 URL:', `${baseURL}/recommendations`);
+      console.log('현재 환경:', import.meta.env.MODE);
       
-      // 프로덕션에서는 즉시 로컬스토리지 사용 (API 문제 회피)
-      if (import.meta.env.MODE === 'production') {
-        console.log('프로덕션 환경: 로컬스토리지에서 추천사 데이터 로드');
-        const localData = localStorage.getItem('recommendations');
-        if (localData) {
-          try {
-            const parsedData = JSON.parse(localData);
-            if (Array.isArray(parsedData) && parsedData.length > 0) {
-              console.log('로컬스토리지에서 추천사 데이터 로드 성공:', parsedData);
-              return parsedData;
-            }
-          } catch (e) {
-            console.warn('로컬스토리지 데이터 파싱 실패:', e);
-          }
-        }
-      }
-      
-      // makeApiRequest 함수를 사용하여 자동 fallback 처리
-      const data = await makeApiRequest('/recommendations', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        timeout: 15000 // Render cold start를 고려하여 15초로 증가
-      });
-      
-      console.log('추천사 API 응답 데이터:', data);
-      console.log('응답 데이터 타입:', typeof data);
-      console.log('응답이 배열인가?:', Array.isArray(data));
-      
-      // 데이터 형식 검증
-      if (!data) {
-        console.error('추천사 데이터가 null 또는 undefined');
-        throw new Error('올바른 형식의 데이터가 아닙니다.');
-      }
-      
-      // 응답이 HTML 문자열인지 확인
-      if (typeof data === 'string') {
-        if (data.includes('<!DOCTYPE html>') || data.includes('<html')) {
-          console.log('HTML 응답 받음:', data.substring(0, 100));
-          throw new Error('HTML 응답을 받았습니다. API 서버 문제입니다.');
-        }
-      }
-      
-      // 배열이 아닌 경우 처리
-      if (!Array.isArray(data)) {
-        console.error('응답이 배열이 아닙니다:', data);
-        throw new Error('올바른 형식의 데이터가 아닙니다.');
-      }
-      
-      // 데이터 검증 및 처리
-      const validatedData = validateAndProcessRecommendations(data);
-      
-      // 성공한 데이터를 로컬스토리지에 저장
-      try {
-        localStorage.setItem('recommendations', JSON.stringify(validatedData));
-        console.log('추천사 데이터를 로컬스토리지에 저장했습니다.');
-      } catch (e) {
-        console.warn('로컬스토리지 저장 실패:', e);
-      }
-      
-      return validatedData;
-      
+      const response = await axios.get(`${baseURL}/recommendations`);
+      console.log('추천사 API 응답 상태:', response.status);
+      console.log('추천사 API 응답 데이터:', response.data);
+      return response.data;
     } catch (error) {
-      console.error('추천사 API 오류:', error);
-      
-      // API 실패 시 로컬스토리지에서 백업 데이터 로드
-      // 로컬스토리지에서 백업 데이터 시도 (fallback)
-      try {
-        const backup = localStorage.getItem('recommendations_backup');
-        if (backup) {
-          console.log('로컬스토리지에서 추천사 백업 데이터 복원');
-          const parsedData = JSON.parse(backup);
-          return parsedData;
-        }
-      } catch (storageError) {
-        console.warn('로컬스토리지 복원 실패:', storageError);
+      console.error('Error fetching recommendations data:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
       }
-      
       throw error;
     }
   },

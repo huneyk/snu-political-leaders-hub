@@ -60,10 +60,14 @@ const Recommendations = () => {
       setIsLoading(true);
       setError(null);
       
-      console.log('추천사 데이터 로드 시작');
+      console.log('MongoDB에서 추천의 글 데이터 로드 시도...');
       
       // apiService를 사용하여 추천사 데이터 가져오기
       const data = await apiService.getRecommendations();
+      
+      console.log('추천의 글 데이터 로드 완료:', data);
+      console.log('데이터 타입:', typeof data);
+      console.log('데이터가 배열인가?', Array.isArray(data));
       
       if (data && Array.isArray(data) && data.length > 0) {
         console.log('MongoDB에서 추천의 글 데이터 로드 성공:', data);
@@ -79,27 +83,33 @@ const Recommendations = () => {
           title: item.title || '',
           text: item.content || item.text || '',
           author: item.name || item.author || '',
-          position: item.position || '',
-          photoUrl: processImageUrl(item.imageUrl || item.photoUrl || '')
+          position: item.position || item.affiliation || '',
+          imageUrl: item.imageUrl || item.photo || '/images/default-profile.jpg',
+          photoUrl: item.imageUrl || item.photo || '/images/default-profile.jpg'
         }));
         
+        console.log('변환된 추천사 데이터:', formattedData);
         setRecommendations(formattedData);
+        
+        // 로컬스토리지에 백업 저장
+        try {
+          localStorage.setItem('recommendations', JSON.stringify(formattedData));
+          localStorage.setItem('recommendationsTime', Date.now().toString());
+          console.log('추천사 데이터 로컬스토리지에 백업 완료');
+        } catch (storageError) {
+          console.warn('로컬스토리지 백업 실패:', storageError);
+        }
+        
+        setError(null);
       } else {
-        console.warn('MongoDB에서 가져온 추천의 글 데이터가 없습니다.');
-        // API 응답이 비어있는 경우 localStorage에서 데이터 로드 시도
+        console.log('MongoDB에서 데이터를 찾을 수 없습니다. 로컬 데이터를 사용합니다.');
         loadFromLocalStorage();
       }
-    } catch (error) {
-      console.error('추천사를 불러오는 중 오류가 발생했습니다:', error);
+    } catch (err) {
+      console.error('추천사를 불러오는 중 오류가 발생했습니다:', err);
+      setError('추천사를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       
-      // 에러 메시지 설정
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('서버에서 데이터를 불러오는 중 오류가 발생했습니다.');
-      }
-      
-      // API 오류 시 localStorage에서 데이터 로드 시도
+      // 오류 발생 시 로컬스토리지에서 폴백 데이터 로드
       loadFromLocalStorage();
     } finally {
       setIsLoading(false);

@@ -1,8 +1,10 @@
 services:
-  # 백엔드 서비스 (Node.js API 서버)
+  # 백엔드 서비스 (Node.js API 서버) - 먼저 배포
   - type: web
-    name: plp-backend
+    name: plp-api-server
     env: node
+    region: oregon
+    plan: free
     buildCommand: cd server && npm install
     startCommand: cd server && npm start
     envVars:
@@ -18,6 +20,8 @@ services:
   - type: web
     name: plp-frontend
     env: static
+    region: oregon
+    plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     headers:
@@ -25,10 +29,6 @@ services:
       - path: /*
         name: Cache-Control
         value: no-cache
-      # CORS 헤더 추가
-      - path: /*
-        name: Access-Control-Allow-Origin
-        value: "*"
     routes:
       # SPA를 위한 모든 경로를 index.html로 리다이렉트
       - type: rewrite
@@ -36,7 +36,7 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://plp-backend.onrender.com/api
+        value: https://plp-api-server.onrender.com/api
       - key: NODE_ENV
         value: production
     autoDeploy: true
