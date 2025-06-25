@@ -138,25 +138,112 @@ export const apiService = {
   // 추천의 글 관련 API
   getRecommendations: async () => {
     try {
-      console.log('추천의 글 데이터 가져오기 시작');
+      console.log('▶️▶️▶️ getRecommendations 함수 호출 시작 ▶️▶️▶️');
       console.log('요청 URL:', `${baseURL}/recommendations`);
       console.log('현재 환경:', import.meta.env.MODE);
       
-      const response = await axios.get(`${baseURL}/recommendations`);
+      // 인증 없이 요청
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      let response;
+      
+      // 먼저 /api/recommendations 경로로 시도
+      try {
+        console.log('🔄 첫 번째 경로로 서버에 요청 전송 시작: /api/recommendations');
+        const config = {
+          headers,
+          withCredentials: false // 인증 관련 쿠키 전송 방지
+        };
+        console.log('요청 설정:', config);
+        
+        response = await axios.get(`${baseURL}/recommendations`, config);
+        console.log('✅ 첫 번째 경로 성공 (/api/recommendations)');
+        console.log('응답 상태:', response.status);
+        console.log('응답 헤더:', response.headers);
+      } catch (firstPathError) {
+        console.warn('⚠️ 첫 번째 경로 실패:', firstPathError);
+        console.warn('⚠️ 두 번째 경로 시도: /api/content/recommendations');
+        
+        // 첫 번째 경로 실패 시 두 번째 경로 시도
+        const config = {
+          headers,
+          withCredentials: false
+        };
+        console.log('두 번째 요청 설정:', config);
+        
+        response = await axios.get(`${baseURL}/content/recommendations`, config);
+        console.log('✅ 두 번째 경로 성공 (/api/content/recommendations)');
+        console.log('응답 상태:', response.status);
+        console.log('응답 헤더:', response.headers);
+      }
+      
+      console.log('===== 서버 응답 확인 =====');
       console.log('추천사 API 응답 상태:', response.status);
       console.log('추천사 API 응답 데이터:', response.data);
+      console.log('데이터 타입:', typeof response.data);
+      console.log('데이터가 배열인가?', Array.isArray(response.data));
+      
+      if (Array.isArray(response.data)) {
+        console.log('배열 길이:', response.data.length);
+        if (response.data.length > 0) {
+          console.log('첫 번째 항목 샘플:', {
+            _id: response.data[0]._id,
+            title: response.data[0].title,
+            content: response.data[0].content,
+            name: response.data[0].name
+          });
+        }
+      }
+      
+      // 백업: 로컬스토리지에 최신 데이터 저장
+      try {
+        localStorage.setItem('recommendations_backup', JSON.stringify(response.data));
+        localStorage.setItem('recommendations_backup_time', Date.now().toString());
+        console.log('추천사 데이터 로컬스토리지에 백업 완료');
+      } catch (storageError) {
+        console.warn('로컬스토리지 백업 실패:', storageError);
+      }
+      
       return response.data;
     } catch (error) {
+      console.error('❌❌❌ 추천사 데이터 가져오기 오류 ❌❌❌');
       console.error('Error fetching recommendations data:', error);
+      
       if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
+        console.error('🔍 Axios Error Details:', {
           status: error.response?.status,
           statusText: error.response?.statusText,
           data: error.response?.data,
-          message: error.message
+          message: error.message,
+          request: error.request ? '요청이 전송됨' : '요청이 전송되지 않음',
+          response: error.response ? '응답 수신됨' : '응답 수신되지 않음',
+          config: error.config
         });
+        
+        if (error.request) {
+          console.error('🔍 Request 객체:', {
+            method: error.config?.method,
+            url: error.config?.url,
+            headers: error.config?.headers
+          });
+        }
       }
-      throw error;
+      
+      // 로컬스토리지에서 백업 데이터 시도
+      try {
+        const backup = localStorage.getItem('recommendations_backup');
+        if (backup) {
+          console.log('로컬스토리지에서 백업 데이터 복원 시도');
+          return JSON.parse(backup);
+        }
+      } catch (storageError) {
+        console.warn('로컬스토리지 복원 실패:', storageError);
+      }
+      
+      // 최종적으로 빈 배열 반환
+      return [];
     }
   },
 

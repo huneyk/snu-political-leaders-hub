@@ -60,33 +60,24 @@ const Recommendations = () => {
       setIsLoading(true);
       setError(null);
       
-      console.log('MongoDB에서 추천의 글 데이터 로드 시도...');
+      console.log('===== Recommendations.tsx: MongoDB에서 추천사 데이터 로드 시도 =====');
       
-      // 먼저 로컬스토리지에서 백업 데이터 확인
-      const backupData = localStorage.getItem('recommendations');
-      if (backupData) {
-        try {
-          const parsedBackup = JSON.parse(backupData);
-          if (Array.isArray(parsedBackup) && parsedBackup.length > 0) {
-            console.log('로컬스토리지에서 추천사 백업 데이터 로드:', parsedBackup);
-            setRecommendations(parsedBackup);
-            setIsLoading(false);
-            return;
-          }
-        } catch (e) {
-          console.warn('로컬스토리지 백업 데이터 파싱 실패:', e);
-        }
-      }
+      // 캐시 무시하고 항상 서버에서 데이터 가져오기
+      console.log('서버에서 최신 데이터 가져오기...');
       
-      // apiService를 사용하여 추천사 데이터 가져오기
+      console.log('apiService.getRecommendations() 호출 시작...');
+      // apiService 사용하여 데이터 가져오기
       const data = await apiService.getRecommendations();
-      
-      console.log('추천의 글 데이터 로드 완료:', data);
+      console.log('===== Recommendations.tsx: 추천사 데이터 로드 완료 =====');
+      console.log('데이터:', data);
       console.log('데이터 타입:', typeof data);
       console.log('데이터가 배열인가?', Array.isArray(data));
+      if (Array.isArray(data)) {
+        console.log('배열 길이:', data.length);
+      }
       
       if (data && Array.isArray(data) && data.length > 0) {
-        console.log('MongoDB에서 추천의 글 데이터 로드 성공:', data);
+        console.log('MongoDB에서 추천사 데이터 로드 성공:', data);
         
         // 섹션 제목 설정 (모든 추천글은 동일한 섹션 제목 사용)
         if (data[0].sectionTitle) {
@@ -122,10 +113,43 @@ const Recommendations = () => {
         loadFromLocalStorage();
       }
     } catch (err) {
-      console.error('추천사를 불러오는 중 오류가 발생했습니다:', err);
+      console.error('===== Recommendations.tsx: 추천사를 불러오는 중 오류 발생 =====');
+      console.error('오류 세부 정보:', err);
+      
+      if (axios?.isAxiosError && axios.isAxiosError(err)) {
+        console.error('Axios 오류 세부 정보:', {
+          status: err.response?.status,
+          statusText: err.response?.statusText,
+          data: err.response?.data,
+          message: err.message
+        });
+      }
+      
       setError('추천사를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       
-      // 오류 발생 시 로컬스토리지에서 폴백 데이터 로드
+      // recommendations_backup 확인
+      try {
+        const backup = localStorage.getItem('recommendations_backup');
+        if (backup) {
+          console.log('recommendations_backup에서 데이터 복원 시도');
+          const backupData = JSON.parse(backup);
+          const formattedBackup = backupData.map((item: any) => ({
+            _id: item._id || '',
+            title: item.title || '',
+            text: item.content || item.text || '',
+            author: item.name || item.author || '',
+            position: item.position || item.affiliation || '',
+            imageUrl: item.imageUrl || item.photo || '/images/default-profile.jpg',
+            photoUrl: item.imageUrl || item.photo || '/images/default-profile.jpg'
+          }));
+          setRecommendations(formattedBackup);
+          return;
+        }
+      } catch (storageError) {
+        console.warn('백업 복원 실패:', storageError);
+      }
+      
+      // 오류 발생 시에도 로컬스토리지에서 폴백 데이터 로드
       loadFromLocalStorage();
     } finally {
       setIsLoading(false);
