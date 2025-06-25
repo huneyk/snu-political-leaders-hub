@@ -9,7 +9,7 @@ import MobileFloatingMenu from "@/components/MobileFloatingMenu";
 import Index from "./pages/Index";
 import Greeting from "./pages/Greeting";
 import AdmissionInfo from "./pages/AdmissionInfo";
-import Recommendations from "./pages/Recommendations";
+import Recommendations from "./pages/intro/Recommendations";
 import Objectives from "./pages/intro/Objectives";
 import CourseBenefits from "./pages/intro/CourseBenefits";
 import Professors from "./pages/intro/Professors";

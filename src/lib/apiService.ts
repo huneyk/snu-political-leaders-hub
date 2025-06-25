@@ -8,7 +8,7 @@
 import axios from 'axios';
 
 // API 서버 URL 설정 - fallback 시스템 구현
-const PRODUCTION_API = import.meta.env.VITE_API_URL || 'https://plp-api-server.onrender.com/api';
+const PRODUCTION_API = 'https://plp-api-server.onrender.com/api'; // 올바른 URL로 고정
 const LOCALHOST_API = 'http://localhost:5001/api';
 
 // 개발 환경에 따른 baseURL 설정
@@ -26,38 +26,59 @@ const makeApiRequest = async <T>(
   endpoint: string, 
   options: any = {}
 ): Promise<T> => {
-  const urls = [
-    PRODUCTION_API, 
-    'https://plp-backend.onrender.com/api', // 새로운 백엔드 URL
-    'https://plpsnu.ne.kr/api',  // 커스텀 도메인도 시도
-    LOCALHOST_API
-  ];
-  let lastError: any = null;
-
-  for (const baseUrl of urls) {
+  // 개발 환경에서는 프록시 사용, production에서는 전체 URL 사용
+  if (import.meta.env.MODE === 'development') {
     try {
-      console.log(`🔗 Trying API: ${baseUrl}${endpoint}`);
+      console.log(`🔗 Trying API (Dev Proxy): /api${endpoint}`);
       const response = await axios({
         ...options,
-        url: `${baseUrl}${endpoint}`,
-        timeout: 15000, // 15초 타임아웃 (Render는 cold start가 있을 수 있음)
+        url: `/api${endpoint}`,
+        timeout: 15000,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           ...options.headers
         }
       });
-      console.log(`✅ Success with: ${baseUrl}`);
+      console.log(`✅ Success with dev proxy`);
       return response.data;
     } catch (error) {
-      console.warn(`❌ Failed with ${baseUrl}:`, error instanceof Error ? error.message : 'Unknown error');
-      lastError = error;
-      continue;
+      console.warn(`❌ Dev proxy failed:`, error instanceof Error ? error.message : 'Unknown error');
+      throw error;
     }
-  }
+  } else {
+    // Production 환경에서는 여러 URL 시도
+    const urls = [
+      'https://plp-api-server.onrender.com/api', // 메인 production 서버
+      'https://plp-backend.onrender.com/api', // 백업 서버 
+    ];
+    let lastError: any = null;
 
-  console.error('🚨 All API endpoints failed');
-  throw lastError;
+    for (const baseUrl of urls) {
+      try {
+        console.log(`🔗 Trying API: ${baseUrl}${endpoint}`);
+        const response = await axios({
+          ...options,
+          url: `${baseUrl}${endpoint}`,
+          timeout: 15000,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...options.headers
+          }
+        });
+        console.log(`✅ Success with: ${baseUrl}`);
+        return response.data;
+      } catch (error) {
+        console.warn(`❌ Failed with ${baseUrl}:`, error instanceof Error ? error.message : 'Unknown error');
+        lastError = error;
+        continue;
+      }
+    }
+
+    console.error('🚨 All API endpoints failed');
+    throw lastError;
+  }
 };
 
 // API 요청 시 기본 헤더 설정
@@ -73,13 +94,14 @@ export const apiService = {
   getGreeting: async () => {
     try {
       console.log('인사말 데이터 가져오기 시작');
-      console.log('요청 URL:', `${baseURL}/greeting`);
       console.log('현재 환경:', import.meta.env.MODE);
       
-      const response = await axios.get(`${baseURL}/greeting`);
-      console.log('인사말 API 응답 상태:', response.status);
-      console.log('인사말 API 응답 데이터:', response.data);
-      return response.data;
+      const data = await makeApiRequest('/greeting', {
+        method: 'GET'
+      });
+      
+      console.log('인사말 API 응답 데이터:', data);
+      return data;
     } catch (error) {
       console.error('Error fetching greeting data:', error);
       if (axios.isAxiosError(error)) {
@@ -139,41 +161,39 @@ export const apiService = {
   getRecommendations: async () => {
     try {
       console.log('▶️▶️▶️ getRecommendations 함수 호출 시작 ▶️▶️▶️');
-      console.log('요청 URL:', `${baseURL}/recommendations`);
       console.log('현재 환경:', import.meta.env.MODE);
       
       // 캐시 무시를 위한 타임스탬프 추가
       const timestamp = Date.now();
-      const response = await axios.get(`${baseURL}/recommendations?t=${timestamp}`, {
+      const data = await makeApiRequest(`/recommendations?t=${timestamp}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0'
-        },
-        withCredentials: false
+        }
       });
       
       console.log('✅ 추천사 API 응답 성공');
-      console.log('응답 상태:', response.status);
-      console.log('응답 데이터:', response.data);
-      console.log('데이터 타입:', typeof response.data);
-      console.log('데이터가 배열인가?', Array.isArray(response.data));
+      console.log('응답 데이터:', data);
+      console.log('데이터 타입:', typeof data);
+      console.log('데이터가 배열인가?', Array.isArray(data));
       
-      if (Array.isArray(response.data)) {
-        console.log('배열 길이:', response.data.length);
+      if (Array.isArray(data)) {
+        console.log('배열 길이:', data.length);
       }
       
       // 백업: 로컬스토리지에 최신 데이터 저장
       try {
-        localStorage.setItem('recommendations_backup', JSON.stringify(response.data));
+        localStorage.setItem('recommendations_backup', JSON.stringify(data));
         localStorage.setItem('recommendations_backup_time', Date.now().toString());
         console.log('추천사 데이터 로컬스토리지에 백업 완료');
       } catch (storageError) {
         console.warn('로컬스토리지 백업 실패:', storageError);
       }
       
-      return response.data;
+      return data;
     } catch (error) {
       console.error('❌❌❌ 추천사 데이터 가져오기 오류 ❌❌❌');
       console.error('Error fetching recommendations data:', error);
@@ -275,74 +295,55 @@ export const apiService = {
   getObjectives: async () => {
     try {
       console.log('▶️▶️▶️ getObjectives 함수 호출 시작 ▶️▶️▶️');
-      console.log('요청 URL:', `${baseURL}/objectives`);
       console.log('현재 환경:', import.meta.env.MODE);
       
-      // 인증 없이 요청
-      const headers: any = {
-        'Content-Type': 'application/json'
-      };
-      
-      let response;
+      let data;
       
       // 먼저 /api/objectives 경로로 시도
       try {
-        console.log('🔄 첫 번째 경로로 서버에 요청 전송 시작: /api/objectives');
-        const config = {
-          headers,
-          withCredentials: false // 인증 관련 쿠키 전송 방지
-        };
-        console.log('요청 설정:', config);
-        
-        response = await axios.get(`${baseURL}/objectives`, config);
-        console.log('✅ 첫 번째 경로 성공 (/api/objectives)');
-        console.log('응답 상태:', response.status);
-        console.log('응답 헤더:', response.headers);
+        console.log('🔄 첫 번째 경로 시도: /objectives');
+        data = await makeApiRequest('/objectives', {
+          method: 'GET'
+        });
+        console.log('✅ 첫 번째 경로 성공 (/objectives)');
       } catch (firstPathError) {
         console.warn('⚠️ 첫 번째 경로 실패:', firstPathError);
-        console.warn('⚠️ 두 번째 경로 시도: /api/content/objectives');
+        console.warn('⚠️ 두 번째 경로 시도: /content/objectives');
         
         // 첫 번째 경로 실패 시 두 번째 경로 시도
-        const config = {
-          headers,
-          withCredentials: false
-        };
-        console.log('두 번째 요청 설정:', config);
-        
-        response = await axios.get(`${baseURL}/content/objectives`, config);
-        console.log('✅ 두 번째 경로 성공 (/api/content/objectives)');
-        console.log('응답 상태:', response.status);
-        console.log('응답 헤더:', response.headers);
+        data = await makeApiRequest('/content/objectives', {
+          method: 'GET'
+        });
+        console.log('✅ 두 번째 경로 성공 (/content/objectives)');
       }
       
       console.log('===== 서버 응답 확인 =====');
-      console.log('목표 API 응답 상태:', response.status);
-      console.log('목표 API 응답 데이터:', response.data);
-      console.log('데이터 타입:', typeof response.data);
-      console.log('데이터가 배열인가?', Array.isArray(response.data));
+      console.log('목표 API 응답 데이터:', data);
+      console.log('데이터 타입:', typeof data);
+      console.log('데이터가 배열인가?', Array.isArray(data));
       
-      if (Array.isArray(response.data)) {
-        console.log('배열 길이:', response.data.length);
-        if (response.data.length > 0) {
+      if (Array.isArray(data)) {
+        console.log('배열 길이:', data.length);
+        if (data.length > 0) {
           console.log('첫 번째 항목 샘플:', {
-            _id: response.data[0]._id,
-            title: response.data[0].title,
-            description: response.data[0].description,
-            sectionTitle: response.data[0].sectionTitle
+            _id: data[0]._id,
+            title: data[0].title,
+            description: data[0].description,
+            sectionTitle: data[0].sectionTitle
           });
         }
       }
       
       // 백업: 로컬스토리지에 최신 데이터 저장
       try {
-        localStorage.setItem('objectives_backup', JSON.stringify(response.data));
+        localStorage.setItem('objectives_backup', JSON.stringify(data));
         localStorage.setItem('objectives_backup_time', Date.now().toString());
         console.log('목표 데이터 로컬스토리지에 백업 완료');
       } catch (storageError) {
         console.warn('로컬스토리지 백업 실패:', storageError);
       }
       
-      return response.data;
+      return data;
     } catch (error) {
       console.error('❌❌❌ 목표 데이터 가져오기 오류 ❌❌❌');
       console.error('Error fetching objectives data:', error);
@@ -357,14 +358,6 @@ export const apiService = {
           response: error.response ? '응답 수신됨' : '응답 수신되지 않음',
           config: error.config
         });
-        
-        if (error.request) {
-          console.error('🔍 Request 객체:', {
-            method: error.config?.method,
-            url: error.config?.url,
-            headers: error.config?.headers
-          });
-        }
       }
       
       // 로컬스토리지에서 백업 데이터 시도
@@ -434,25 +427,26 @@ export const apiService = {
   getBenefits: async () => {
     try {
       console.log('Benefits API Request 시작');
-      console.log('요청 URL:', `${baseURL}/benefits`);
       
       // 여러 API 경로를 시도
-      let response;
-      let error;
+      let data;
       
       // 첫 번째 시도: /benefits
       try {
         console.log('첫 번째 경로 시도: /benefits');
-        response = await axios.get(`${baseURL}/benefits`);
+        data = await makeApiRequest('/benefits', {
+          method: 'GET'
+        });
         console.log('첫 번째 경로 성공');
       } catch (err) {
         console.warn('첫 번째 경로 실패, 두 번째 경로 시도');
-        error = err;
         
         // 두 번째 시도: /content/benefits
         try {
           console.log('두 번째 경로 시도: /content/benefits');
-          response = await axios.get(`${baseURL}/content/benefits`);
+          data = await makeApiRequest('/content/benefits', {
+            method: 'GET'
+          });
           console.log('두 번째 경로 성공');
         } catch (err2) {
           console.error('두 번째 경로도 실패');
@@ -460,11 +454,10 @@ export const apiService = {
         }
       }
       
-      console.log('Benefits API 응답 상태:', response.status);
-      console.log('Benefits API 응답 데이터 타입:', typeof response.data);
-      console.log('Benefits API 응답 데이터 길이:', Array.isArray(response.data) ? response.data.length : 'Not an array');
+      console.log('Benefits API 응답 데이터 타입:', typeof data);
+      console.log('Benefits API 응답 데이터 길이:', Array.isArray(data) ? data.length : 'Not an array');
       
-      return response.data;
+      return data;
     } catch (error) {
       console.error('특전 데이터 가져오기 오류:', error);
       
@@ -495,7 +488,6 @@ export const apiService = {
   getBenefitsAll: async (token: string) => {
     try {
       console.log('관리자용 특전 데이터 조회 시작');
-      console.log('요청 URL:', `${baseURL}/content/benefits/all`);
       
       const headers: any = {
         'Content-Type': 'application/json'
@@ -506,9 +498,13 @@ export const apiService = {
       //   headers.Authorization = `Bearer ${token}`;
       // }
       
-      const response = await axios.get(`${baseURL}/content/benefits/all`, { headers });
-      console.log('전체 특전 데이터 조회 결과:', response.status);
-      return response.data;
+      const data = await makeApiRequest('/content/benefits/all', {
+        method: 'GET',
+        headers
+      });
+      
+      console.log('전체 특전 데이터 조회 결과 성공');
+      return data;
     } catch (error) {
       console.error('관리자용 특전 데이터 조회 실패:', error);
       throw error;
@@ -591,73 +587,54 @@ export const apiService = {
   getProfessors: async () => {
     try {
       console.log('▶️▶️▶️ getProfessors 함수 호출 시작 ▶️▶️▶️');
-      console.log('요청 URL:', `${baseURL}/professors`);
       console.log('현재 환경:', import.meta.env.MODE);
       
-      // 인증 없이 요청
-      const headers: any = {
-        'Content-Type': 'application/json'
-      };
-      
-      let response;
+      let data;
       
       // 먼저 /api/professors 경로로 시도
       try {
-        console.log('🔄 첫 번째 경로로 서버에 요청 전송 시작: /api/professors');
-        const config = {
-          headers,
-          withCredentials: false // 인증 관련 쿠키 전송 방지
-        };
-        console.log('요청 설정:', config);
-        
-        response = await axios.get(`${baseURL}/professors`, config);
-        console.log('✅ 첫 번째 경로 성공 (/api/professors)');
-        console.log('응답 상태:', response.status);
-        console.log('응답 헤더:', response.headers);
+        console.log('🔄 첫 번째 경로 시도: /professors');
+        data = await makeApiRequest('/professors', {
+          method: 'GET'
+        });
+        console.log('✅ 첫 번째 경로 성공 (/professors)');
       } catch (firstPathError) {
         console.warn('⚠️ 첫 번째 경로 실패:', firstPathError);
-        console.warn('⚠️ 두 번째 경로 시도: /api/content/professors');
+        console.warn('⚠️ 두 번째 경로 시도: /content/professors');
         
         // 첫 번째 경로 실패 시 두 번째 경로 시도
-        const config = {
-          headers,
-          withCredentials: false
-        };
-        console.log('두 번째 요청 설정:', config);
-        
-        response = await axios.get(`${baseURL}/content/professors`, config);
-        console.log('✅ 두 번째 경로 성공 (/api/content/professors)');
-        console.log('응답 상태:', response.status);
-        console.log('응답 헤더:', response.headers);
+        data = await makeApiRequest('/content/professors', {
+          method: 'GET'
+        });
+        console.log('✅ 두 번째 경로 성공 (/content/professors)');
       }
       
       console.log('===== 서버 응답 확인 =====');
-      console.log('교수진 API 응답 상태:', response.status);
-      console.log('교수진 API 응답 데이터:', response.data);
-      console.log('데이터 타입:', typeof response.data);
-      console.log('데이터가 배열인가?', Array.isArray(response.data));
+      console.log('교수진 API 응답 데이터:', data);
+      console.log('데이터 타입:', typeof data);
+      console.log('데이터가 배열인가?', Array.isArray(data));
       
-      if (Array.isArray(response.data)) {
-        console.log('배열 길이:', response.data.length);
-        if (response.data.length > 0) {
+      if (Array.isArray(data)) {
+        console.log('배열 길이:', data.length);
+        if (data.length > 0) {
           console.log('첫 번째 항목 샘플:', {
-            _id: response.data[0]._id,
-            sectionTitle: response.data[0].sectionTitle,
-            professors: response.data[0].professors?.length || 0
+            _id: data[0]._id,
+            sectionTitle: data[0].sectionTitle,
+            professors: data[0].professors?.length || 0
           });
         }
       }
       
       // 백업: 로컬스토리지에 최신 데이터 저장
       try {
-        localStorage.setItem('professors-data', JSON.stringify(response.data));
+        localStorage.setItem('professors-data', JSON.stringify(data));
         localStorage.setItem('professors-data-time', Date.now().toString());
         console.log('교수진 데이터 로컬스토리지에 백업 완료');
       } catch (storageError) {
         console.warn('로컬스토리지 백업 실패:', storageError);
       }
       
-      return response.data;
+      return data;
     } catch (error) {
       console.error('❌❌❌ 교수진 데이터 가져오기 오류 ❌❌❌');
       console.error('Error fetching professors data:', error);
@@ -693,7 +670,6 @@ export const apiService = {
   getProfessorsAll: async (token?: string) => {
     try {
       console.log('관리자용 교수진 데이터 조회 시작');
-      console.log('요청 URL:', `${baseURL}/content/professors/all`);
       
       const headers: any = {
         'Content-Type': 'application/json'
@@ -704,9 +680,13 @@ export const apiService = {
       //   headers.Authorization = `Bearer ${token}`;
       // }
       
-      const response = await axios.get(`${baseURL}/content/professors/all`, { headers });
-      console.log('전체 교수진 데이터 조회 결과:', response.status);
-      return response.data;
+      const data = await makeApiRequest('/content/professors/all', {
+        method: 'GET',
+        headers
+      });
+      
+      console.log('전체 교수진 데이터 조회 결과 성공');
+      return data;
     } catch (error) {
       console.error('교수진 전체 데이터 조회 실패:', error);
       throw error;
@@ -1402,90 +1382,60 @@ export const apiService = {
   getLecturers: async () => {
     try {
       console.log('▶️▶️▶️ getLecturers 함수 호출 시작 ▶️▶️▶️');
-      // 완전한 URL 경로 사용
-      const apiUrl = import.meta.env.MODE === 'production' 
-        ? 'https://snu-plp-hub-server.onrender.com/api/lecturers'
-        : 'http://localhost:5001/api/lecturers';
-      
-      console.log('요청 URL (수정됨):', apiUrl);
       console.log('현재 환경:', import.meta.env.MODE);
       
-      // 명시적인 헤더 설정
-      const headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      };
+      let data;
       
-      let response;
-      
-      // 첫 번째 시도: 직접 URL로 요청
+      // 첫 번째 시도: /lecturers
       try {
-        console.log('🔄 서버에 직접 요청 전송 시작:', apiUrl);
-        const config = {
-          headers,
-          withCredentials: false
-        };
-        console.log('요청 설정:', config);
-        
-        response = await axios.get(apiUrl, config);
-        console.log('✅ API 요청 성공');
-        console.log('응답 상태:', response.status);
+        console.log('🔄 첫 번째 경로 시도: /lecturers');
+        data = await makeApiRequest('/lecturers', {
+          method: 'GET'
+        });
+        console.log('✅ 첫 번째 경로 성공');
       } catch (firstError) {
-        console.warn('⚠️ 첫 번째 요청 실패:', firstError.message);
-        console.warn('⚠️ baseURL + 경로 조합으로 다시 시도');
+        console.warn('⚠️ 첫 번째 경로 실패:', firstError.message);
+        console.warn('⚠️ 두 번째 경로 시도: /content/lecturers');
         
-        try {
-          // 두 번째 시도: 기존 방식으로 시도
-          response = await axios.get(`${baseURL}/lecturers`, {
-            headers,
-            withCredentials: false
-          });
-          console.log('✅ 두 번째 시도 성공');
-        } catch (secondError) {
-          console.warn('⚠️ 두 번째 시도도 실패, content 경로 시도');
-          
-          // 세 번째 시도: content 경로
-          response = await axios.get(`${baseURL}/content/lecturers`, {
-            headers,
-            withCredentials: false
-          });
-          console.log('✅ 세 번째 시도 성공');
-        }
+        // 두 번째 시도: content 경로
+        data = await makeApiRequest('/content/lecturers', {
+          method: 'GET'
+        });
+        console.log('✅ 두 번째 경로 성공');
       }
       
       console.log('===== 서버 응답 확인 =====');
-      console.log('강사진 API 응답 상태:', response.status);
-      console.log('강사진 API 응답 데이터 타입:', typeof response.data);
+      console.log('강사진 API 응답 데이터 타입:', typeof data);
       
       // 데이터 유효성 검사: HTML이 반환된 경우
-      if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+      if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
         console.error('❌ API가 HTML을 반환했습니다. 서버 설정 문제가 있습니다.');
         throw new Error('API returned HTML instead of JSON data');
       }
       
-      if (Array.isArray(response.data)) {
-        console.log('배열 길이:', response.data.length);
-        if (response.data.length > 0) {
+      if (Array.isArray(data)) {
+        console.log('배열 길이:', data.length);
+        if (data.length > 0) {
           console.log('첫 번째 항목 샘플:', {
-            _id: response.data[0]._id,
-            name: response.data[0].name,
-            term: response.data[0].term,
-            category: response.data[0].category
+            _id: data[0]._id,
+            name: data[0].name,
+            term: data[0].term,
+            category: data[0].category
           });
         }
         
         // 백업: 로컬스토리지에 최신 데이터 저장
         try {
-          localStorage.setItem('lecturers-data', JSON.stringify(response.data));
+          localStorage.setItem('lecturers-data', JSON.stringify(data));
           localStorage.setItem('lecturers-data-time', Date.now().toString());
           console.log('강사진 데이터 로컬스토리지에 백업 완료');
         } catch (storageError) {
           console.warn('로컬스토리지 백업 실패:', storageError);
         }
         
-      return response.data;
+      return data;
       } else {
-        console.error('❌ API 응답이 배열이 아닙니다:', response.data);
+        console.error('❌ API 응답이 배열이 아닙니다:', data);
         throw new Error('API did not return an array of lecturers');
       }
     } catch (error) {
@@ -1533,18 +1483,18 @@ export const apiService = {
   getLecturersAll: async () => {
     try {
       console.log('관리자용 모든 강사진 데이터 조회 시작');
-      console.log('요청 URL:', `${baseURL}/content/lecturers/all`);
       
-      const response = await axios.get(`${baseURL}/content/lecturers/all`, {
+      const data = await makeApiRequest('/content/lecturers/all', {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json'
         }
       });
       
-      console.log('전체 강사진 데이터 조회 결과:', response.status);
-      console.log('조회된 강사 수:', response.data?.length || 0);
+      console.log('전체 강사진 데이터 조회 결과 성공');
+      console.log('조회된 강사 수:', data?.length || 0);
       
-      return response.data;
+      return data;
     } catch (error) {
       console.error('관리자용 강사진 데이터 조회 실패:', error);
       
@@ -1567,9 +1517,11 @@ export const apiService = {
   getGallery: async () => {
     try {
       console.log('갤러리 데이터 가져오기 시도');
-      const response = await axios.get(`${baseURL}/gallery`);
-      console.log('갤러리 데이터 응답:', response.data);
-      return response.data;
+      const data = await makeApiRequest('/gallery', {
+        method: 'GET'
+      });
+      console.log('갤러리 데이터 응답:', data);
+      return data;
     } catch (error) {
       console.error('갤러리 데이터 가져오기 실패:', error);
       throw error;
@@ -1702,9 +1654,11 @@ export const apiService = {
   getNotices: async () => {
     try {
       console.log('공지사항 데이터 가져오기 시도');
-      const response = await axios.get(`${baseURL}/notices`);
-      console.log('공지사항 데이터 응답:', response.data);
-      return response.data;
+      const data = await makeApiRequest('/notices', {
+        method: 'GET'
+      });
+      console.log('공지사항 데이터 응답:', data);
+      return data;
     } catch (error) {
       console.error('공지사항 데이터 가져오기 실패:', error);
       throw error;
@@ -1816,7 +1770,7 @@ export const apiService = {
     try {
       const data = await makeApiRequest('/admissions', {
         method: 'GET'
-      });
+      }) as any;
       console.log('Admission API response:', data);
       console.log('endYear from API response:', data?.endYear);
       if (data && data.term) {
@@ -1898,13 +1852,14 @@ export const apiService = {
   getFooter: async () => {
     try {
       console.log('푸터 데이터 가져오기 시작');
-      console.log('요청 URL:', `${baseURL}/footer`);
       console.log('현재 환경:', import.meta.env.MODE);
       
-      const response = await axios.get(`${baseURL}/footer`);
-      console.log('푸터 API 응답 상태:', response.status);
-      console.log('푸터 API 응답 데이터:', response.data);
-      return response.data;
+      const data = await makeApiRequest('/footer', {
+        method: 'GET'
+      });
+      
+      console.log('푸터 API 응답 데이터:', data);
+      return data;
     } catch (error) {
       console.error('Error fetching footer data:', error);
       if (axios.isAxiosError(error)) {

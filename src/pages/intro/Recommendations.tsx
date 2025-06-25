@@ -4,31 +4,33 @@ import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 import ScrollReveal from '@/components/ScrollReveal';
 import { apiService } from '@/lib/apiService';
-import axios from 'axios';
-
-// API 기본 URL 설정
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
-  : 'http://localhost:5001/api';
 
 interface Recommendation {
-  _id?: string;
+  _id: string;
+  sectionTitle: string;
   title: string;
-  text: string;
-  author: string;
+  name: string;
   position: string;
-  photoUrl: string;
+  content: string;
+  imageUrl: string;
+  order: number;
+  isActive: boolean;
 }
 
+// 폴백 데이터
+const FALLBACK_RECOMMENDATIONS: Recommendation[] = [];
+
 const Recommendations = () => {
-  const [sectionTitle, setSectionTitle] = useState('추천의 글');
+  const title = '추천의 글'; // 하드코딩된 제목
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
   // 이미지 URL을 처리하는 함수
   const processImageUrl = (url: string) => {
-    if (!url) return '';
+    if (!url) return '/images/default-profile.jpg';
     
     // Base64 인코딩된 이미지 데이터인 경우 (data:image로 시작)
     if (url.startsWith('data:image')) {
@@ -54,211 +56,93 @@ const Recommendations = () => {
     return `${window.location.origin}/images/${url}`;
   };
 
-  // MongoDB에서 추천의 글 데이터 로드
-  const loadRecommendations = async () => {
+  // MongoDB에서 추천사 데이터 가져오기 - apiService 사용
+  const fetchRecommendations = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      console.log('===== Recommendations.tsx: MongoDB에서 추천사 데이터 로드 시도 =====');
+      console.log('MongoDB에서 추천의 글 데이터 가져오기 시도...');
       
-      try {
-        // apiService 사용하여 데이터 가져오기
-        console.log('apiService.getRecommendations() 호출 시작...');
-        const data = await apiService.getRecommendations();
-        console.log('===== Recommendations.tsx: 추천사 데이터 로드 완료 =====');
-        console.log('데이터:', data);
-        console.log('데이터 타입:', typeof data);
-        console.log('데이터가 배열인가?', Array.isArray(data));
-        if (Array.isArray(data)) {
-          console.log('배열 길이:', data.length);
-        }
+      // apiService를 사용하여 데이터 가져오기
+      const data = await apiService.getRecommendations();
+      console.log('Recommendations API Response:', data);
+      
+      if (data && Array.isArray(data)) {
+        // 활성화된 항목만 필터링하고 정렬
+        const sortedRecommendations = data
+          .filter((rec: Recommendation) => {
+            const isActive = rec.isActive !== false;
+            if (!isActive) console.log('비활성화된 추천의 글 필터링:', rec.title);
+            return isActive;
+          })
+          .sort((a: Recommendation, b: Recommendation) => a.order - b.order);
         
-        if (data && Array.isArray(data) && data.length > 0) {
-          console.log('MongoDB에서 추천사 데이터 로드 성공:', data);
-          
-          // 섹션 제목 설정 (모든 추천글은 동일한 섹션 제목 사용)
-          if (data[0].sectionTitle) {
-            setSectionTitle(data[0].sectionTitle);
-          }
-          
-          // MongoDB 데이터를 프론트엔드 형식으로 변환
-          const formattedData = data.map((item: any) => ({
-            _id: item._id || '',
-            title: item.title || '',
-            text: item.content || item.text || '',
-            author: item.name || item.author || '',
-            position: item.position || item.affiliation || '',
-            imageUrl: item.imageUrl || item.photo || '/images/default-profile.jpg',
-            photoUrl: item.imageUrl || item.photo || '/images/default-profile.jpg'
-          }));
-          
-          console.log('변환된 추천사 데이터:', formattedData);
-          setRecommendations(formattedData);
-          
-          // 로컬스토리지에 백업 저장
-          try {
-            localStorage.setItem('recommendations', JSON.stringify(formattedData));
-            localStorage.setItem('recommendationsTime', Date.now().toString());
-            console.log('추천사 데이터 로컬스토리지에 백업 완료');
-          } catch (storageError) {
-            console.warn('로컬스토리지 백업 실패:', storageError);
-          }
-          
-          setError(null);
-        } else {
-          console.log('MongoDB에서 데이터를 찾을 수 없습니다. 로컬 데이터를 사용합니다.');
-          throw new Error('데이터 형식 오류');
-        }
-      } catch (apiError) {
-        console.error('apiService.getRecommendations() 호출 중 오류:', apiError);
+        console.log('처리된 추천의 글 데이터:', sortedRecommendations);
+        console.log('추천의 글 개수:', sortedRecommendations.length);
         
-        // 여러 경로로 시도 - Benefits 페이지와 동일한 방식
-        console.log('직접 API 호출 시도 (fetch)');
-        const response = await fetch(`/api/recommendations?t=${Date.now()}`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
-        });
+        setRecommendations(sortedRecommendations);
         
-        console.log('응답 상태:', response.status, response.statusText);
+        // 데이터 캐싱
+        localStorage.setItem('recommendations', JSON.stringify(sortedRecommendations));
+        localStorage.setItem('recommendationsTime', Date.now().toString());
+        console.log('데이터 캐싱 완료');
         
-        if (!response.ok) {
-          throw new Error(`서버 오류: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('추천사 데이터 로드 완료 (fetch 방식):', data);
-        
-        if (data && Array.isArray(data)) {
-          // 섹션 제목 설정
-          if (data[0]?.sectionTitle) {
-            setSectionTitle(data[0].sectionTitle);
-          }
-          
-          // MongoDB 데이터를 프론트엔드 형식으로 변환
-          const formattedData = data.map((item: any) => ({
-            _id: item._id || '',
-            title: item.title || '',
-            text: item.content || item.text || '',
-            author: item.name || item.author || '',
-            position: item.position || item.affiliation || '',
-            imageUrl: item.imageUrl || item.photo || '/images/default-profile.jpg',
-            photoUrl: item.imageUrl || item.photo || '/images/default-profile.jpg'
-          }));
-          
-          setRecommendations(formattedData);
-          setError(null);
-        } else {
-          console.log('데이터가 없거나 배열이 아닙니다.');
-          throw new Error('데이터 형식 오류');
-        }
+        setError(null);
+      } else {
+        throw new Error('올바른 형식의 데이터가 아닙니다.');
       }
     } catch (err) {
-      console.error('===== Recommendations.tsx: 추천사를 불러오는 중 오류 발생 =====');
+      console.error('===== Recommendations.tsx: 추천의 글을 불러오는 중 오류 발생 =====');
       console.error('오류 세부 정보:', err);
       
-      setError('추천사를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      setError('추천의 글을 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       
-      // 로컬 스토리지에서 데이터 로드 시도
-      const cachedRecommendations = localStorage.getItem('recommendations');
-      if (cachedRecommendations) {
-        try {
-          const parsedData = JSON.parse(cachedRecommendations);
-          setRecommendations(parsedData);
-          setSectionTitle(parsedData[0]?.sectionTitle || '추천의 글');
-        } catch (cacheErr) {
-          console.error('캐시된 데이터 파싱 오류:', cacheErr);
-        }
-      }
-      
-      // recommendations_backup 확인
+      // 로컬 스토리지에서 백업 데이터 시도
       try {
         const backup = localStorage.getItem('recommendations_backup');
         if (backup) {
           console.log('recommendations_backup에서 데이터 복원 시도');
           const backupData = JSON.parse(backup);
-          const formattedBackup = backupData.map((item: any) => ({
-            _id: item._id || '',
-            title: item.title || '',
-            text: item.content || item.text || '',
-            author: item.name || item.author || '',
-            position: item.position || item.affiliation || '',
-            imageUrl: item.imageUrl || item.photo || '/images/default-profile.jpg',
-            photoUrl: item.imageUrl || item.photo || '/images/default-profile.jpg'
-          }));
-          setRecommendations(formattedBackup);
+          setRecommendations(backupData);
           return;
         }
       } catch (storageError) {
         console.warn('백업 복원 실패:', storageError);
       }
       
-      // 최종 폴백으로 로컬 데이터 로드
-      loadFromLocalStorage();
+      // 최대 3번까지 재시도
+      if (retryCount < MAX_RETRIES) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          fetchRecommendations();
+        }, 3000);  // 3초 후 재시도
+      } else {
+        // 모든 재시도 실패 시 폴백 데이터 사용
+        setRecommendations(FALLBACK_RECOMMENDATIONS);
+      }
     } finally {
       setIsLoading(false);
     }
   };
-  
-  // localStorage에서 데이터 로드 (fallback)
-  const loadFromLocalStorage = () => {
-    const savedTitle = localStorage.getItem('recommendations-title');
-    const savedRecommendations = localStorage.getItem('recommendations');
-    
-    if (savedTitle) {
-      setSectionTitle(savedTitle);
-      console.log('localStorage에서 섹션 제목 로드:', savedTitle);
-    }
-    
-    if (savedRecommendations) {
-      try {
-        const parsedRecommendations = JSON.parse(savedRecommendations);
-        console.log('localStorage에서 추천의 글 데이터 로드:', parsedRecommendations);
-        
-        // 데이터 형식 변환 및 이미지 URL 처리
-        const updatedRecommendations = parsedRecommendations.map((rec: any) => ({
-          _id: rec._id || '',
-          title: rec.title || '',
-          text: rec.text || '', 
-          author: rec.author || '',
-          position: rec.position || '',
-          photoUrl: processImageUrl(rec.photoUrl || '')
-        }));
-        
-        setRecommendations(updatedRecommendations);
-        setError(null); // localStorage에서 데이터를 로드했으므로 오류 메시지를 지웁니다
-      } catch (error) {
-        console.error('localStorage에서 추천의 글 데이터 파싱 실패:', error);
-        setError('저장된 데이터를 불러오는 중 오류가 발생했습니다.');
-      }
-    } else {
-      console.warn('localStorage에 추천의 글 데이터가 없습니다.');
-      // 로컬 스토리지에도 데이터가 없는 경우 빈 배열 설정
-      setRecommendations([]);
-    }
-  };
 
+  // 페이지 로드 시 데이터 가져오기
   useEffect(() => {
     window.scrollTo(0, 0);
     
-    // 컴포넌트 마운트 시 데이터 로드
-    loadRecommendations();
+    // localStorage에서 캐시 데이터 삭제
+    try {
+      console.log('캐시 데이터 삭제 중...');
+      localStorage.removeItem('recommendations');
+      localStorage.removeItem('recommendationsTime');
+      console.log('캐시 데이터 삭제 완료');
+    } catch (err) {
+      console.error('캐시 데이터 삭제 중 오류:', err);
+    }
     
-    // 에러가 있는 경우 5초 후 자동으로 다시 시도
-    const retryTimer = setTimeout(() => {
-      if (error && recommendations.length === 0) {
-        console.log('자동 재시도: 추천의 글 데이터 로드');
-        loadRecommendations();
-      }
-    }, 5000);
-    
-    return () => clearTimeout(retryTimer);
-  }, [error]);
+    fetchRecommendations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Animation variants
   const containerVariants = {
@@ -282,100 +166,117 @@ const Recommendations = () => {
     }
   };
 
+  // 수동 재시도 핸들러
+  const handleRetry = () => {
+    setRetryCount(0);
+    fetchRecommendations();
+  };
+
   return (
     <>
       <Header />
       <main className="pt-24 pb-16">
-        {/* 스타일 1: 파란색 배경의 제목 띠 */}
-        <div className="w-full bg-mainBlue text-white">
-          <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <ScrollReveal>
+          <section className="py-16 bg-mainBlue text-white">
             <div className="main-container">
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">{sectionTitle}</h1>
-
+              <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal">{title}</h1>
             </div>
-          </div>
-        </div>
-
-        {/* 스타일 2: Benefits 페이지 스타일의 백업 제목 (필요시 주석 해제) */}
-        {/* <div className="main-container">
-          <h1 className="section-title text-center mb-12" style={{ wordBreak: 'keep-all' }}>{sectionTitle}</h1>
-        </div> */}
+          </section>
+        </ScrollReveal>
 
         <div className="main-container py-12">
           {isLoading ? (
-            <div className="flex justify-center items-center h-64">
+            <div className="flex flex-col items-center justify-center h-64 space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
-              <span className="ml-3 text-mainBlue">추천의 글을 불러오는 중...</span>
+              <p className="text-gray-600">추천의 글을 불러오는 중...</p>
             </div>
-          ) : error && recommendations.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-lg inline-block">
-                <p className="font-medium">{error}</p>
+          ) : error ? (
+            <div className="text-center py-12 space-y-4">
+              <p className="text-red-500" style={{ wordBreak: 'keep-all' }}>{error}</p>
+              {retryCount >= MAX_RETRIES && (
                 <button 
-                  onClick={loadRecommendations}
-                  className="mt-3 px-4 py-2 bg-mainBlue text-white rounded-md text-sm hover:bg-blue-800 transition-colors"
+                  onClick={handleRetry}
+                  className="px-4 py-2 bg-mainBlue text-white rounded hover:bg-mainBlue/90 transition-colors"
                 >
                   다시 시도
                 </button>
-              </div>
+              )}
             </div>
           ) : recommendations.length === 0 ? (
             <div className="text-center text-gray-500 py-12">
-              <p>등록된 추천의 글이 없습니다.</p>
+              <p style={{ wordBreak: 'keep-all' }}>등록된 추천의 글이 없습니다.</p>
+              <button 
+                onClick={handleRetry}
+                className="mt-4 px-4 py-2 bg-mainBlue text-white rounded hover:bg-mainBlue/90 transition-colors"
+              >
+                데이터 새로고침
+              </button>
             </div>
           ) : (
-            <motion.div 
-              className="grid gap-8 md:gap-12 max-w-4xl mx-auto"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {recommendations.map((recommendation, index) => (
-                <motion.div 
-                  key={index}
-                  className="bg-white rounded-lg shadow-md overflow-hidden"
-                  variants={itemVariants}
+            <>
+              <div className="flex justify-end mb-6">
+                <button 
+                  onClick={handleRetry}
+                  className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300 transition-colors"
                 >
-                  <div className="p-6 md:p-8 flex flex-col md:flex-row gap-6">
-                    {recommendation.photoUrl && (
-                      <div className="flex-shrink-0">
-                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-gray-100 shadow-sm mx-auto md:mx-0 bg-mainBlue">
-                          <img 
-                            src={recommendation.photoUrl} 
-                            alt={`${recommendation.author || '추천인'} 사진`} 
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              console.error(`이미지 로드 실패: ${recommendation.photoUrl}`);
-                              // 기본 이미지로 대체
-                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Profile';
-                              // 플레이스홀더 이미지도 로드 실패하면 기본 색상 배경 유지
-                              (e.target as HTMLImageElement).onerror = () => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              };
-                            }}
-                          />
+                  새로고침
+                </button>
+              </div>
+              <motion.div 
+                className="grid gap-8 md:gap-12 max-w-4xl mx-auto"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                {recommendations.map((recommendation) => (
+                  <motion.div 
+                    key={recommendation._id}
+                    className="bg-white rounded-lg shadow-md overflow-hidden"
+                    variants={itemVariants}
+                  >
+                    <div className="p-6 md:p-8 flex flex-col md:flex-row gap-6">
+                      {recommendation.imageUrl && (
+                        <div className="flex-shrink-0">
+                          <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-gray-100 shadow-sm mx-auto md:mx-0 bg-mainBlue">
+                            <img 
+                              src={processImageUrl(recommendation.imageUrl)} 
+                              alt={`${recommendation.name || '추천인'} 사진`} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                console.error(`이미지 로드 실패: ${recommendation.imageUrl}`);
+                                // 기본 이미지로 대체
+                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Profile';
+                                // 플레이스홀더 이미지도 로드 실패하면 기본 색상 배경 유지
+                                (e.target as HTMLImageElement).onerror = () => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                };
+                              }}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    
-                    <div className={`flex-1 ${!recommendation.photoUrl ? 'md:pl-0' : ''}`}>
-                      {recommendation.title && (
-                        <h2 className="text-xl font-bold text-mainBlue mb-3">{recommendation.title}</h2>
                       )}
                       
-                      <div className="mb-4 text-lg md:text-xl leading-relaxed text-gray-700 italic">
-                        "{recommendation.text}"
-                      </div>
-                      
-                      <div className="flex flex-col items-start">
-                        <h3 className="text-xl font-bold text-mainBlue">{recommendation.author}</h3>
-                        <p className="text-gray-600">{recommendation.position}</p>
+                      <div className={`flex-1 ${!recommendation.imageUrl ? 'md:pl-0' : ''}`}>
+                        {recommendation.title && (
+                          <h2 className="text-xl font-bold text-mainBlue mb-3" style={{ wordBreak: 'keep-all' }}>
+                            {recommendation.title}
+                          </h2>
+                        )}
+                        
+                        <div className="mb-4 text-lg md:text-xl leading-relaxed text-gray-700 italic" style={{ wordBreak: 'keep-all' }}>
+                          "{recommendation.content}"
+                        </div>
+                        
+                        <div className="flex flex-col items-start">
+                          <h3 className="text-xl font-bold text-mainBlue" style={{ wordBreak: 'keep-all' }}>{recommendation.name}</h3>
+                          <p className="text-gray-600" style={{ wordBreak: 'keep-all' }}>{recommendation.position}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </>
           )}
         </div>
       </main>
