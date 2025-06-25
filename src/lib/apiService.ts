@@ -8,7 +8,7 @@
 import axios from 'axios';
 
 // API 서버 URL 설정 - fallback 시스템 구현
-const PRODUCTION_API = import.meta.env.VITE_API_URL || 'https://snu-plp-hub-server.onrender.com/api';
+const PRODUCTION_API = import.meta.env.VITE_API_URL || 'https://snu-plp-hub-backend.onrender.com/api';
 const LOCALHOST_API = 'http://localhost:5001/api';
 
 // 개발 환경에 따른 baseURL 설정
@@ -28,8 +28,8 @@ const makeApiRequest = async <T>(
 ): Promise<T> => {
   const urls = [
     PRODUCTION_API, 
+    'https://snu-plp-hub-backend.onrender.com/api', // 새로운 백엔드 URL
     'https://plpsnu.ne.kr/api',  // 커스텀 도메인도 시도
-    'https://snu-plp-hub-server.onrender.com/api', // 백업 URL
     LOCALHOST_API
   ];
   let lastError: any = null;
