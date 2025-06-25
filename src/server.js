@@ -30,7 +30,9 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5173',
+      'http://localhost:8080',
       'https://snu-political-leaders-hub-1.onrender.com',
+      'https://snu-plp-hub-server.onrender.com',
       'https://plpsnu.ne.kr',
       'http://plpsnu.ne.kr',
       'https://www.plpsnu.ne.kr',
@@ -86,7 +88,7 @@ import greetingRoutes from './routes/greetingRoutes.js';
 
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/notices', noticeRoutes);
-app.use('/api/admission', admissionRoutes);
+app.use('/api/admissions', admissionRoutes);
 app.use('/api/footer', footerRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/greeting', greetingRoutes);
