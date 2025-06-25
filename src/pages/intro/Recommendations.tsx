@@ -115,12 +115,13 @@ const Recommendations = () => {
         
         // 여러 경로로 시도 - Benefits 페이지와 동일한 방식
         console.log('직접 API 호출 시도 (fetch)');
-        const response = await fetch(`/api/recommendations`, {
+        const response = await fetch(`/api/recommendations?t=${Date.now()}`, {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           }
         });
         
