@@ -8,13 +8,18 @@
 import axios from 'axios';
 
 // API 서버 URL 설정 - fallback 시스템 구현
-const PRODUCTION_API = 'https://snu-plp-hub-server.onrender.com/api';
+const PRODUCTION_API = import.meta.env.VITE_API_URL || 'https://snu-plp-hub-server.onrender.com/api';
 const LOCALHOST_API = 'http://localhost:5001/api';
 
 // 개발 환경에 따른 baseURL 설정
 const baseURL = import.meta.env.MODE === 'production' 
   ? PRODUCTION_API 
   : LOCALHOST_API;
+
+console.log('🔧 API 설정 정보:');
+console.log('- 현재 모드:', import.meta.env.MODE);
+console.log('- VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('- baseURL:', baseURL);
 
 // API 요청 시 자동 fallback 처리하는 함수
 const makeApiRequest = async <T>(
@@ -24,6 +29,7 @@ const makeApiRequest = async <T>(
   const urls = [
     PRODUCTION_API, 
     'https://plpsnu.ne.kr/api',  // 커스텀 도메인도 시도
+    'https://snu-plp-hub-server.onrender.com/api', // 백업 URL
     LOCALHOST_API
   ];
   let lastError: any = null;
@@ -34,7 +40,12 @@ const makeApiRequest = async <T>(
       const response = await axios({
         ...options,
         url: `${baseUrl}${endpoint}`,
-        timeout: 10000, // 10초 타임아웃 (Render는 cold start가 있을 수 있음)
+        timeout: 15000, // 15초 타임아웃 (Render는 cold start가 있을 수 있음)
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...options.headers
+        }
       });
       console.log(`✅ Success with: ${baseUrl}`);
       return response.data;
@@ -129,114 +140,50 @@ export const apiService = {
     try {
       console.log('추천의 글 데이터 가져오기 시작');
       
-      let response;
-      let lastError;
+      // makeApiRequest 함수를 사용하여 자동 fallback 처리
+      const data = await makeApiRequest('/recommendations', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        timeout: 15000 // Render cold start를 고려하여 15초로 증가
+      });
       
-      // 여러 API 경로를 시도
-      const apiPaths = [
-        `${baseURL}/recommendations`,
-        `${baseURL}/content/recommendations`
-      ];
-      
-      for (const apiPath of apiPaths) {
-        try {
-          console.log(`추천사 API 경로 시도: ${apiPath}`);
-          
-          const config = {
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            withCredentials: false,
-            timeout: 10000
-          };
-          
-          response = await axios.get(apiPath, config);
-          console.log(`✅ 추천사 API 성공: ${apiPath}`);
-          break;
-        } catch (error) {
-          console.warn(`❌ 추천사 API 실패: ${apiPath}`, error instanceof Error ? error.message : 'Unknown error');
-          lastError = error;
-          continue;
-        }
-      }
-      
-      if (!response) {
-        throw lastError || new Error('모든 API 경로 시도 실패');
-      }
-      
-      console.log('추천사 API 응답 상태:', response.status);
-      console.log('추천사 API 응답 데이터:', response.data);
-      console.log('응답 데이터 타입:', typeof response.data);
-      console.log('응답이 배열인가?:', Array.isArray(response.data));
+      console.log('추천사 API 응답 데이터:', data);
+      console.log('응답 데이터 타입:', typeof data);
+      console.log('응답이 배열인가?:', Array.isArray(data));
       
       // 데이터 형식 검증
-      if (!response.data) {
-        throw new Error('API 응답이 null 또는 undefined입니다.');
+      if (!data) {
+        console.error('추천사 데이터가 null 또는 undefined');
+        throw new Error('올바른 형식의 데이터가 아닙니다.');
       }
       
-      if (!Array.isArray(response.data)) {
-        console.warn('API 응답이 배열이 아닙니다. 배열로 변환 시도...');
+      // 응답이 HTML 문자열인지 확인
+      if (typeof data === 'string') {
+        if (data.includes('<!DOCTYPE html>') || data.includes('<html>')) {
+          console.error('HTML 응답 받음:', data.substring(0, 200));
+          throw new Error('올바른 형식의 데이터가 아닙니다.');
+        }
         
-        // 객체인 경우 배열로 변환 시도
-        if (typeof response.data === 'object') {
-          if (response.data.data && Array.isArray(response.data.data)) {
-            response.data = response.data.data;
-          } else if (response.data.recommendations && Array.isArray(response.data.recommendations)) {
-            response.data = response.data.recommendations;
-          } else {
-            // 단일 객체인 경우 배열로 감싸기
-            response.data = [response.data];
-          }
-        } else {
+        // JSON 문자열인 경우 파싱 시도
+        try {
+          const parsedData = JSON.parse(data);
+          return await this.validateAndProcessRecommendations(parsedData);
+        } catch (parseError) {
+          console.error('JSON 파싱 실패:', parseError);
           throw new Error('올바른 형식의 데이터가 아닙니다.');
         }
       }
       
-      console.log(`추천사 데이터 로드 완료: ${response.data.length}개 항목`);
+      // 정상적인 객체/배열 데이터 처리
+      return await this.validateAndProcessRecommendations(data);
       
-      // 각 항목의 필수 필드 검증
-      const validatedData = response.data.filter((item: any) => {
-        if (!item || typeof item !== 'object') {
-          console.warn('유효하지 않은 추천사 항목:', item);
-          return false;
-        }
-        
-        // 최소한 제목이나 내용이 있어야 함
-        if (!item.title && !item.content && !item.text) {
-          console.warn('제목과 내용이 모두 없는 추천사 항목:', item);
-          return false;
-        }
-        
-        return true;
-      });
-      
-      console.log(`유효한 추천사 데이터: ${validatedData.length}개 항목`);
-      
-      // 백업: 로컬스토리지에 최신 데이터 저장
-      try {
-        localStorage.setItem('recommendations_backup', JSON.stringify(validatedData));
-        localStorage.setItem('recommendations_backup_time', Date.now().toString());
-        console.log('추천사 데이터 로컬스토리지에 백업 완료');
-      } catch (storageError) {
-        console.warn('로컬스토리지 백업 실패:', storageError);
-      }
-      
-      return validatedData;
     } catch (error) {
-      console.error('❌❌❌ 추천의 글 로드 실패 ❌❌❌');
-      console.error('Error details:', error);
+      console.error('추천사를 불러오는 중 오류가 발생했습니다:', error);
       
-      if (axios.isAxiosError(error)) {
-        console.error('Axios Error Details:', {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          message: error.message
-        });
-      }
-      
-      // 로컬스토리지에서 백업 데이터 시도
+      // 로컬스토리지에서 백업 데이터 시도 (fallback)
       try {
         const backup = localStorage.getItem('recommendations_backup');
         if (backup) {
@@ -248,9 +195,77 @@ export const apiService = {
         console.warn('로컬스토리지 복원 실패:', storageError);
       }
       
-      // 에러를 다시 throw하여 컴포넌트에서 처리할 수 있도록 함
       throw error;
     }
+  },
+
+  // 추천사 데이터 검증 및 처리 헬퍼 함수
+  validateAndProcessRecommendations: async (data: any) => {
+    console.log('추천사 데이터 검증 시작:', data);
+    
+    // 배열이 아닌 경우 배열로 변환 시도
+    let processedData = data;
+    if (!Array.isArray(data)) {
+      if (data && typeof data === 'object') {
+        // 객체에 data 속성이 있는 경우
+        if (data.data && Array.isArray(data.data)) {
+          processedData = data.data;
+        }
+        // 객체에 recommendations 속성이 있는 경우
+        else if (data.recommendations && Array.isArray(data.recommendations)) {
+          processedData = data.recommendations;
+        }
+        // 단일 객체인 경우 배열로 감싸기
+        else {
+          processedData = [data];
+        }
+      } else {
+        throw new Error('올바른 형식의 데이터가 아닙니다.');
+      }
+    }
+    
+    if (!Array.isArray(processedData)) {
+      console.error('최종 데이터가 배열이 아님:', typeof processedData);
+      throw new Error('올바른 형식의 데이터가 아닙니다.');
+    }
+    
+    if (processedData.length === 0) {
+      console.warn('추천사 데이터가 비어있음');
+      return [];
+    }
+    
+    // 데이터 구조 검증 및 정리
+    const validatedData = processedData.filter((item: any) => {
+      if (!item || typeof item !== 'object') {
+        console.warn('유효하지 않은 추천사 항목:', item);
+        return false;
+      }
+      
+      // 필수 필드 확인
+      const hasTitle = item.title && typeof item.title === 'string';
+      const hasContent = (item.content || item.text) && typeof (item.content || item.text) === 'string';
+      const hasName = item.name && typeof item.name === 'string';
+      
+      if (!hasTitle || !hasContent || !hasName) {
+        console.warn('필수 필드가 누락된 추천사 항목:', item);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    console.log(`✅ 추천사 데이터 검증 완료: ${validatedData.length}개 항목`);
+    
+    // 백업 저장
+    try {
+      localStorage.setItem('recommendations_backup', JSON.stringify(validatedData));
+      localStorage.setItem('recommendations_backup_time', Date.now().toString());
+      console.log('추천사 데이터 로컬스토리지에 백업 완료');
+    } catch (storageError) {
+      console.warn('로컬스토리지 백업 실패:', storageError);
+    }
+    
+    return validatedData;
   },
 
   // 목표(Objectives) 관련 API

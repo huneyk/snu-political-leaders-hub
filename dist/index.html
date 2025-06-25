@@ -3,9 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
     <title>서울대학교 정치지도자 과정 | Political Leaders Program</title>
     <meta name="description" content="정치지도자 과정(PLP)은 서울대학교 정치외교학부가 주관하는 국내 최고 수준의 정치 교육 프로그램입니다. 국회의원, 지방자치단체장, 지방의회 의원 등 각급 선거에 출마하는 정치인, 정치 후보자들을 양성하는 프로그램입니다." />
     <meta name="keywords" content="서울대학교, 정치지도자, 선거, PLP, 정치인, 정치 후보자, 국회의원, 지방자치단체장, 지방의회 의원" />
@@ -15,8 +12,34 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/assets/index-BODifPk2.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-CtAIprZl.css">
+    <script>
+      // 404 페이지에서 저장된 경로가 있는지 확인
+      (function() {
+        var redirectPath = sessionStorage.getItem('redirectPath');
+        var lastPath = sessionStorage.getItem('lastPath');
+        
+        // 리프레시 후 저장된 경로로 복원
+        if (window.location.pathname === '/' && lastPath) {
+          console.log('새로고침: 이전 경로로 복원', lastPath);
+          window.history.replaceState(null, '', lastPath);
+          sessionStorage.removeItem('lastPath');
+          return;
+        }
+        
+        // 404 리다이렉트 처리
+        if (redirectPath) {
+          sessionStorage.removeItem('redirectPath');
+          if (redirectPath !== '/') {
+            console.log('리다이렉트: 저장된 경로로 이동', redirectPath);
+            window.history.replaceState(null, '', redirectPath);
+          }
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-BOmCdQk3.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-CUzt5T_J.js">
+    <link rel="modulepreload" crossorigin href="/assets/ui-LoPyfMUf.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-B5mkjcRF.css">
   </head>
 
   <body>
