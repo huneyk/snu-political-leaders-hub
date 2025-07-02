@@ -4,10 +4,48 @@ const { isAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// 모든 갤러리 항목 가져오기 (공개)
+// 갤러리 항목 가져오기 (공개) - 기수별 필터링 지원
 router.get('/', async (req, res) => {
   try {
-    const galleries = await Gallery.find().sort({ date: -1 });
+    const { term, meta_only } = req.query;
+    
+    // 메타데이터만 요청하는 경우 (이미지 URL 제외)
+    if (meta_only === 'true') {
+      const galleries = await Gallery.find().select('title description date term createdAt updatedAt').sort({ date: -1 });
+      console.log(`메타데이터만 조회: ${galleries.length}개 항목`);
+      res.json(galleries);
+      return;
+    }
+    
+    let query = {};
+    
+    // 특정 기수만 요청하는 경우
+    if (term) {
+      // 관대한 필터링: 다양한 타입과 패턴 고려
+      query.$or = [
+        { term: term },                    // 원래 값
+        { term: String(term) },            // 문자열 변환
+        { term: Number(term) },            // 숫자 변환
+        { term: { $regex: term, $options: 'i' } }  // 정규식 매칭 (대소문자 무시)
+      ];
+      console.log(`🎯 기수별 조회: ${term}기 (관대한 검색)`);
+    }
+    
+    const galleries = await Gallery.find(query).sort({ date: -1 });
+    
+    // 응답 데이터 로깅 (디버깅용)
+    if (term) {
+      const termCounts = {};
+      galleries.forEach(item => {
+        const itemTerm = item.term;
+        termCounts[itemTerm] = (termCounts[itemTerm] || 0) + 1;
+      });
+      console.log(`📊 ${term}기 조회 결과: 총 ${galleries.length}개 항목`);
+      console.log(`📈 기수별 분포:`, termCounts);
+    } else {
+      console.log(`📋 전체 조회 완료: ${galleries.length}개 항목`);
+    }
+    
     res.json(galleries);
   } catch (error) {
     console.error('갤러리 항목 조회 오류:', error);
