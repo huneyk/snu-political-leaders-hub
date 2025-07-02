@@ -6,34 +6,37 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from 'react';
 import MobileFloatingMenu from "@/components/MobileFloatingMenu";
 
-import Index from "./pages/Index";
-import Greeting from "./pages/Greeting";
-import AdmissionInfo from "./pages/AdmissionInfo";
-import Recommendations from "./pages/intro/Recommendations";
-import Objectives from "./pages/intro/Objectives";
-import CourseBenefits from "./pages/intro/CourseBenefits";
-import Professors from "./pages/intro/Professors";
-import Rules from "./pages/admission/Rules";
-import Admin from "./pages/Admin";
-import AdminLogin from "./pages/AdminLogin";
-import GreetingManage from "./pages/admin/GreetingManage";
-import RecommendationsManage from "./pages/admin/RecommendationsManage";
-import CourseGoalManage from "./pages/admin/CourseGoalManage";
-import CourseBenefitsManage from "./pages/admin/CourseBenefitsManage";
-import ProfessorsManage from "./pages/admin/ProfessorsManage";
-import FacultyManage from "./pages/admin/FacultyManage";
-import UsersManage from "./pages/admin/UsersManage";
-import ScheduleManage from "./pages/admin/ScheduleManage";
-import GalleryManage from "./pages/admin/GalleryManage";
-import NoticesManage from "./pages/admin/NoticesManage";
-import AdmissionManage from "./pages/admin/AdmissionManage";
-import FooterManage from "./pages/admin/FooterManage";
-import ScheduleLecturers from "./pages/ScheduleLecturers";
-import ScheduleCalendar from "./pages/ScheduleCalendar";
-import ScheduleActivities from "./pages/ScheduleActivities";
-import Gallery from "./pages/Gallery";
-import Notices from "./pages/Notices";
-import NotFound from "./pages/NotFound";
+// Lazy load pages for better performance
+const Index = lazy(() => import("./pages/Index"));
+const Greeting = lazy(() => import("./pages/Greeting"));
+const AdmissionInfo = lazy(() => import("./pages/AdmissionInfo"));
+const Recommendations = lazy(() => import("./pages/intro/Recommendations"));
+const Objectives = lazy(() => import("./pages/intro/Objectives"));
+const CourseBenefits = lazy(() => import("./pages/intro/CourseBenefits"));
+const Professors = lazy(() => import("./pages/intro/Professors"));
+const Rules = lazy(() => import("./pages/admission/Rules"));
+const ScheduleLecturers = lazy(() => import("./pages/ScheduleLecturers"));
+const ScheduleCalendar = lazy(() => import("./pages/ScheduleCalendar"));
+const ScheduleActivities = lazy(() => import("./pages/ScheduleActivities"));
+const Gallery = lazy(() => import("./pages/Gallery"));
+const Notices = lazy(() => import("./pages/Notices"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Admin pages - separate chunks for admin functionality
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const GreetingManage = lazy(() => import("./pages/admin/GreetingManage"));
+const RecommendationsManage = lazy(() => import("./pages/admin/RecommendationsManage"));
+const CourseGoalManage = lazy(() => import("./pages/admin/CourseGoalManage"));
+const CourseBenefitsManage = lazy(() => import("./pages/admin/CourseBenefitsManage"));
+const ProfessorsManage = lazy(() => import("./pages/admin/ProfessorsManage"));
+const FacultyManage = lazy(() => import("./pages/admin/FacultyManage"));
+const UsersManage = lazy(() => import("./pages/admin/UsersManage"));
+const ScheduleManage = lazy(() => import("./pages/admin/ScheduleManage"));
+const GalleryManage = lazy(() => import("./pages/admin/GalleryManage"));
+const NoticesManage = lazy(() => import("./pages/admin/NoticesManage"));
+const AdmissionManage = lazy(() => import("./pages/admin/AdmissionManage"));
+const FooterManage = lazy(() => import("./pages/admin/FooterManage"));
 
 // Loading component
 const Loading = () => (
@@ -44,7 +47,7 @@ const Loading = () => (
 
 import withAdminHomeButton from "./components/admin/withAdminHomeButton";
 
-// Apply HOC to admin pages
+// Apply HOC to admin pages - keeping HOC simple while lazy loading the pages
 const GreetingManageWithButton = withAdminHomeButton(GreetingManage);
 const RecommendationsManageWithButton = withAdminHomeButton(RecommendationsManage);
 const CourseGoalManageWithButton = withAdminHomeButton(CourseGoalManage);

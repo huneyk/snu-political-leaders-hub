@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 
 const Hero = () => {
@@ -12,13 +12,13 @@ const Hero = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleScrollDown = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleScrollDown = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     const admissionSection = document.getElementById('admission');
     if (admissionSection) {
       admissionSection.scrollIntoView({ behavior: 'smooth' });
     }
-  };
+  }, []);
 
   return (
     <section className="relative h-screen flex items-center overflow-hidden bg-gradient-to-r from-mainBlue via-mainBlue/95 to-mainBlue/90">
