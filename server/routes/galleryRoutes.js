@@ -223,6 +223,17 @@ async function getValidTerms() {
 // 갤러리 항목 가져오기 (공개) - 기수별 필터링 지원
 router.get('/', async (req, res) => {
   try {
+    // 🚨 CRITICAL: 특정 경로들이 여기로 잘못 라우팅되는 것을 방지
+    const blockedPaths = ['thumbnails', 'valid-terms', 'health'];
+    if (blockedPaths.some(path => req.originalUrl.includes(`/${path}`))) {
+      console.log('🚫 BLOCKED: 동적 라우트에서 특수 경로 차단됨:', req.originalUrl);
+      return res.status(404).json({ 
+        message: '잘못된 경로입니다.',
+        originalUrl: req.originalUrl,
+        redirectedTo: 'general gallery route'
+      });
+    }
+    
     const { term, meta_only } = req.query;
     
     console.log(`🔍 갤러리 API 요청 - term: ${term}, meta_only: ${meta_only}, 요청 시각: ${new Date().toISOString()}`);
@@ -361,6 +372,17 @@ router.post('/', isAdmin, async (req, res) => {
 // 갤러리 항목 수정 (관리자 전용)
 router.put('/:id', isAdmin, async (req, res) => {
   try {
+    // 🚨 CRITICAL: 특수 경로 차단
+    const blockedPaths = ['thumbnails', 'valid-terms', 'health'];
+    if (blockedPaths.includes(req.params.id)) {
+      console.log('🚫 PUT BLOCKED: 특수 경로가 동적 라우트로 라우팅됨:', req.params.id);
+      return res.status(404).json({ 
+        message: '잘못된 경로입니다.',
+        blockedPath: req.params.id,
+        route: 'PUT /:id'
+      });
+    }
+    
     // MongoDB ObjectId 형식 검증 (24자리 16진수)
     const objectIdRegex = /^[0-9a-fA-F]{24}$/;
     if (!objectIdRegex.test(req.params.id)) {
@@ -415,6 +437,17 @@ router.put('/:id', isAdmin, async (req, res) => {
 // 갤러리 항목 삭제 (관리자 전용)
 router.delete('/:id', isAdmin, async (req, res) => {
   try {
+    // 🚨 CRITICAL: 특수 경로 차단
+    const blockedPaths = ['thumbnails', 'valid-terms', 'health'];
+    if (blockedPaths.includes(req.params.id)) {
+      console.log('🚫 DELETE BLOCKED: 특수 경로가 동적 라우트로 라우팅됨:', req.params.id);
+      return res.status(404).json({ 
+        message: '잘못된 경로입니다.',
+        blockedPath: req.params.id,
+        route: 'DELETE /:id'
+      });
+    }
+    
     // MongoDB ObjectId 형식 검증 (24자리 16진수)
     const objectIdRegex = /^[0-9a-fA-F]{24}$/;
     if (!objectIdRegex.test(req.params.id)) {
