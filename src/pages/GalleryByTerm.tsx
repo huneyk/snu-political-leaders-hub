@@ -194,6 +194,9 @@ const GalleryByTerm = () => {
       return;
     }
     
+    // 기수 변경 시 이미지 캐시 클리어
+    setImageCache(new Map());
+    
     loadGalleryByTerm(term);
   }, [term, navigate]);
 
@@ -202,28 +205,29 @@ const GalleryByTerm = () => {
     setError(null);
     setCurrentPage(1);
     
+    // 이전 데이터 즉시 클리어
+    setGalleryItems([]);
+    setDisplayedItems([]);
+    
     try {
       console.log(`🎯 ${termNumber}기 갤러리 데이터 로드 시작`);
       
-      let validTerms: string[] = [];
-      let skipValidation = false;
-      
+      // 먼저 유효한 기수인지 확인
       try {
-        // 먼저 유효한 기수인지 확인 시도
         const validTermsResponse = await apiService.getValidTerms();
-        validTerms = (validTermsResponse as any)?.terms || [];
+        const validTerms = (validTermsResponse as any)?.terms || [];
         
         if (!validTerms.includes(termNumber)) {
           console.log(`❌ 존재하지 않는 기수: ${termNumber}기`);
           console.log(`✅ 유효한 기수들: ${validTerms.join(', ')}`);
           setError(`제${termNumber}기는 존재하지 않는 기수입니다. 유효한 기수: ${validTerms.join(', ')}`);
-          setGalleryItems([]);
-          setDisplayedItems([]);
+          setLoading(false);
           return;
         }
+        console.log(`✅ ${termNumber}기는 유효한 기수입니다.`);
       } catch (validTermsError) {
-        console.warn('⚠️ valid-terms API 실패, 기수 검증 건너뛰고 갤러리 데이터 직접 로드 시도:', validTermsError);
-        skipValidation = true;
+        console.warn('⚠️ valid-terms API 실패, 갤러리 데이터 직접 로드로 검증:', validTermsError);
+        // valid-terms API가 실패해도 갤러리 데이터 로드로 검증
       }
       
       // 메타데이터만 먼저 로드 (이미지 URL 제외)
@@ -257,6 +261,7 @@ const GalleryByTerm = () => {
         console.log(`✅ ${termNumber}기 갤러리 메타데이터 로드 완료: ${sortedData.length}개 항목 (첫 페이지: ${firstPageItems.length}개 표시)`);
       } else {
         console.warn(`⚠️ ${termNumber}기에 해당하는 데이터가 없습니다`);
+        setError(`제${termNumber}기의 갤러리 데이터가 없습니다.`);
         setGalleryItems([]);
         setDisplayedItems([]);
       }
@@ -266,12 +271,20 @@ const GalleryByTerm = () => {
       
       // 404 에러인 경우 (존재하지 않는 기수)
       if (err?.response?.status === 404) {
-        setError(`제${termNumber}기에 해당하는 갤러리가 없습니다.`);
+        const errorData = err?.response?.data;
+        if (errorData?.validTerms) {
+          setError(`제${termNumber}기는 존재하지 않는 기수입니다. 유효한 기수: ${errorData.validTerms.join(', ')}`);
+        } else {
+          setError(`제${termNumber}기에 해당하는 갤러리가 없습니다.`);
+        }
       } else {
         setError(`갤러리 로드 중 오류가 발생했습니다: ${err.message}`);
       }
+      
+      // 에러 발생 시 반드시 데이터 클리어
       setGalleryItems([]);
       setDisplayedItems([]);
+      setImageCache(new Map());
     } finally {
       setLoading(false);
     }
@@ -279,9 +292,19 @@ const GalleryByTerm = () => {
 
   // 특정 아이템들의 이미지를 로드하는 함수
   const loadImagesForItems = async (items: GalleryItem[], termNumber: string) => {
-    if (!term) return;
+    if (!term || term !== termNumber) {
+      console.warn(`⚠️ 기수 불일치: 현재 기수(${term}) != 요청 기수(${termNumber})`);
+      return;
+    }
     
     try {
+      // 요청된 아이템들이 모두 올바른 기수인지 검증
+      const invalidItems = items.filter(item => item.term && item.term.toString() !== termNumber);
+      if (invalidItems.length > 0) {
+        console.warn(`⚠️ 잘못된 기수의 아이템 발견:`, invalidItems.map(item => `${item.title} (${item.term}기)`));
+        return;
+      }
+      
       // 캐시되지 않은 아이템들만 필터링
       const uncachedItems = items.filter(item => !imageCache.has(item._id!));
       
@@ -299,16 +322,16 @@ const GalleryByTerm = () => {
         return;
       }
       
-      console.log(`🖼️ ${uncachedItems.length}개 이미지 로드 중...`);
+      console.log(`🖼️ ${termNumber}기 이미지 ${uncachedItems.length}개 로드 중...`);
       
       // 해당 기수의 전체 이미지 데이터를 한 번만 가져오기 (캐시용)
       const fullData = await apiService.getGalleryByTerm(termNumber);
       
-      if (Array.isArray(fullData)) {
-        // 새로운 이미지 캐시 업데이트
+      if (Array.isArray(fullData) && fullData.length > 0) {
+        // 새로운 이미지 캐시 업데이트 (해당 기수만)
         const newCache = new Map(imageCache);
         fullData.forEach(item => {
-          if (item._id && item.imageUrl) {
+          if (item._id && item.imageUrl && item.term?.toString() === termNumber) {
             newCache.set(item._id, item.imageUrl);
           }
         });
@@ -326,7 +349,9 @@ const GalleryByTerm = () => {
           return [...prev, ...newItems];
         });
         
-        console.log(`✅ 이미지 로드 완료: ${itemsWithImages.length}개`);
+        console.log(`✅ ${termNumber}기 이미지 로드 완료: ${itemsWithImages.length}개`);
+      } else {
+        console.warn(`⚠️ ${termNumber}기의 이미지 데이터가 없습니다`);
       }
     } catch (error) {
       console.error('이미지 로드 실패:', error);

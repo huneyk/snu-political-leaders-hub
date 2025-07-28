@@ -43,21 +43,21 @@ router.get('/', async (req, res) => {
   try {
     const { term, meta_only } = req.query;
     
-    // 특정 기수 요청 시 유효성 검증 (일단 주석 처리하여 모든 기수 허용)
-    // if (term) {
-    //   const validTerms = await getValidTerms();
-    //   const requestedTerm = String(term);
-    //   
-    //   if (!validTerms.includes(requestedTerm)) {
-    //     console.log(`❌ 존재하지 않는 기수 요청: ${requestedTerm}기`);
-    //     console.log(`✅ 유효한 기수들: ${validTerms.join(', ')}`);
-    //     return res.status(404).json({ 
-    //       message: `제${requestedTerm}기는 존재하지 않습니다.`,
-    //       validTerms: validTerms,
-    //       requestedTerm: requestedTerm
-    //     });
-    //   }
-    // }
+    // 특정 기수 요청 시 유효성 검증
+    if (term) {
+      const validTerms = await getValidTerms();
+      const requestedTerm = String(term);
+      
+      if (!validTerms.includes(requestedTerm)) {
+        console.log(`❌ 존재하지 않는 기수 요청: ${requestedTerm}기`);
+        console.log(`✅ 유효한 기수들: ${validTerms.join(', ')}`);
+        return res.status(404).json({ 
+          message: `제${requestedTerm}기는 존재하지 않는 기수입니다.`,
+          validTerms: validTerms,
+          requestedTerm: requestedTerm
+        });
+      }
+    }
     
     // 메타데이터만 요청하는 경우 (이미지 URL 제외)
     if (meta_only === 'true') {
