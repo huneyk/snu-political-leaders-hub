@@ -131,6 +131,14 @@ const GalleryManage = () => {
         setGalleryItems(sortedItems);
         console.log('✅ 갤러리 데이터 로드 완료:', sortedItems.length, '개 항목');
         
+        // 디버깅: 관리자 페이지 - 갤러리 데이터의 기수 분포 확인
+        const adminTermDistribution = sortedItems.reduce((acc, item) => {
+          const termKey = String(item.term);
+          acc[termKey] = (acc[termKey] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log('🔍 관리자 페이지 - 갤러리 데이터의 기수 분포:', adminTermDistribution);
+        
         // 샘플 데이터 로깅
         if (sortedItems.length > 0) {
           console.log('📋 첫 번째 항목 샘플:', {

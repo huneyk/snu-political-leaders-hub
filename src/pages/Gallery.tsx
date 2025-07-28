@@ -86,6 +86,14 @@ const Gallery = () => {
         validTerms = [...new Set(galleryData.map(item => String(item.term)))].sort((a, b) => Number(a) - Number(b));
         console.log('🔍 갤러리 데이터에서 추출한 기수들:', validTerms);
         
+        // 디버깅: 전체 갤러리 데이터의 기수 분포 확인
+        const allTermDistribution = galleryData.reduce((acc, item) => {
+          const termKey = String(item.term);
+          acc[termKey] = (acc[termKey] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log('🔍 메인 갤러리 - 전체 데이터의 기수 분포:', allTermDistribution);
+        
         // 새로운 기수 감지
         if (previousTerms.length > 0) {
           const newTerms = validTerms.filter(term => !previousTerms.includes(term));

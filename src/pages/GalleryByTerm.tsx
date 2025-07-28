@@ -215,9 +215,26 @@ const GalleryByTerm = () => {
       // 헬스체크와 valid-terms API는 서버에서 구현되지 않음 - 직접 갤러리 데이터 로드로 검증
       console.log('📋 갤러리 데이터 직접 로드로 기수 검증 (헬스체크/valid-terms API 미구현)');
       
-      // 기본 갤러리 데이터 로드 (메타데이터 API 미구현)
-      console.log(`📋 ${termNumber}기 갤러리 데이터 로드 중...`);
-      const metaData = await apiService.getGalleryByTerm(termNumber);
+      // 전체 갤러리 데이터 로드 후 클라이언트에서 필터링 (서버 필터링 미구현)
+      console.log(`📋 전체 갤러리 데이터 로드 후 ${termNumber}기 필터링 중...`);
+      const allGalleryData = await apiService.getGallery();
+      console.log(`📊 전체 갤러리 데이터 개수: ${Array.isArray(allGalleryData) ? allGalleryData.length : 0}`);
+      
+      // 디버깅: 전체 데이터의 기수 분포 확인
+      if (Array.isArray(allGalleryData)) {
+        const allTermDistribution = allGalleryData.reduce((acc, item) => {
+          const termKey = String(item.term);
+          acc[termKey] = (acc[termKey] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log(`🔍 전체 데이터의 기수 분포:`, allTermDistribution);
+      }
+      
+      // 클라이언트에서 기수별 필터링
+      const metaData = Array.isArray(allGalleryData) 
+        ? allGalleryData.filter(item => String(item.term) === termNumber)
+        : [];
+      console.log(`🎯 ${termNumber}기 필터링 결과: ${metaData.length}개 항목`);
       
       if (Array.isArray(metaData) && metaData.length > 0) {
         const formattedData = metaData.map(item => ({
@@ -229,6 +246,14 @@ const GalleryByTerm = () => {
           date: new Date(item.date).toISOString(),
           term: item.term
         }));
+        
+        // 디버깅: 필터링된 데이터의 기수 분포 확인
+        const termDistribution = formattedData.reduce((acc, item) => {
+          const termKey = String(item.term);
+          acc[termKey] = (acc[termKey] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log(`🔍 ${termNumber}기 요청 - 필터링된 데이터의 기수 분포:`, termDistribution);
         
         // 날짜순 정렬 (최신순)
         const sortedData = formattedData.sort((a, b) => 
@@ -341,8 +366,24 @@ const GalleryByTerm = () => {
       
       console.log(`🖼️ ${termNumber}기 이미지 ${uncachedItems.length}개 로드 중...`);
       
-      // 해당 기수의 전체 이미지 데이터를 한 번만 가져오기 (캐시용)
-      const fullData = await apiService.getGalleryByTerm(termNumber);
+      // 전체 갤러리 데이터를 가져온 후 클라이언트에서 필터링 (서버 필터링 미구현)
+      const allGalleryData = await apiService.getGallery();
+      
+      // 디버깅: 이미지 로드 시 전체 데이터의 기수 분포 확인
+      if (Array.isArray(allGalleryData)) {
+        const allTermDistribution = allGalleryData.reduce((acc, item) => {
+          const termKey = String(item.term);
+          acc[termKey] = (acc[termKey] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log(`🔍 이미지 로드 - 전체 데이터의 기수 분포:`, allTermDistribution);
+      }
+      
+      const fullData = Array.isArray(allGalleryData) 
+        ? allGalleryData.filter(item => String(item.term) === termNumber)
+        : [];
+      
+      console.log(`📊 전체 데이터에서 ${termNumber}기 필터링: ${fullData.length}개`);
       
       if (Array.isArray(fullData) && fullData.length > 0) {
         // 새로운 이미지 캐시 업데이트 (해당 기수만)
