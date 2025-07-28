@@ -9,6 +9,65 @@ const galleryThumbnailService = require('../services/galleryThumbnailService');
 
 const router = express.Router();
 
+// ===== 우선순위 라우트 (동적 라우트보다 먼저 정의) =====
+
+// 썸네일 라우트 - 최우선 순위로 배치
+router.get('/thumbnails', async (req, res) => {
+  try {
+    console.log('🎯 [PRIORITY ROUTE] /thumbnails 요청 감지됨', {
+      originalUrl: req.originalUrl,
+      path: req.path,
+      params: req.params,
+      query: req.query
+    });
+    
+    // 확실한 경로 확인
+    if (!req.originalUrl.includes('/thumbnails')) {
+      console.log('❌ thumbnails 라우트 경로 불일치');
+      return res.status(404).json({ message: 'Invalid thumbnails route' });
+    }
+    
+    console.log('🖼️ 갤러리 썸네일 목록 조회 시작');
+    const thumbnails = await galleryThumbnailService.getAllThumbnails();
+    
+    console.log(`✅ 썸네일 조회 완료: ${thumbnails.length}개`);
+    res.json(thumbnails);
+    
+  } catch (error) {
+    console.error('❌ [PRIORITY ROUTE] 썸네일 조회 실패:', error);
+    res.status(500).json({ 
+      message: '썸네일 목록을 불러오는 중 오류가 발생했습니다.',
+      error: error.message 
+    });
+  }
+});
+
+// valid-terms 라우트 - 우선순위 배치
+router.get('/valid-terms', async (req, res) => {
+  try {
+    console.log('🎯 [PRIORITY ROUTE] /valid-terms 요청 감지됨', {
+      originalUrl: req.originalUrl,
+      path: req.path,
+      params: req.params,
+      query: req.query
+    });
+    
+    if (!req.originalUrl.includes('/valid-terms')) {
+      console.log('❌ valid-terms 라우트 경로 불일치');
+      return res.status(404).json({ message: 'Invalid valid-terms route' });
+    }
+    
+    const validTerms = await getValidTerms();
+    res.json({
+      terms: validTerms,
+      count: validTerms.length
+    });
+  } catch (error) {
+    console.error('❌ [PRIORITY ROUTE] 유효한 기수 조회 실패:', error);
+    res.status(500).json({ message: '기수 정보를 불러오는 중 오류가 발생했습니다.' });
+  }
+});
+
 // 헬스체크 엔드포인트 - 데이터베이스 연결 및 갤러리 데이터 상태 확인 - 강화된 라우트 가드
 router.get('/health', async (req, res) => {
   try {
@@ -83,40 +142,7 @@ router.get('/health', async (req, res) => {
 
 // 썸네일 관련 API 엔드포인트들
 
-// 모든 기수의 썸네일 목록 조회 (갤러리 메인 페이지용) - 강화된 라우트 가드
-router.get('/thumbnails', async (req, res) => {
-  try {
-    // 강화된 라우트 가드: URL 경로 직접 확인
-    if (req.path !== '/thumbnails' && req.originalUrl !== '/api/gallery/thumbnails') {
-      console.log('⚠️ thumbnails 라우트 경로 불일치:', {
-        path: req.path,
-        originalUrl: req.originalUrl,
-        params: req.params
-      });
-      return res.status(404).json({ message: 'Invalid thumbnails endpoint' });
-    }
-    
-    // 추가 파라미터 체크
-    if (req.params && Object.keys(req.params).length > 0) {
-      console.log('⚠️ thumbnails 라우트에서 의도하지 않은 params 감지됨:', req.params);
-      return res.status(404).json({ message: 'Endpoint not found' });
-    }
-    
-    console.log('🖼️ 갤러리 썸네일 목록 조회 요청 (경로 확인됨):', req.originalUrl);
-    
-    const thumbnails = await galleryThumbnailService.getAllThumbnails();
-    
-    console.log(`✅ 썸네일 목록 조회 완료: ${thumbnails.length}개`);
-    res.json(thumbnails);
-    
-  } catch (error) {
-    console.error('❌ 썸네일 목록 조회 실패:', error);
-    res.status(500).json({ 
-      message: '썸네일 목록을 불러오는 중 오류가 발생했습니다.',
-      error: error.message 
-    });
-  }
-});
+
 
 // 모든 기수의 썸네일 생성/업데이트 (관리자 전용)
 router.post('/thumbnails/generate', isAdmin, async (req, res) => {
@@ -192,35 +218,7 @@ async function getValidTerms() {
   }
 }
 
-// 실제 존재하는 기수 목록 반환 (새로운 엔드포인트) - 강화된 라우트 가드
-router.get('/valid-terms', async (req, res) => {
-  try {
-    // 강화된 라우트 가드: URL 경로 직접 확인
-    if (req.path !== '/valid-terms' && req.originalUrl !== '/api/gallery/valid-terms') {
-      console.log('⚠️ valid-terms 라우트 경로 불일치:', {
-        path: req.path,
-        originalUrl: req.originalUrl,
-        params: req.params
-      });
-      return res.status(404).json({ message: 'Invalid valid-terms endpoint' });
-    }
-    
-    // 추가 파라미터 체크
-    if (req.params && Object.keys(req.params).length > 0) {
-      console.log('⚠️ valid-terms 라우트에서 의도하지 않은 params 감지됨:', req.params);
-      return res.status(404).json({ message: 'Endpoint not found' });
-    }
-    
-    const validTerms = await getValidTerms();
-    res.json({
-      terms: validTerms,
-      count: validTerms.length
-    });
-  } catch (error) {
-    console.error('유효한 기수 조회 오류:', error);
-    res.status(500).json({ message: '기수 정보를 불러오는 중 오류가 발생했습니다.' });
-  }
-});
+
 
 // 갤러리 항목 가져오기 (공개) - 기수별 필터링 지원
 router.get('/', async (req, res) => {
