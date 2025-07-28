@@ -212,38 +212,12 @@ const GalleryByTerm = () => {
     try {
       console.log(`🎯 ${termNumber}기 갤러리 데이터 로드 시작`);
       
-      // 프로덕션 환경에서 먼저 헬스체크 수행
-      if (import.meta.env.MODE === 'production') {
-        try {
-          console.log('🏥 프로덕션 환경 - 갤러리 헬스체크 수행');
-          const healthCheck = await apiService.getGalleryHealth();
-          console.log('🏥 헬스체크 결과:', healthCheck);
-        } catch (healthError) {
-          console.warn('⚠️ 헬스체크 실패:', healthError);
-        }
-      }
+      // 헬스체크와 valid-terms API는 서버에서 구현되지 않음 - 직접 갤러리 데이터 로드로 검증
+      console.log('📋 갤러리 데이터 직접 로드로 기수 검증 (헬스체크/valid-terms API 미구현)');
       
-      // 먼저 유효한 기수인지 확인
-      try {
-        const validTermsResponse = await apiService.getValidTerms();
-        const validTerms = (validTermsResponse as any)?.terms || [];
-        
-        if (!validTerms.includes(termNumber)) {
-          console.log(`❌ 존재하지 않는 기수: ${termNumber}기`);
-          console.log(`✅ 유효한 기수들: ${validTerms.join(', ')}`);
-          setError(`제${termNumber}기는 존재하지 않는 기수입니다. 유효한 기수: ${validTerms.join(', ')}`);
-          setLoading(false);
-          return;
-        }
-        console.log(`✅ ${termNumber}기는 유효한 기수입니다.`);
-      } catch (validTermsError) {
-        console.warn('⚠️ valid-terms API 실패, 갤러리 데이터 직접 로드로 검증:', validTermsError);
-        // valid-terms API가 실패해도 갤러리 데이터 로드로 검증
-      }
-      
-      // 메타데이터만 먼저 로드 (이미지 URL 제외)
-      console.log(`📋 ${termNumber}기 갤러리 메타데이터 로드 중...`);
-      const metaData = await apiService.getGalleryMetaByTerm(termNumber);
+      // 기본 갤러리 데이터 로드 (메타데이터 API 미구현)
+      console.log(`📋 ${termNumber}기 갤러리 데이터 로드 중...`);
+      const metaData = await apiService.getGalleryByTerm(termNumber);
       
       if (Array.isArray(metaData) && metaData.length > 0) {
         const formattedData = metaData.map(item => ({
@@ -251,7 +225,7 @@ const GalleryByTerm = () => {
           _id: item._id,
           title: item.title,
           description: item.description,
-          imageUrl: '', // 메타데이터에는 이미지 URL 없음
+          imageUrl: item.imageUrl || '', // 기본 갤러리 API에는 이미지 URL 포함
           date: new Date(item.date).toISOString(),
           term: item.term
         }));

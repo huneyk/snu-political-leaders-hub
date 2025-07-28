@@ -1,0 +1,4 @@
+---
+alwaysApply: true
+---
+에상되는 error를 막기 위해 fallback process나 fallback data를 사용하지 마세요.

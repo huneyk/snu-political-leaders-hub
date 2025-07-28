@@ -68,56 +68,23 @@ const Gallery = () => {
     try {
       console.log('📋 갤러리 메타데이터 로드 시작');
       
-      // 먼저 썸네일 API 시도
-      try {
-        console.log('🖼️ 썸네일 API 시도');
-        const thumbnails = await apiService.getGalleryThumbnails() as GalleryThumbnail[];
-        
-        if (Array.isArray(thumbnails) && thumbnails.length > 0) {
-          console.log('✅ 썸네일 API 성공');
-          
-          // 썸네일 데이터를 TermGalleryInfo 형식으로 변환
-          const termInfos: TermGalleryInfo[] = thumbnails.map(thumbnail => ({
-            term: String(thumbnail.term),
-            count: thumbnail.itemCount,
-            latestDate: thumbnail.latestDate,
-            thumbnailUrl: thumbnail.thumbnailUrl
-          }));
-          
-          // 기수별로 정렬 (최신 기수부터)
-          const sortedTermInfos = termInfos.sort((a, b) => Number(b.term) - Number(a.term));
-          
-          // 새로운 기수 감지
-          const currentTerms = sortedTermInfos.map(info => info.term);
-          if (previousTerms.length > 0) {
-            const newTerms = currentTerms.filter(term => !previousTerms.includes(term));
-            if (newTerms.length > 0) {
-              console.log('🎉 새로운 기수 감지:', newTerms);
-              setNewlyAddedTerms(newTerms);
-              setTimeout(() => {
-                setNewlyAddedTerms([]);
-              }, 10000);
-            }
-          }
-          setPreviousTerms(currentTerms);
-          
-          setTermGalleries(sortedTermInfos);
-          console.log('✅ 갤러리 썸네일 메타데이터 로드 완료:', sortedTermInfos);
-          return;
-        }
-      } catch (thumbnailError) {
-        console.warn('⚠️ 썸네일 API 실패, 기존 방식으로 대체:', thumbnailError);
-      }
+      // 썸네일 API는 서버에서 구현되지 않음 - 기본 갤러리 API 사용
+      console.log('📋 기본 갤러리 API 사용 (썸네일 API 미구현)');
       
       // 썸네일 API 실패 시 기존 방식으로 Fallback
       console.log('🔄 기존 갤러리 시스템으로 Fallback');
       
+      // valid-terms API는 서버에서 구현되지 않음 - 갤러리 데이터에서 기수 추출
+      console.log('📋 갤러리 데이터에서 기수 추출 (valid-terms API 미구현)');
       let validTerms: string[] = [];
       
-      try {
-        const validTermsResponse = await apiService.getValidTerms();
-        validTerms = (validTermsResponse as any)?.terms || [];
-        console.log('🔍 실제 존재하는 기수들 (API):', validTerms);
+      // 실제 존재하는 기수들의 갤러리 데이터만 가져오기
+      const galleryData = await apiService.getGallery();
+      
+      // 갤러리 데이터에서 기수 추출
+      if (Array.isArray(galleryData) && galleryData.length > 0) {
+        validTerms = [...new Set(galleryData.map(item => String(item.term)))].sort((a, b) => Number(a) - Number(b));
+        console.log('🔍 갤러리 데이터에서 추출한 기수들:', validTerms);
         
         // 새로운 기수 감지
         if (previousTerms.length > 0) {
@@ -131,17 +98,6 @@ const Gallery = () => {
           }
         }
         setPreviousTerms(validTerms);
-      } catch (validTermsError) {
-        console.warn('⚠️ valid-terms API 실패, 갤러리 데이터에서 기수 추출 시도:', validTermsError);
-      }
-      
-      // 실제 존재하는 기수들의 갤러리 데이터만 가져오기
-      const galleryData = await apiService.getGallery();
-      
-      // valid-terms API가 실패한 경우 갤러리 데이터에서 기수 추출
-      if (validTerms.length === 0 && Array.isArray(galleryData) && galleryData.length > 0) {
-        validTerms = [...new Set(galleryData.map(item => String(item.term)))].sort((a, b) => Number(a) - Number(b));
-        console.log('🔍 갤러리 데이터에서 추출한 기수들:', validTerms);
       }
       
       if (validTerms.length === 0) {

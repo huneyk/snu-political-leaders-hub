@@ -715,26 +715,34 @@ const GalleryManage = () => {
                 variant="secondary" 
                 size="sm"
                 onClick={() => {
-                  console.log('🚨 갤러리 헬스체크 실행');
-                  apiService.getGalleryHealth()
-                    .then((result) => {
-                      console.log('✅ 갤러리 헬스체크 결과:', result);
+                  console.log('🔄 갤러리 데이터 새로고침');
+                  // 기본 갤러리 API로 데이터 새로고침
+                  const loadGalleryItems = async () => {
+                    try {
+                      const response = await apiService.getGallery() as GalleryItem[];
+                      if (Array.isArray(response)) {
+                        const sortedItems = response.sort((a: GalleryItem, b: GalleryItem) => 
+                          new Date(b.date).getTime() - new Date(a.date).getTime()
+                        );
+                        setGalleryItems(sortedItems);
+                        toast({
+                          title: "새로고침 완료",
+                          description: `${sortedItems.length}개의 갤러리 항목이 로드되었습니다.`,
+                        });
+                      }
+                    } catch (error) {
+                      console.error('❌ 갤러리 새로고침 실패:', error);
                       toast({
-                        title: "헬스체크 완료",
-                        description: `갤러리 시스템 상태가 확인되었습니다.`,
-                      });
-                    })
-                    .catch((error) => {
-                      console.error('❌ 갤러리 헬스체크 실패:', error);
-                      toast({
-                        title: "헬스체크 실패",
-                        description: `갤러리 시스템 상태 확인 실패: ${error instanceof Error ? error.message : '알 수 없는 에러'}`,
+                        title: "새로고침 실패",
+                        description: `갤러리 데이터 새로고침 실패: ${error instanceof Error ? error.message : '알 수 없는 에러'}`,
                         variant: "destructive",
                       });
-                    });
+                    }
+                  };
+                  loadGalleryItems();
                 }}
               >
-                🏥 헬스체크
+                🔄 새로고침
               </Button>
             </div>
           )}
