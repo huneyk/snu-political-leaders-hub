@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { apiService } from '@/lib/apiService';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import axios from 'axios';
 
 interface GalleryItem {
@@ -52,6 +53,7 @@ const DEFAULT_GALLERY_ITEMS: GalleryItem[] = [
 ];
 
 const GalleryManage = () => {
+  const { isAuthenticated, token } = useAdminAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
@@ -527,7 +529,7 @@ const GalleryManage = () => {
     try {
       console.log('🖼️ 썸네일 생성 요청');
       
-      const result = await apiService.generateAllGalleryThumbnails() as any;
+      const result = await apiService.generateAllGalleryThumbnails(token || '') as any;
       
       toast({
         title: "썸네일 생성 완료",
