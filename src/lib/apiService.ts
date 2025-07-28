@@ -1621,6 +1621,75 @@ export const apiService = {
     }
   },
 
+  // 갤러리 썸네일 목록 조회 (메인 갤러리 페이지용)
+  getGalleryThumbnails: async () => {
+    try {
+      console.log('🖼️ 갤러리 썸네일 목록 조회 요청');
+      const data = await makeApiRequest('/gallery/thumbnails', {
+        method: 'GET'
+      });
+      console.log('✅ 갤러리 썸네일 목록 응답:', {
+        isArray: Array.isArray(data),
+        length: Array.isArray(data) ? data.length : 'N/A',
+        thumbnails: data
+      });
+      return data;
+    } catch (error) {
+      console.error('❌ 갤러리 썸네일 목록 조회 실패:', error);
+      throw error;
+    }
+  },
+
+  // 모든 기수의 썸네일 생성/업데이트 (관리자 전용)
+  generateAllGalleryThumbnails: async (token?: string) => {
+    try {
+      console.log('🖼️ 전체 갤러리 썸네일 생성 요청 (관리자)');
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const data = await makeApiRequest('/gallery/thumbnails/generate', {
+        method: 'POST',
+        headers
+      });
+      
+      console.log('✅ 전체 갤러리 썸네일 생성 응답:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ 전체 갤러리 썸네일 생성 실패:', error);
+      throw error;
+    }
+  },
+
+  // 특정 기수의 썸네일 생성/업데이트 (관리자 전용)
+  generateGalleryThumbnailByTerm: async (term: string, token?: string) => {
+    try {
+      console.log(`🖼️ 제${term}기 갤러리 썸네일 생성 요청 (관리자)`);
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const data = await makeApiRequest(`/gallery/thumbnails/generate/${term}`, {
+        method: 'POST',
+        headers
+      });
+      
+      console.log(`✅ 제${term}기 갤러리 썸네일 생성 응답:`, data);
+      return data;
+    } catch (error) {
+      console.error(`❌ 제${term}기 갤러리 썸네일 생성 실패:`, error);
+      throw error;
+    }
+  },
+
   // 유효한 기수 목록 가져오기
   getValidTerms: async () => {
     try {

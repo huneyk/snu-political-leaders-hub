@@ -1,9 +1,11 @@
 const express = require('express');
 const Gallery = require('../models/Gallery');
+const GalleryThumbnail = require('../models/GalleryThumbnail');
 const Admission = require('../models/Admission');
 const Schedule = require('../models/Schedule');
 const Graduate = require('../models/Graduate');
 const { isAdmin } = require('../middleware/authMiddleware');
+const galleryThumbnailService = require('../services/galleryThumbnailService');
 
 const router = express.Router();
 
@@ -59,6 +61,84 @@ router.get('/health', async (req, res) => {
       database: {
         connected: false
       }
+    });
+  }
+});
+
+// 썸네일 관련 API 엔드포인트들
+
+// 모든 기수의 썸네일 목록 조회 (갤러리 메인 페이지용)
+router.get('/thumbnails', async (req, res) => {
+  try {
+    console.log('🖼️ 갤러리 썸네일 목록 조회 요청');
+    
+    const thumbnails = await galleryThumbnailService.getAllThumbnails();
+    
+    console.log(`✅ 썸네일 목록 조회 완료: ${thumbnails.length}개`);
+    res.json(thumbnails);
+    
+  } catch (error) {
+    console.error('❌ 썸네일 목록 조회 실패:', error);
+    res.status(500).json({ 
+      message: '썸네일 목록을 불러오는 중 오류가 발생했습니다.',
+      error: error.message 
+    });
+  }
+});
+
+// 모든 기수의 썸네일 생성/업데이트 (관리자 전용)
+router.post('/thumbnails/generate', isAdmin, async (req, res) => {
+  try {
+    console.log('🖼️ 전체 썸네일 생성 요청 (관리자)');
+    
+    const results = await galleryThumbnailService.generateAllThumbnails();
+    
+    console.log(`✅ 전체 썸네일 생성 완료: ${results.length}개`);
+    res.json({
+      message: `${results.length}개 기수의 썸네일이 생성/업데이트되었습니다.`,
+      thumbnails: results
+    });
+    
+  } catch (error) {
+    console.error('❌ 전체 썸네일 생성 실패:', error);
+    res.status(500).json({ 
+      message: '썸네일 생성 중 오류가 발생했습니다.',
+      error: error.message 
+    });
+  }
+});
+
+// 특정 기수의 썸네일 생성/업데이트 (관리자 전용)
+router.post('/thumbnails/generate/:term', isAdmin, async (req, res) => {
+  try {
+    const { term } = req.params;
+    const termNumber = Number(term);
+    
+    if (isNaN(termNumber)) {
+      return res.status(400).json({ message: '유효하지 않은 기수 형식입니다.' });
+    }
+    
+    console.log(`🖼️ 제${termNumber}기 썸네일 생성 요청 (관리자)`);
+    
+    const result = await galleryThumbnailService.generateThumbnailForTerm(termNumber);
+    
+    if (result) {
+      console.log(`✅ 제${termNumber}기 썸네일 생성 완료`);
+      res.json({
+        message: `제${termNumber}기 썸네일이 생성/업데이트되었습니다.`,
+        thumbnail: result
+      });
+    } else {
+      res.status(404).json({
+        message: `제${termNumber}기에 이미지가 있는 갤러리 아이템이 없습니다.`
+      });
+    }
+    
+  } catch (error) {
+    console.error(`❌ 제${req.params.term}기 썸네일 생성 실패:`, error);
+    res.status(500).json({ 
+      message: '썸네일 생성 중 오류가 발생했습니다.',
+      error: error.message 
     });
   }
 });
@@ -217,6 +297,14 @@ router.post('/', isAdmin, async (req, res) => {
     const galleryItem = new Gallery(req.body);
     const savedItem = await galleryItem.save();
     console.log(`✅ 갤러리 항목 생성: ${savedItem.term}기 - ${savedItem.title}`);
+    
+    // 새 갤러리 아이템 추가 시 썸네일 자동 업데이트
+    try {
+      await galleryThumbnailService.updateThumbnailOnNewItem(savedItem);
+    } catch (thumbnailError) {
+      console.warn('⚠️ 썸네일 업데이트 실패 (갤러리 아이템은 생성됨):', thumbnailError);
+    }
+    
     res.status(201).json(savedItem);
   } catch (error) {
     console.error('갤러리 항목 생성 오류:', error);
@@ -253,6 +341,14 @@ router.put('/:id', isAdmin, async (req, res) => {
     }
     
     console.log(`✅ 갤러리 항목 수정: ${updatedItem.term}기 - ${updatedItem.title}`);
+    
+    // 갤러리 아이템 수정 시 썸네일 업데이트
+    try {
+      await galleryThumbnailService.updateThumbnailOnNewItem(updatedItem);
+    } catch (thumbnailError) {
+      console.warn('⚠️ 썸네일 업데이트 실패 (갤러리 아이템은 수정됨):', thumbnailError);
+    }
+    
     res.json(updatedItem);
   } catch (error) {
     console.error('갤러리 항목 수정 오류:', error);
@@ -270,6 +366,15 @@ router.delete('/:id', isAdmin, async (req, res) => {
     }
     
     console.log(`🗑️ 갤러리 항목 삭제: ${deletedItem.term}기 - ${deletedItem.title}`);
+    
+    // 갤러리 아이템 삭제 시 해당 기수의 썸네일 재생성
+    try {
+      if (deletedItem.term) {
+        await galleryThumbnailService.generateThumbnailForTerm(deletedItem.term);
+      }
+    } catch (thumbnailError) {
+      console.warn('⚠️ 썸네일 재생성 실패 (갤러리 아이템은 삭제됨):', thumbnailError);
+    }
     res.json({ message: '갤러리 항목이 성공적으로 삭제되었습니다.' });
   } catch (error) {
     console.error('갤러리 항목 삭제 오류:', error);
