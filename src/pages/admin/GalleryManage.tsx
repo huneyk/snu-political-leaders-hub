@@ -522,6 +522,36 @@ const GalleryManage = () => {
     }
   };
 
+  // 썸네일 생성 핸들러
+  const handleGenerateThumbnails = async () => {
+    try {
+      console.log('🖼️ 썸네일 생성 요청');
+      
+      const result = await apiService.generateAllGalleryThumbnails() as any;
+      
+      toast({
+        title: "썸네일 생성 완료",
+        description: result?.message || "갤러리 썸네일이 성공적으로 생성되었습니다.",
+      });
+      
+      console.log('✅ 썸네일 생성 완료:', result);
+      
+    } catch (error) {
+      console.error('❌ 썸네일 생성 실패:', error);
+      
+      let errorMessage = "썸네일 생성 중 오류가 발생했습니다.";
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage += ` (상태: ${error.response.status})`;
+      }
+      
+      toast({
+        title: "썸네일 생성 실패",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ko-KR', {
@@ -537,6 +567,12 @@ const GalleryManage = () => {
         <CardHeader>
           <CardTitle className="text-xl font-semibold">갤러리 관리</CardTitle>
           <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleGenerateThumbnails}
+            >
+              썸네일 생성
+            </Button>
             <Button onClick={handleAddClick}>새 항목 추가</Button>
           </div>
           {debugMode && (

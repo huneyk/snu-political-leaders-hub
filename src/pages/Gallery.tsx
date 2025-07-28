@@ -66,49 +66,154 @@ const Gallery = () => {
     setError(null);
     
     try {
-      console.log('📋 갤러리 썸네일 메타데이터 로드 시작');
+      console.log('📋 갤러리 메타데이터 로드 시작');
       
-      // 썸네일 API를 사용하여 기수별 갤러리 정보 조회
-      const thumbnails = await apiService.getGalleryThumbnails() as GalleryThumbnail[];
+      // 먼저 썸네일 API 시도
+      try {
+        console.log('🖼️ 썸네일 API 시도');
+        const thumbnails = await apiService.getGalleryThumbnails() as GalleryThumbnail[];
+        
+        if (Array.isArray(thumbnails) && thumbnails.length > 0) {
+          console.log('✅ 썸네일 API 성공');
+          
+          // 썸네일 데이터를 TermGalleryInfo 형식으로 변환
+          const termInfos: TermGalleryInfo[] = thumbnails.map(thumbnail => ({
+            term: String(thumbnail.term),
+            count: thumbnail.itemCount,
+            latestDate: thumbnail.latestDate,
+            thumbnailUrl: thumbnail.thumbnailUrl
+          }));
+          
+          // 기수별로 정렬 (최신 기수부터)
+          const sortedTermInfos = termInfos.sort((a, b) => Number(b.term) - Number(a.term));
+          
+          // 새로운 기수 감지
+          const currentTerms = sortedTermInfos.map(info => info.term);
+          if (previousTerms.length > 0) {
+            const newTerms = currentTerms.filter(term => !previousTerms.includes(term));
+            if (newTerms.length > 0) {
+              console.log('🎉 새로운 기수 감지:', newTerms);
+              setNewlyAddedTerms(newTerms);
+              setTimeout(() => {
+                setNewlyAddedTerms([]);
+              }, 10000);
+            }
+          }
+          setPreviousTerms(currentTerms);
+          
+          setTermGalleries(sortedTermInfos);
+          console.log('✅ 갤러리 썸네일 메타데이터 로드 완료:', sortedTermInfos);
+          return;
+        }
+      } catch (thumbnailError) {
+        console.warn('⚠️ 썸네일 API 실패, 기존 방식으로 대체:', thumbnailError);
+      }
       
-      if (!Array.isArray(thumbnails) || thumbnails.length === 0) {
-        console.warn('⚠️ 썸네일 데이터가 없습니다.');
-        setError('갤러리 썸네일 데이터가 없습니다.');
+      // 썸네일 API 실패 시 기존 방식으로 Fallback
+      console.log('🔄 기존 갤러리 시스템으로 Fallback');
+      
+      let validTerms: string[] = [];
+      
+      try {
+        const validTermsResponse = await apiService.getValidTerms();
+        validTerms = (validTermsResponse as any)?.terms || [];
+        console.log('🔍 실제 존재하는 기수들 (API):', validTerms);
+        
+        // 새로운 기수 감지
+        if (previousTerms.length > 0) {
+          const newTerms = validTerms.filter(term => !previousTerms.includes(term));
+          if (newTerms.length > 0) {
+            console.log('🎉 새로운 기수 감지:', newTerms);
+            setNewlyAddedTerms(newTerms);
+            setTimeout(() => {
+              setNewlyAddedTerms([]);
+            }, 10000);
+          }
+        }
+        setPreviousTerms(validTerms);
+      } catch (validTermsError) {
+        console.warn('⚠️ valid-terms API 실패, 갤러리 데이터에서 기수 추출 시도:', validTermsError);
+      }
+      
+      // 실제 존재하는 기수들의 갤러리 데이터만 가져오기
+      const galleryData = await apiService.getGallery();
+      
+      // valid-terms API가 실패한 경우 갤러리 데이터에서 기수 추출
+      if (validTerms.length === 0 && Array.isArray(galleryData) && galleryData.length > 0) {
+        validTerms = [...new Set(galleryData.map(item => String(item.term)))].sort((a, b) => Number(a) - Number(b));
+        console.log('🔍 갤러리 데이터에서 추출한 기수들:', validTerms);
+      }
+      
+      if (validTerms.length === 0) {
+        console.warn('⚠️ 실제 존재하는 기수가 없습니다');
         setTermGalleries([]);
         return;
       }
       
-      // 썸네일 데이터를 TermGalleryInfo 형식으로 변환
-      const termInfos: TermGalleryInfo[] = thumbnails.map(thumbnail => ({
-        term: String(thumbnail.term),
-        count: thumbnail.itemCount,
-        latestDate: thumbnail.latestDate,
-        thumbnailUrl: thumbnail.thumbnailUrl
-      }));
-      
-      // 기수별로 정렬 (최신 기수부터)
-      const sortedTermInfos = termInfos.sort((a, b) => Number(b.term) - Number(a.term));
-      
-      // 새로운 기수 감지
-      const currentTerms = sortedTermInfos.map(info => info.term);
-      if (previousTerms.length > 0) {
-        const newTerms = currentTerms.filter(term => !previousTerms.includes(term));
-        if (newTerms.length > 0) {
-          console.log('🎉 새로운 기수 감지:', newTerms);
-          setNewlyAddedTerms(newTerms);
-          setTimeout(() => {
-            setNewlyAddedTerms([]);
-          }, 10000); // 10초 후 NEW 표시 제거
-        }
+      if (Array.isArray(galleryData) && galleryData.length > 0) {
+        // 실제 존재하는 기수들만 필터링
+        const filteredData = galleryData.filter(item => validTerms.includes(String(item.term)));
+        
+        // 기수별로 그룹화
+        const termGroups: { [key: string]: any[] } = {};
+        
+        filteredData.forEach(item => {
+          const term = String(item.term);
+          if (!termGroups[term]) {
+            termGroups[term] = [];
+          }
+          termGroups[term].push(item);
+        });
+        
+        // 기수별 정보 생성 (실제 존재하는 기수만)
+        const termInfos: TermGalleryInfo[] = validTerms.map(term => {
+          const items = termGroups[term] || [];
+          
+          if (items.length > 0) {
+            // 날짜순으로 정렬하여 최신 날짜 찾기
+            const sortedItems = items.sort((a, b) => 
+              new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+            
+            return {
+              term,
+              count: items.length,
+              latestDate: sortedItems[0].date,
+              thumbnailUrl: sortedItems[0].imageUrl || ''
+            };
+          } else {
+            return {
+              term,
+              count: 0,
+              latestDate: new Date().toISOString(),
+              thumbnailUrl: ''
+            };
+          }
+        }).filter(Boolean);
+        
+        // 기수별로 정렬 (최신 기수부터)
+        const sortedTermInfos = termInfos.sort((a, b) => Number(b.term) - Number(a.term));
+        
+        setTermGalleries(sortedTermInfos);
+        console.log('✅ 갤러리 메타데이터 로드 완료 (Fallback):', sortedTermInfos);
+        
+      } else {
+        // 갤러리 데이터가 없어도 실제 존재하는 기수들은 표시
+        const termInfos: TermGalleryInfo[] = validTerms.map(term => ({
+          term,
+          count: 0,
+          latestDate: new Date().toISOString(),
+          thumbnailUrl: ''
+        }));
+        
+        const sortedTermInfos = termInfos.sort((a, b) => Number(b.term) - Number(a.term));
+        setTermGalleries(sortedTermInfos);
+        console.log('📋 갤러리 데이터는 없지만 유효한 기수들로 목록 생성 (Fallback):', sortedTermInfos);
       }
-      setPreviousTerms(currentTerms);
-      
-      setTermGalleries(sortedTermInfos);
-      console.log('✅ 갤러리 썸네일 메타데이터 로드 완료:', sortedTermInfos);
       
     } catch (err: any) {
-      console.error('❌ 갤러리 썸네일 메타데이터 로드 실패:', err);
-      setError('갤러리 썸네일 데이터를 불러오는 중 오류가 발생했습니다.');
+      console.error('❌ 갤러리 메타데이터 로드 실패:', err);
+      setError('갤러리 데이터를 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
