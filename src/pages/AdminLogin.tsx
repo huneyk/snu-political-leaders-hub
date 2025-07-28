@@ -18,7 +18,13 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     console.log('로그인 시도:', { username });
-    console.log('API 엔드포인트:', `/api/auth/login`);
+    
+    // 프로덕션 환경에서는 실제 서버 URL 사용
+    const apiUrl = window.location.hostname === 'localhost' 
+      ? '/api/auth/login' 
+      : 'https://snu-plp-hub-server.onrender.com/api/auth/login';
+    
+    console.log('API 엔드포인트:', apiUrl);
     
     try {
       // API를 통한 실제 로그인 처리
@@ -30,7 +36,7 @@ const AdminLogin = () => {
       console.log('요청 데이터:', requestData);
       
       // 프록시 URL 사용 (vite.config.ts에 설정된 프록시 사용)
-      const response = await fetch(`/api/auth/login`, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
