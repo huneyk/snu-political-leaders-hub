@@ -7,6 +7,62 @@ const { isAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+// 헬스체크 엔드포인트 - 데이터베이스 연결 및 갤러리 데이터 상태 확인
+router.get('/health', async (req, res) => {
+  try {
+    console.log('🏥 갤러리 헬스체크 요청 받음');
+    
+    // 데이터베이스 연결 테스트
+    const totalCount = await Gallery.countDocuments();
+    
+    // 기수별 분포 확인
+    const termDistribution = await Gallery.aggregate([
+      { $group: { _id: '$term', count: { $sum: 1 } } },
+      { $sort: { _id: 1 } }
+    ]);
+    
+    // 각 기수별 샘플 데이터 확인
+    const term1Sample = await Gallery.findOne({ term: 1 });
+    const term2Sample = await Gallery.findOne({ term: 2 });
+    
+    const healthData = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      database: {
+        connected: true,
+        totalGalleryItems: totalCount,
+        termDistribution: termDistribution,
+        samples: {
+          term1: term1Sample ? { 
+            id: term1Sample._id, 
+            title: term1Sample.title, 
+            term: term1Sample.term 
+          } : null,
+          term2: term2Sample ? { 
+            id: term2Sample._id, 
+            title: term2Sample.title, 
+            term: term2Sample.term 
+          } : null
+        }
+      }
+    };
+    
+    console.log('✅ 갤러리 헬스체크 성공:', healthData);
+    res.json(healthData);
+    
+  } catch (error) {
+    console.error('❌ 갤러리 헬스체크 실패:', error);
+    res.status(500).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error.message,
+      database: {
+        connected: false
+      }
+    });
+  }
+});
+
 // 실제 존재하는 기수들을 확인하는 함수
 async function getValidTerms() {
   try {

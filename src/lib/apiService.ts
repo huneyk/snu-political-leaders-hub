@@ -67,7 +67,11 @@ const makeApiRequest = async <T>(
             ...options.headers
           }
         });
+        
         console.log(`✅ Success with: ${baseUrl}`);
+        console.log(`📊 Response status: ${response.status}`);
+        console.log(`📊 Response data type: ${typeof response.data}`);
+        console.log(`📊 Response data:`, response.data);
         
         // HTML 응답 감지 및 에러 처리
         if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
@@ -78,6 +82,10 @@ const makeApiRequest = async <T>(
         return response.data;
       } catch (error) {
         console.warn(`❌ Failed with ${baseUrl}:`, error instanceof Error ? error.message : 'Unknown error');
+        if ((error as any)?.response) {
+          console.warn(`❌ Response status: ${(error as any).response.status}`);
+          console.warn(`❌ Response data: ${(error as any).response.data}`);
+        }
         lastError = error;
         continue;
       }
@@ -1598,6 +1606,21 @@ export const apiService = {
     }
   },
 
+  // 갤러리 헬스체크 - 데이터베이스 연결 및 데이터 상태 확인
+  getGalleryHealth: async () => {
+    try {
+      console.log('🏥 갤러리 헬스체크 요청');
+      const data = await makeApiRequest('/gallery/health', {
+        method: 'GET'
+      });
+      console.log('✅ 갤러리 헬스체크 응답:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ 갤러리 헬스체크 실패:', error);
+      throw error;
+    }
+  },
+
   // 유효한 기수 목록 가져오기
   getValidTerms: async () => {
     try {
@@ -1617,10 +1640,24 @@ export const apiService = {
   getGalleryByTerm: async (term: string) => {
     try {
       console.log(`🎯 제${term}기 갤러리 데이터 조회 시도`);
+      console.log(`📍 현재 환경: ${import.meta.env.MODE}`);
+      console.log(`📍 요청 URL: /gallery?term=${term}`);
+      
       const data = await makeApiRequest(`/gallery?term=${term}`, {
         method: 'GET'
       });
-      console.log(`✅ 제${term}기 갤러리 데이터 응답:`, data);
+      
+      console.log(`✅ 제${term}기 갤러리 데이터 응답:`, {
+        isArray: Array.isArray(data),
+        length: Array.isArray(data) ? data.length : 'N/A',
+        firstItem: Array.isArray(data) && data.length > 0 ? data[0] : 'N/A',
+        termDistribution: Array.isArray(data) ? data.reduce((acc, item) => {
+          const itemTerm = item.term;
+          acc[itemTerm] = (acc[itemTerm] || 0) + 1;
+          return acc;
+        }, {}) : 'N/A'
+      });
+      
       return data;
     } catch (error) {
       console.error(`❌ 제${term}기 갤러리 데이터 조회 실패:`, error);
@@ -1632,10 +1669,23 @@ export const apiService = {
   getGalleryMetaByTerm: async (term: string) => {
     try {
       console.log(`📋 제${term}기 갤러리 메타데이터 조회 시도`);
+      console.log(`📍 현재 환경: ${import.meta.env.MODE}`);
+      console.log(`📍 요청 URL: /gallery?term=${term}&meta_only=true`);
+      
       const data = await makeApiRequest(`/gallery?term=${term}&meta_only=true`, {
         method: 'GET'
       });
-      console.log(`✅ 제${term}기 갤러리 메타데이터 응답: ${Array.isArray(data) ? data.length : 0}개`);
+      
+      console.log(`✅ 제${term}기 갤러리 메타데이터 응답:`, {
+        isArray: Array.isArray(data),
+        length: Array.isArray(data) ? data.length : 'N/A',
+        termDistribution: Array.isArray(data) ? data.reduce((acc, item) => {
+          const itemTerm = item.term;
+          acc[itemTerm] = (acc[itemTerm] || 0) + 1;
+          return acc;
+        }, {}) : 'N/A'
+      });
+      
       return data;
     } catch (error) {
       console.error(`❌ 제${term}기 갤러리 메타데이터 조회 실패:`, error);

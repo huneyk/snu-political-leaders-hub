@@ -212,6 +212,17 @@ const GalleryByTerm = () => {
     try {
       console.log(`🎯 ${termNumber}기 갤러리 데이터 로드 시작`);
       
+      // 프로덕션 환경에서 먼저 헬스체크 수행
+      if (import.meta.env.MODE === 'production') {
+        try {
+          console.log('🏥 프로덕션 환경 - 갤러리 헬스체크 수행');
+          const healthCheck = await apiService.getGalleryHealth();
+          console.log('🏥 헬스체크 결과:', healthCheck);
+        } catch (healthError) {
+          console.warn('⚠️ 헬스체크 실패:', healthError);
+        }
+      }
+      
       // 먼저 유효한 기수인지 확인
       try {
         const validTermsResponse = await apiService.getValidTerms();
