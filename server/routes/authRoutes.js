@@ -154,6 +154,7 @@ router.post('/register', async (req, res) => {
     await newUser.save();
     
     res.status(201).json({ 
+      success: true,
       message: '관리자 계정이 성공적으로 생성되었습니다.',
       user: {
         email: newUser.email,
@@ -171,6 +172,7 @@ router.get('/verify', (req, res) => {
   // 개발 모드에서는 항상 성공
   if (process.env.NODE_ENV === 'development') {
     return res.json({ 
+      success: true,
       authenticated: true,
       message: '개발 모드: 인증이 유효합니다.'
     });
@@ -189,6 +191,7 @@ router.get('/verify', (req, res) => {
     }
     
     res.json({ 
+      success: true,
       authenticated: true,
       user: {
         email: user.email,
