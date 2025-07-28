@@ -87,96 +87,191 @@ const GalleryManage = () => {
     // 전역 객체에 디버깅 함수 추가
     (window as any).resetGalleryData = resetGalleryData;
     (window as any).checkGalleryData = checkGalleryData;
-    (window as any).forceLoadSampleData = () => {
-      setGalleryItems(DEFAULT_GALLERY_ITEMS);
-      return "샘플 데이터가 강제로 로드되었습니다.";
-    };
   }, []);
 
-  // 갤러리 데이터 로드
+  // 갤러리 데이터 로드 - fallback 로직 제거
   useEffect(() => {
     const loadGalleryItems = async () => {
       try {
-        console.log('갤러리 데이터 로드 시작');
-        const response = await apiService.getGallery();
-        console.log('API 응답:', response);
+        console.log('🔄 갤러리 데이터 로드 시작');
+        console.log('🌐 현재 환경:', import.meta.env.MODE);
+        console.log('🔗 API URL:', import.meta.env.MODE === 'production' 
+          ? 'https://snu-plp-hub-server.onrender.com/api' 
+          : 'http://localhost:5001/api');
         
-        if (response && Array.isArray(response) && response.length > 0) {
-          // 날짜 기준 내림차순 정렬 (최신순)
-          const sortedItems = response.sort((a: GalleryItem, b: GalleryItem) => 
-            new Date(b.date).getTime() - new Date(a.date).getTime()
-          );
-          
-          setGalleryItems(sortedItems);
-          console.log('갤러리 데이터 로드 완료:', sortedItems.length, '개 항목');
-        } else {
-          console.log('API에서 받은 데이터가 비어있습니다. 샘플 데이터를 생성합니다.');
-          createSampleData();
+        // API 호출 - 타입 assertion으로 에러 해결
+        const response = await apiService.getGallery() as GalleryItem[];
+        
+        console.log('✅ API 응답 성공');
+        console.log('📊 응답 타입:', typeof response);
+        console.log('📊 배열 여부:', Array.isArray(response));
+        console.log('📊 데이터 개수:', Array.isArray(response) ? response.length : 'N/A');
+        
+        // 응답 데이터 검증
+        if (!response) {
+          throw new Error('API 응답이 null 또는 undefined입니다');
         }
+        
+        if (!Array.isArray(response)) {
+          console.error('❌ API 응답이 배열이 아닙니다:', response);
+          throw new Error(`API 응답이 배열이 아닙니다. 타입: ${typeof response}`);
+        }
+        
+        if (response.length === 0) {
+          console.warn('⚠️ 갤러리 데이터가 비어있습니다');
+          setGalleryItems([]);
+          return;
+        }
+        
+        // 날짜 기준 내림차순 정렬 (최신순)
+        const sortedItems = response.sort((a: GalleryItem, b: GalleryItem) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        
+        setGalleryItems(sortedItems);
+        console.log('✅ 갤러리 데이터 로드 완료:', sortedItems.length, '개 항목');
+        
+        // 샘플 데이터 로깅
+        if (sortedItems.length > 0) {
+          console.log('📋 첫 번째 항목 샘플:', {
+            _id: sortedItems[0]._id,
+            title: sortedItems[0].title,
+            term: sortedItems[0].term,
+            date: sortedItems[0].date
+          });
+        }
+        
       } catch (error) {
-        console.error('갤러리 데이터 로드 실패:', error);
+        console.error('❌❌❌ 갤러리 데이터 로드 실패 ❌❌❌');
+        console.error('에러 타입:', typeof error);
+        console.error('에러 메시지:', error instanceof Error ? error.message : '알 수 없는 에러');
+        console.error('전체 에러 객체:', error);
+        
+        if (axios.isAxiosError(error)) {
+          console.error('🔍 Axios 에러 세부정보:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            headers: error.response?.headers,
+            config: {
+              url: error.config?.url,
+              method: error.config?.method,
+              baseURL: error.config?.baseURL,
+              timeout: error.config?.timeout
+            }
+          });
+          
+          // HTML 응답 체크
+          if (typeof error.response?.data === 'string' && error.response.data.includes('<!DOCTYPE html>')) {
+            console.error('🚨 서버가 HTML 페이지를 반환했습니다 - 라우팅 문제일 가능성');
+          }
+        }
+        
+        // fallback 제거 - 에러를 그대로 노출
         toast({
-          title: "데이터 로드 실패",
-          description: "갤러리 데이터를 불러오는 중 오류가 발생했습니다. 샘플 데이터를 사용합니다.",
+          title: "갤러리 데이터 로드 실패",
+          description: `갤러리 데이터를 불러오는 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 에러'}`,
           variant: "destructive",
         });
-        createSampleData();
+        
+        // 빈 배열로 설정하여 UI가 깨지지 않도록 함
+        setGalleryItems([]);
       }
     };
     
     loadGalleryItems();
   }, []);
 
-  // 샘플 데이터 생성 함수
+  // 샘플 데이터 생성 함수 - fallback 제거됨
   const createSampleData = async () => {
     try {
-      console.log('샘플 데이터 생성 시작');
+      console.log('🔄 샘플 데이터 생성 시작');
+      console.log('🌐 현재 환경:', import.meta.env.MODE);
       
-      // 서버에 샘플 데이터 저장 시도
+      // 기본 샘플 데이터
+      const DEFAULT_GALLERY_ITEMS: GalleryItem[] = [
+        {
+          title: '입학식',
+          description: '2023년 봄학기 입학식 현장',
+          imageUrl: 'data:image/jpeg;base64,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',
+          date: new Date(2023, 2, 2).toISOString(),
+          term: 1,
+        },
+        {
+          title: '특별 강연',
+          description: '국제 정치 특별 강연 세미나',
+          imageUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCABkAGQDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD0S7ukt49znnsBVVWkuX3OcL2HSiigDRt1VUAAxVXUbeadCLaXy5AeR3HsaKKAK1vp1xGdzXbFT12g0s1pNM25rxwPRQBRRQA6GxQffZ3x3ario4bZYwMZJooqZNt3A//Z',
+          date: new Date(2023, 3, 15).toISOString(),
+          term: 1,
+        },
+        {
+          title: '워크샵',
+          description: '리더십 개발 워크샵',
+          imageUrl: 'data:image/jpeg;base64,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',
+          date: new Date(2023, 4, 10).toISOString(),
+          term: 2,
+        },
+      ];
+      
+      // 서버에 샘플 데이터 저장 시도 - fallback 제거됨
       for (const item of DEFAULT_GALLERY_ITEMS) {
         const itemToCreate = {
           ...item,
           _id: undefined // _id는 MongoDB가 자동 생성하도록 제거
         };
-        // 관리자 권한으로 API 호출
-        console.log('샘플 항목 생성 시도:', itemToCreate);
+        console.log('📤 샘플 항목 생성 시도:', itemToCreate.title);
         await apiService.addGalleryItem(itemToCreate);
       }
       
-      // 다시 데이터 로드
-      const response = await apiService.getGallery();
+      // 다시 데이터 로드 - 타입 assertion 추가
+      const response = await apiService.getGallery() as GalleryItem[];
+      
+      if (!Array.isArray(response)) {
+        throw new Error('샘플 데이터 생성 후 API 응답이 배열이 아닙니다');
+      }
+      
       setGalleryItems(response);
       
       toast({
-        title: "샘플 데이터 생성",
-        description: "갤러리 샘플 데이터가 생성되었습니다.",
+        title: "샘플 데이터 생성 완료",
+        description: `${DEFAULT_GALLERY_ITEMS.length}개의 갤러리 샘플 데이터가 생성되었습니다.`,
       });
       
-      console.log('샘플 데이터 생성 완료');
+      console.log(`✅ 샘플 데이터 생성 완료: ${response.length}개 항목`);
+      return `샘플 데이터 생성 완료: ${response.length}개 항목`;
     } catch (error) {
-      console.error('샘플 데이터 생성 실패:', error);
-      // 실패 시 로컬 상태에만 적용
-      setGalleryItems(DEFAULT_GALLERY_ITEMS);
+      console.error('❌ 샘플 데이터 생성 실패:', error);
       
+      // fallback 제거 - 에러를 그대로 노출
       toast({
         title: "샘플 데이터 생성 실패",
-        description: "서버에 샘플 데이터를 저장하는데 실패했습니다. 로컬에서만 표시됩니다.",
+        description: `서버에 샘플 데이터를 저장하는데 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 에러'}`,
         variant: "destructive",
       });
+      
+      throw error; // 에러를 다시 던져서 상위에서 처리할 수 있도록 함
     }
   };
 
   // 디버깅용 함수: 갤러리 데이터 초기화
   const resetGalleryData = async () => {
     try {
-      // 모든 갤러리 항목 가져오기
-      const items = await apiService.getGallery();
-      console.log('초기화할 항목:', items);
+      console.log('🔄 갤러리 데이터 초기화 시작');
+      
+      // 모든 갤러리 항목 가져오기 - 타입 assertion
+      const items = await apiService.getGallery() as GalleryItem[];
+      console.log('📊 초기화할 항목 수:', Array.isArray(items) ? items.length : 0);
+      console.log('📋 초기화할 항목들:', items);
+      
+      // 타입 가드 추가
+      if (!Array.isArray(items)) {
+        throw new Error('갤러리 데이터가 배열 형태가 아닙니다');
+      }
       
       // 각 항목 삭제
       for (const item of items) {
         if (item._id) {
-          console.log(`항목 삭제 시도 (ID: ${item._id})`);
+          console.log(`🗑️ 항목 삭제 시도 (ID: ${item._id})`);
           await apiService.deleteGalleryItem(item._id);
         }
       }
@@ -184,46 +279,62 @@ const GalleryManage = () => {
       setGalleryItems([]);
       
       toast({
-        title: "데이터 초기화",
-        description: "갤러리 데이터가 초기화되었습니다.",
+        title: "데이터 초기화 완료",
+        description: `${items.length}개의 갤러리 항목이 삭제되었습니다.`,
       });
       
-      return '갤러리 데이터가 초기화되었습니다.';
+      return `갤러리 데이터가 초기화되었습니다. (${items.length}개 항목 삭제)`;
     } catch (error) {
-      console.error('데이터 초기화 실패:', error);
+      console.error('❌ 데이터 초기화 실패:', error);
       
       toast({
         title: "데이터 초기화 실패",
-        description: "갤러리 데이터 초기화 중 오류가 발생했습니다.",
+        description: `갤러리 데이터 초기화 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 에러'}`,
         variant: "destructive",
       });
       
-      return '갤러리 데이터 초기화 실패';
+      return `갤러리 데이터 초기화 실패: ${error instanceof Error ? error.message : '알 수 없는 에러'}`;
     }
   };
 
   // 디버깅용 함수: 갤러리 데이터 확인
   const checkGalleryData = async () => {
     try {
-      const items = await apiService.getGallery();
-      console.log('현재 갤러리 데이터:', items);
+      console.log('🔍 갤러리 데이터 확인 시작');
+      
+      // 타입 assertion으로 에러 해결
+      const items = await apiService.getGallery() as GalleryItem[];
+      console.log('📊 현재 갤러리 데이터:', items);
+      console.log('📊 데이터 타입:', typeof items);
+      console.log('📊 배열 여부:', Array.isArray(items));
+      
+      const itemCount = Array.isArray(items) ? items.length : 0;
       
       toast({
-        title: "데이터 확인",
-        description: `현재 ${items ? items.length : 0}개의 갤러리 항목이 있습니다.`,
+        title: "데이터 확인 완료",
+        description: `현재 ${itemCount}개의 갤러리 항목이 있습니다.`,
       });
       
-      return JSON.stringify(items);
+      return {
+        count: itemCount,
+        data: items,
+        type: typeof items,
+        isArray: Array.isArray(items)
+      };
     } catch (error) {
-      console.error('데이터 확인 실패:', error);
+      console.error('❌ 데이터 확인 실패:', error);
       
       toast({
         title: "데이터 확인 실패",
-        description: "갤러리 데이터를 확인하는 중 오류가 발생했습니다.",
+        description: `갤러리 데이터를 확인하는 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 에러'}`,
         variant: "destructive",
       });
       
-      return '갤러리 데이터 확인 실패';
+      return {
+        error: error instanceof Error ? error.message : '알 수 없는 에러',
+        count: 0,
+        data: null
+      };
     }
   };
 
@@ -584,34 +695,46 @@ const GalleryManage = () => {
                 size="sm"
                 onClick={resetGalleryData}
               >
-                데이터 초기화
+                🗑️ 데이터 초기화
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={checkGalleryData}
               >
-                데이터 확인
+                🔍 데이터 확인
               </Button>
               <Button 
                 variant="default" 
                 size="sm"
                 onClick={createSampleData}
               >
-                샘플 데이터 생성
+                📤 샘플 데이터 생성
               </Button>
               <Button 
                 variant="secondary" 
                 size="sm"
                 onClick={() => {
-                  setGalleryItems(DEFAULT_GALLERY_ITEMS);
-                  toast({
-                    title: "강제 로드",
-                    description: "샘플 데이터가 강제로 로드되었습니다.",
-                  });
+                  console.log('🚨 갤러리 헬스체크 실행');
+                  apiService.getGalleryHealth()
+                    .then((result) => {
+                      console.log('✅ 갤러리 헬스체크 결과:', result);
+                      toast({
+                        title: "헬스체크 완료",
+                        description: `갤러리 시스템 상태가 확인되었습니다.`,
+                      });
+                    })
+                    .catch((error) => {
+                      console.error('❌ 갤러리 헬스체크 실패:', error);
+                      toast({
+                        title: "헬스체크 실패",
+                        description: `갤러리 시스템 상태 확인 실패: ${error instanceof Error ? error.message : '알 수 없는 에러'}`,
+                        variant: "destructive",
+                      });
+                    });
                 }}
               >
-                강제 샘플 데이터
+                🏥 헬스체크
               </Button>
             </div>
           )}

@@ -213,7 +213,46 @@ const Gallery = () => {
       
     } catch (err: any) {
       console.error('❌ 갤러리 메타데이터 로드 실패:', err);
-      setError('갤러리 데이터를 불러오는 중 오류가 발생했습니다.');
+      
+      // 환경 정보 로깅
+      console.error('🌐 현재 환경:', import.meta.env.MODE);
+      console.error('🔗 API URL:', import.meta.env.MODE === 'production' 
+        ? 'https://snu-plp-hub-server.onrender.com/api' 
+        : 'http://localhost:5001/api');
+      
+      // Axios 에러 세부 정보
+      if (err.isAxiosError) {
+        console.error('🔍 Gallery 페이지 Axios 에러 세부정보:', {
+          status: err.response?.status,
+          statusText: err.response?.statusText,
+          data: err.response?.data,
+          headers: err.response?.headers,
+          config: {
+            url: err.config?.url,
+            method: err.config?.method,
+            baseURL: err.config?.baseURL,
+            timeout: err.config?.timeout
+          }
+        });
+        
+        // HTML 응답 감지
+        if (typeof err.response?.data === 'string' && err.response.data.includes('<!DOCTYPE html>')) {
+          console.error('🚨 Gallery 페이지: 서버가 HTML 페이지를 반환했습니다 - 라우팅 문제일 가능성');
+        }
+        
+        // 상세한 에러 메시지 설정
+        if (err.response?.status === 404) {
+          setError('갤러리 API를 찾을 수 없습니다. 서버 설정을 확인해주세요.');
+        } else if (err.response?.status === 500) {
+          setError('서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        } else if (err.code === 'NETWORK_ERROR' || err.message.includes('Network Error')) {
+          setError('네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인해주세요.');
+        } else {
+          setError(`갤러리 데이터를 불러오는 중 오류가 발생했습니다. (${err.response?.status || err.message})`);
+        }
+      } else {
+        setError(`갤러리 데이터를 불러오는 중 오류가 발생했습니다. (${err.message || '알 수 없는 오류'})`);
+      }
     } finally {
       setLoading(false);
     }

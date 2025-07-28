@@ -280,6 +280,34 @@ const GalleryByTerm = () => {
     } catch (err: any) {
       console.error(`❌ ${termNumber}기 갤러리 로드 실패:`, err);
       
+      // 환경 정보 로깅
+      console.error('🌐 현재 환경:', import.meta.env.MODE);
+      console.error('🔗 API URL:', import.meta.env.MODE === 'production' 
+        ? 'https://snu-plp-hub-server.onrender.com/api' 
+        : 'http://localhost:5001/api');
+      
+      // Axios 에러 세부 정보
+      if (err.isAxiosError) {
+        console.error('🔍 GalleryByTerm 페이지 Axios 에러 세부정보:', {
+          term: termNumber,
+          status: err.response?.status,
+          statusText: err.response?.statusText,
+          data: err.response?.data,
+          headers: err.response?.headers,
+          config: {
+            url: err.config?.url,
+            method: err.config?.method,
+            baseURL: err.config?.baseURL,
+            timeout: err.config?.timeout
+          }
+        });
+        
+        // HTML 응답 감지
+        if (typeof err.response?.data === 'string' && err.response.data.includes('<!DOCTYPE html>')) {
+          console.error('🚨 GalleryByTerm 페이지: 서버가 HTML 페이지를 반환했습니다 - 라우팅 문제일 가능성');
+        }
+      }
+      
       // 404 에러인 경우 (존재하지 않는 기수)
       if (err?.response?.status === 404) {
         const errorData = err?.response?.data;
@@ -288,8 +316,12 @@ const GalleryByTerm = () => {
         } else {
           setError(`제${termNumber}기에 해당하는 갤러리가 없습니다.`);
         }
+      } else if (err?.response?.status === 500) {
+        setError(`서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요. (제${termNumber}기)`);
+      } else if (err.code === 'NETWORK_ERROR' || err.message.includes('Network Error')) {
+        setError(`네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인해주세요. (제${termNumber}기)`);
       } else {
-        setError(`갤러리 로드 중 오류가 발생했습니다: ${err.message}`);
+        setError(`갤러리 로드 중 오류가 발생했습니다: ${err.response?.status || err.message} (제${termNumber}기)`);
       }
       
       // 에러 발생 시 반드시 데이터 클리어

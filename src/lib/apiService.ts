@@ -82,10 +82,30 @@ const makeApiRequest = async <T>(
         return response.data;
       } catch (error) {
         console.warn(`❌ Failed with ${baseUrl}:`, error instanceof Error ? error.message : 'Unknown error');
-        if ((error as any)?.response) {
-          console.warn(`❌ Response status: ${(error as any).response.status}`);
-          console.warn(`❌ Response data: ${(error as any).response.data}`);
+        
+        // 상세한 에러 정보 로깅
+        if (axios.isAxiosError(error)) {
+          console.error('🔍 makeApiRequest Axios 에러 세부정보:', {
+            baseUrl,
+            endpoint,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            headers: error.response?.headers,
+            config: {
+              url: error.config?.url,
+              method: error.config?.method,
+              baseURL: error.config?.baseURL,
+              timeout: error.config?.timeout
+            }
+          });
+          
+          // HTML 응답 감지
+          if (typeof error.response?.data === 'string' && error.response.data.includes('<!DOCTYPE html>')) {
+            console.error('🚨 makeApiRequest: 서버가 HTML 페이지를 반환했습니다 - 라우팅 문제일 가능성');
+          }
         }
+        
         lastError = error;
         continue;
       }
@@ -1594,14 +1614,42 @@ export const apiService = {
   // 갤러리(Gallery) 관련 API
   getGallery: async () => {
     try {
-      console.log('갤러리 데이터 가져오기 시도');
+      // 환경 정보 로깅
+      console.log('🌐 현재 환경:', import.meta.env.MODE);
+      console.log('🔗 API URL:', import.meta.env.MODE === 'production' 
+        ? 'https://snu-plp-hub-server.onrender.com/api' 
+        : 'http://localhost:5001/api');
+      console.log('🔄 갤러리 데이터 가져오기 시도');
+      
       const data = await makeApiRequest('/gallery', {
         method: 'GET'
       });
-      console.log('갤러리 데이터 응답:', data);
+      console.log('✅ 갤러리 데이터 응답 성공:', data);
       return data;
     } catch (error) {
-      console.error('갤러리 데이터 가져오기 실패:', error);
+      console.error('❌ 갤러리 데이터 가져오기 실패:', error);
+      
+      // Axios 에러 세부 정보
+      if (axios.isAxiosError(error)) {
+        console.error('🔍 Axios 에러 세부정보:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          headers: error.response?.headers,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+            timeout: error.config?.timeout
+          }
+        });
+        
+        // HTML 응답 감지
+        if (typeof error.response?.data === 'string' && error.response.data.includes('<!DOCTYPE html>')) {
+          console.error('🚨 서버가 HTML 페이지를 반환했습니다 - 라우팅 문제일 가능성');
+        }
+      }
+      
       throw error;
     }
   },
