@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { apiService } from '@/lib/apiService';
 
 interface SubMenuItem {
   name: string;
@@ -12,47 +13,78 @@ interface MenuItem {
   submenu?: SubMenuItem[];
 }
 
-const menuItems: MenuItem[] = [
-  {
-    name: '과정 소개',
-    path: '/intro',
-    submenu: [
-      { name: '인사말', path: '/intro/greeting' },
-      { name: '추천의 글', path: '/intro/recommendations' },
-      { name: '과정의 목표', path: '/intro/objectives' },
-      { name: '과정의 특전', path: '/intro/benefits' },
-      { name: '운영 교수진', path: '/intro/professors' },
-    ],
-  },
-  {
-    name: '입학 안내',
-    path: '/admission',
-    submenu: [
-      { name: '입학 지원 안내', path: '/admission/info' },
-      { name: '운영 준칙', path: '/admission/rules' },
-    ],
-  },
-  {
-    name: '학사 일정',
-    path: '/schedule',
-    submenu: [
-      { name: '전체 일정', path: '/schedule/calendar' },
-      { name: '특별 활동', path: '/schedule/activities' },
-      { name: '강 사 진', path: '/schedule/lecturers' },
-    ],
-  },
-  { name: '갤러리', path: '/gallery' },
-  { name: '공지 사항', path: '/notices' },
-];
-
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
+  const [galleryTerms, setGalleryTerms] = useState<string[]>([]);
   const location = useLocation();
   
   // Check if we're on the home page
   const isHomePage = location.pathname === '/';
+
+  // Load available gallery terms
+  useEffect(() => {
+    const loadGalleryTerms = async () => {
+      try {
+        const response = await apiService.getValidTerms() as { terms: string[]; count: number };
+        if (response && response.terms) {
+          // Sort terms in descending order (newest first)
+          const sortedTerms = response.terms.sort((a: string, b: string) => Number(b) - Number(a));
+          setGalleryTerms(sortedTerms);
+        }
+      } catch (error) {
+        console.error('갤러리 기수 목록 로드 실패:', error);
+        // Fallback to empty array if API fails
+        setGalleryTerms([]);
+      }
+    };
+
+    loadGalleryTerms();
+  }, []);
+
+  // Create dynamic menu items with gallery submenus
+  const menuItems: MenuItem[] = [
+    {
+      name: '과정 소개',
+      path: '/intro',
+      submenu: [
+        { name: '인사말', path: '/intro/greeting' },
+        { name: '추천의 글', path: '/intro/recommendations' },
+        { name: '과정의 목표', path: '/intro/objectives' },
+        { name: '과정의 특전', path: '/intro/benefits' },
+        { name: '운영 교수진', path: '/intro/professors' },
+      ],
+    },
+    {
+      name: '입학 안내',
+      path: '/admission',
+      submenu: [
+        { name: '입학 지원 안내', path: '/admission/info' },
+        { name: '운영 준칙', path: '/admission/rules' },
+      ],
+    },
+    {
+      name: '학사 일정',
+      path: '/schedule',
+      submenu: [
+        { name: '전체 일정', path: '/schedule/calendar' },
+        { name: '특별 활동', path: '/schedule/activities' },
+        { name: '강 사 진', path: '/schedule/lecturers' },
+      ],
+    },
+    {
+      name: '갤러리',
+      path: '/gallery',
+      submenu: [
+        ...galleryTerms.map(term => ({
+          name: `제${term}기`,
+          path: `/gallery/term/${term}`
+        }))
+      ],
+    },
+    { name: '공지 사항', path: '/notices' },
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
