@@ -333,11 +333,6 @@ const Gallery = () => {
             {/* 기수별 갤러리 목록 */}
             {termGalleries.length > 0 ? (
               <>
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold mb-2">기수별 갤러리</h2>
-                  <p className="text-gray-600">각 기수별로 정리된 갤러리를 확인하실 수 있습니다.</p>
-                </div>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {termGalleries.map((termInfo) => {
                     const isNewTerm = newlyAddedTerms.includes(termInfo.term);
