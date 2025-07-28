@@ -9,16 +9,26 @@ const galleryThumbnailService = require('../services/galleryThumbnailService');
 
 const router = express.Router();
 
-// 헬스체크 엔드포인트 - 데이터베이스 연결 및 갤러리 데이터 상태 확인 - 라우트 가드 추가
+// 헬스체크 엔드포인트 - 데이터베이스 연결 및 갤러리 데이터 상태 확인 - 강화된 라우트 가드
 router.get('/health', async (req, res) => {
   try {
-    // 라우트 가드: 정확한 엔드포인트인지 확인
+    // 강화된 라우트 가드: URL 경로 직접 확인
+    if (req.path !== '/health' && req.originalUrl !== '/api/gallery/health') {
+      console.log('⚠️ health 라우트 경로 불일치:', {
+        path: req.path,
+        originalUrl: req.originalUrl,
+        params: req.params
+      });
+      return res.status(404).json({ message: 'Invalid health endpoint' });
+    }
+    
+    // 추가 파라미터 체크
     if (req.params && Object.keys(req.params).length > 0) {
       console.log('⚠️ health 라우트에서 의도하지 않은 params 감지됨:', req.params);
       return res.status(404).json({ message: 'Endpoint not found' });
     }
     
-    console.log('🏥 갤러리 헬스체크 요청 받음');
+    console.log('🏥 갤러리 헬스체크 요청 받음 (경로 확인됨):', req.originalUrl);
     
     // 데이터베이스 연결 테스트
     const totalCount = await Gallery.countDocuments();
@@ -73,16 +83,26 @@ router.get('/health', async (req, res) => {
 
 // 썸네일 관련 API 엔드포인트들
 
-// 모든 기수의 썸네일 목록 조회 (갤러리 메인 페이지용) - 라우트 가드 추가
+// 모든 기수의 썸네일 목록 조회 (갤러리 메인 페이지용) - 강화된 라우트 가드
 router.get('/thumbnails', async (req, res) => {
   try {
-    // 라우트 가드: 정확한 엔드포인트인지 확인
+    // 강화된 라우트 가드: URL 경로 직접 확인
+    if (req.path !== '/thumbnails' && req.originalUrl !== '/api/gallery/thumbnails') {
+      console.log('⚠️ thumbnails 라우트 경로 불일치:', {
+        path: req.path,
+        originalUrl: req.originalUrl,
+        params: req.params
+      });
+      return res.status(404).json({ message: 'Invalid thumbnails endpoint' });
+    }
+    
+    // 추가 파라미터 체크
     if (req.params && Object.keys(req.params).length > 0) {
       console.log('⚠️ thumbnails 라우트에서 의도하지 않은 params 감지됨:', req.params);
       return res.status(404).json({ message: 'Endpoint not found' });
     }
     
-    console.log('🖼️ 갤러리 썸네일 목록 조회 요청');
+    console.log('🖼️ 갤러리 썸네일 목록 조회 요청 (경로 확인됨):', req.originalUrl);
     
     const thumbnails = await galleryThumbnailService.getAllThumbnails();
     
@@ -172,10 +192,20 @@ async function getValidTerms() {
   }
 }
 
-// 실제 존재하는 기수 목록 반환 (새로운 엔드포인트) - 라우트 가드 추가
+// 실제 존재하는 기수 목록 반환 (새로운 엔드포인트) - 강화된 라우트 가드
 router.get('/valid-terms', async (req, res) => {
   try {
-    // 라우트 가드: 정확한 엔드포인트인지 확인
+    // 강화된 라우트 가드: URL 경로 직접 확인
+    if (req.path !== '/valid-terms' && req.originalUrl !== '/api/gallery/valid-terms') {
+      console.log('⚠️ valid-terms 라우트 경로 불일치:', {
+        path: req.path,
+        originalUrl: req.originalUrl,
+        params: req.params
+      });
+      return res.status(404).json({ message: 'Invalid valid-terms endpoint' });
+    }
+    
+    // 추가 파라미터 체크
     if (req.params && Object.keys(req.params).length > 0) {
       console.log('⚠️ valid-terms 라우트에서 의도하지 않은 params 감지됨:', req.params);
       return res.status(404).json({ message: 'Endpoint not found' });
@@ -333,6 +363,16 @@ router.post('/', isAdmin, async (req, res) => {
 // 갤러리 항목 수정 (관리자 전용)
 router.put('/:id', isAdmin, async (req, res) => {
   try {
+    // MongoDB ObjectId 형식 검증 (24자리 16진수)
+    const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+    if (!objectIdRegex.test(req.params.id)) {
+      console.log('⚠️ PUT 라우트: 유효하지 않은 ObjectId 형식:', req.params.id);
+      return res.status(400).json({ 
+        message: '유효하지 않은 ID 형식입니다.',
+        providedId: req.params.id 
+      });
+    }
+    
     const { term } = req.body;
     
     // 수정 시에도 유효한 기수인지 검증
@@ -377,6 +417,16 @@ router.put('/:id', isAdmin, async (req, res) => {
 // 갤러리 항목 삭제 (관리자 전용)
 router.delete('/:id', isAdmin, async (req, res) => {
   try {
+    // MongoDB ObjectId 형식 검증 (24자리 16진수)
+    const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+    if (!objectIdRegex.test(req.params.id)) {
+      console.log('⚠️ DELETE 라우트: 유효하지 않은 ObjectId 형식:', req.params.id);
+      return res.status(400).json({ 
+        message: '유효하지 않은 ID 형식입니다.',
+        providedId: req.params.id 
+      });
+    }
+    
     const deletedItem = await Gallery.findByIdAndDelete(req.params.id);
     
     if (!deletedItem) {
