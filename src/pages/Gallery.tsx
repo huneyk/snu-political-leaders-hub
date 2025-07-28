@@ -23,9 +23,30 @@ const Gallery = () => {
   const [termGalleries, setTermGalleries] = useState<TermGalleryInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [previousTerms, setPreviousTerms] = useState<string[]>([]);
+  const [newlyAddedTerms, setNewlyAddedTerms] = useState<string[]>([]);
 
   useEffect(() => {
     loadGalleryMetadata();
+    
+    // 페이지 포커스 시 자동 새로고침 (새로운 기수 감지용)
+    const handleFocus = () => {
+      console.log('📱 페이지 포커스 감지 - 갤러리 메타데이터 새로고침');
+      loadGalleryMetadata();
+    };
+    
+    // 주기적으로 새로운 기수 체크 (5분마다)
+    const intervalId = setInterval(() => {
+      console.log('🔄 주기적 갤러리 메타데이터 업데이트 체크');
+      loadGalleryMetadata();
+    }, 5 * 60 * 1000); // 5분
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(intervalId);
+    };
   }, []);
 
   const loadGalleryMetadata = async () => {
@@ -42,6 +63,21 @@ const Gallery = () => {
         const validTermsResponse = await apiService.getValidTerms();
         validTerms = (validTermsResponse as any)?.terms || [];
         console.log('🔍 실제 존재하는 기수들 (API):', validTerms);
+        
+        // 새로운 기수 감지
+        if (previousTerms.length > 0) {
+          const newTerms = validTerms.filter(term => !previousTerms.includes(term));
+          if (newTerms.length > 0) {
+            console.log('🎉 새로운 기수 감지:', newTerms);
+            setNewlyAddedTerms(newTerms);
+            
+            // 새로운 기수 알림 표시 (3초 후 자동 숨김)
+            setTimeout(() => {
+              setNewlyAddedTerms([]);
+            }, 10000); // 10초간 하이라이트 유지
+          }
+        }
+        setPreviousTerms(validTerms);
       } catch (validTermsError) {
         console.warn('⚠️ valid-terms API 실패, 갤러리 데이터에서 기수 추출 시도:', validTermsError);
       }
@@ -221,6 +257,24 @@ const Gallery = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             
+            {/* 새로운 기수 추가 알림 */}
+            {newlyAddedTerms.length > 0 && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 border-l-4 border-green-500 rounded-lg animate-pulse">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-green-800">
+                      🎉 새로운 기수가 추가되었습니다! 제{newlyAddedTerms.join(', ')}기 갤러리를 확인해보세요.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 기수별 갤러리 목록 */}
             {termGalleries.length > 0 ? (
               <>
@@ -230,12 +284,16 @@ const Gallery = () => {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {termGalleries.map((termInfo) => (
-                    <Card 
-                      key={termInfo.term} 
-                      className="overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border-0 shadow-sm group"
-                      onClick={() => handleTermClick(termInfo.term)}
-                    >
+                  {termGalleries.map((termInfo) => {
+                    const isNewTerm = newlyAddedTerms.includes(termInfo.term);
+                    return (
+                      <Card 
+                        key={termInfo.term} 
+                        className={`overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border-0 shadow-sm group ${
+                          isNewTerm ? 'ring-2 ring-green-400 shadow-lg bg-gradient-to-br from-green-50 to-blue-50' : ''
+                        }`}
+                        onClick={() => handleTermClick(termInfo.term)}
+                      >
                                              <div className="relative aspect-video bg-gray-100">
                          {termInfo.thumbnailUrl ? (
                            <img
@@ -264,10 +322,15 @@ const Gallery = () => {
                         </div>
                         
                         {/* 기수 배지 */}
-                        <div className="absolute top-4 left-4">
+                        <div className="absolute top-4 left-4 flex items-center gap-2">
                           <Badge className="bg-mainBlue text-white font-bold text-lg px-3 py-1">
                             제 {termInfo.term}기
                           </Badge>
+                          {isNewTerm && (
+                            <Badge className="bg-green-500 text-white font-bold text-xs px-2 py-1 animate-bounce">
+                              NEW
+                            </Badge>
+                          )}
                         </div>
                       </div>
                       
@@ -301,7 +364,8 @@ const Gallery = () => {
                         </Button>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             ) : (

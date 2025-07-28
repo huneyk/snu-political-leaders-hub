@@ -299,7 +299,7 @@ const GalleryByTerm = () => {
     
     try {
       // 요청된 아이템들이 모두 올바른 기수인지 검증
-      const invalidItems = items.filter(item => item.term && item.term.toString() !== termNumber);
+      const invalidItems = items.filter(item => item.term && String(item.term) !== String(termNumber));
       if (invalidItems.length > 0) {
         console.warn(`⚠️ 잘못된 기수의 아이템 발견:`, invalidItems.map(item => `${item.title} (${item.term}기)`));
         return;
@@ -331,7 +331,8 @@ const GalleryByTerm = () => {
         // 새로운 이미지 캐시 업데이트 (해당 기수만)
         const newCache = new Map(imageCache);
         fullData.forEach(item => {
-          if (item._id && item.imageUrl && item.term?.toString() === termNumber) {
+          // 기수 비교 시 둘 다 문자열로 변환해서 비교
+          if (item._id && item.imageUrl && String(item.term) === String(termNumber)) {
             newCache.set(item._id, item.imageUrl);
           }
         });

@@ -43,10 +43,14 @@ router.get('/', async (req, res) => {
   try {
     const { term, meta_only } = req.query;
     
+    console.log(`🔍 갤러리 API 요청 - term: ${term}, meta_only: ${meta_only}, 요청 시각: ${new Date().toISOString()}`);
+    
     // 특정 기수 요청 시 유효성 검증
     if (term) {
       const validTerms = await getValidTerms();
       const requestedTerm = String(term);
+      
+      console.log(`📋 기수 유효성 검증 - 요청된 기수: ${requestedTerm}, 유효한 기수들: [${validTerms.join(', ')}]`);
       
       if (!validTerms.includes(requestedTerm)) {
         console.log(`❌ 존재하지 않는 기수 요청: ${requestedTerm}기`);
@@ -57,6 +61,7 @@ router.get('/', async (req, res) => {
           requestedTerm: requestedTerm
         });
       }
+      console.log(`✅ 기수 유효성 검증 통과: ${requestedTerm}기`);
     }
     
     // 메타데이터만 요청하는 경우 (이미지 URL 제외)
@@ -102,6 +107,22 @@ router.get('/', async (req, res) => {
     // 응답 데이터 로깅 (디버깅용)
     if (term) {
       console.log(`📊 ${term}기 조회 결과: 총 ${galleries.length}개 항목`);
+      
+      // 실제 응답 데이터의 기수 분포 확인
+      const responseTermCounts = {};
+      galleries.forEach(item => {
+        const itemTerm = item.term;
+        responseTermCounts[itemTerm] = (responseTermCounts[itemTerm] || 0) + 1;
+      });
+      console.log(`📈 응답 데이터의 기수별 분포:`, responseTermCounts);
+      
+      // 첫 3개 항목의 상세 정보
+      if (galleries.length > 0) {
+        console.log(`📋 응답 데이터 샘플 (처음 3개):`);
+        galleries.slice(0, 3).forEach((item, index) => {
+          console.log(`  ${index + 1}. ${item.title} (기수: ${item.term})`);
+        });
+      }
     } else {
       const termCounts = {};
       galleries.forEach(item => {
