@@ -9,9 +9,15 @@ const galleryThumbnailService = require('../services/galleryThumbnailService');
 
 const router = express.Router();
 
-// 헬스체크 엔드포인트 - 데이터베이스 연결 및 갤러리 데이터 상태 확인
+// 헬스체크 엔드포인트 - 데이터베이스 연결 및 갤러리 데이터 상태 확인 - 라우트 가드 추가
 router.get('/health', async (req, res) => {
   try {
+    // 라우트 가드: 정확한 엔드포인트인지 확인
+    if (req.params && Object.keys(req.params).length > 0) {
+      console.log('⚠️ health 라우트에서 의도하지 않은 params 감지됨:', req.params);
+      return res.status(404).json({ message: 'Endpoint not found' });
+    }
+    
     console.log('🏥 갤러리 헬스체크 요청 받음');
     
     // 데이터베이스 연결 테스트
@@ -67,9 +73,15 @@ router.get('/health', async (req, res) => {
 
 // 썸네일 관련 API 엔드포인트들
 
-// 모든 기수의 썸네일 목록 조회 (갤러리 메인 페이지용)
+// 모든 기수의 썸네일 목록 조회 (갤러리 메인 페이지용) - 라우트 가드 추가
 router.get('/thumbnails', async (req, res) => {
   try {
+    // 라우트 가드: 정확한 엔드포인트인지 확인
+    if (req.params && Object.keys(req.params).length > 0) {
+      console.log('⚠️ thumbnails 라우트에서 의도하지 않은 params 감지됨:', req.params);
+      return res.status(404).json({ message: 'Endpoint not found' });
+    }
+    
     console.log('🖼️ 갤러리 썸네일 목록 조회 요청');
     
     const thumbnails = await galleryThumbnailService.getAllThumbnails();
@@ -160,9 +172,15 @@ async function getValidTerms() {
   }
 }
 
-// 실제 존재하는 기수 목록 반환 (새로운 엔드포인트)
+// 실제 존재하는 기수 목록 반환 (새로운 엔드포인트) - 라우트 가드 추가
 router.get('/valid-terms', async (req, res) => {
   try {
+    // 라우트 가드: 정확한 엔드포인트인지 확인
+    if (req.params && Object.keys(req.params).length > 0) {
+      console.log('⚠️ valid-terms 라우트에서 의도하지 않은 params 감지됨:', req.params);
+      return res.status(404).json({ message: 'Endpoint not found' });
+    }
+    
     const validTerms = await getValidTerms();
     res.json({
       terms: validTerms,
@@ -380,6 +398,24 @@ router.delete('/:id', isAdmin, async (req, res) => {
     console.error('갤러리 항목 삭제 오류:', error);
     res.status(500).json({ message: '갤러리 항목을 삭제하는 중 오류가 발생했습니다.' });
   }
+});
+
+// Catch-all 라우트: 정의되지 않은 갤러리 엔드포인트 차단
+router.get('/*', (req, res) => {
+  console.log('⚠️ 정의되지 않은 갤러리 엔드포인트 요청:', req.path);
+  console.log('📋 요청 params:', req.params);
+  console.log('📋 요청 query:', req.query);
+  
+  res.status(404).json({ 
+    message: '갤러리 엔드포인트를 찾을 수 없습니다.',
+    path: req.path,
+    availableEndpoints: [
+      '/api/gallery',
+      '/api/gallery/health', 
+      '/api/gallery/thumbnails',
+      '/api/gallery/valid-terms'
+    ]
+  });
 });
 
 module.exports = router; 
