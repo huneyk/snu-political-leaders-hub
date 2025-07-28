@@ -19,6 +19,7 @@ const ScheduleLecturers = lazy(() => import("./pages/ScheduleLecturers"));
 const ScheduleCalendar = lazy(() => import("./pages/ScheduleCalendar"));
 const ScheduleActivities = lazy(() => import("./pages/ScheduleActivities"));
 const Gallery = lazy(() => import("./pages/Gallery"));
+const GalleryByTerm = lazy(() => import("./pages/GalleryByTerm"));
 const Notices = lazy(() => import("./pages/Notices"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -79,6 +80,7 @@ const App = () => (
             <Route path="/schedule/calendar" element={<ScheduleCalendar />} />
             <Route path="/schedule/activities" element={<ScheduleActivities />} />
             <Route path="/gallery" element={<Gallery />} />
+            <Route path="/gallery/term/:term" element={<GalleryByTerm />} />
             <Route path="/notices" element={<Notices />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/login" element={<AdminLogin />} />

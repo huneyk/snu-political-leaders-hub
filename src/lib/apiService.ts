@@ -1598,6 +1598,51 @@ export const apiService = {
     }
   },
 
+  // 유효한 기수 목록 가져오기
+  getValidTerms: async () => {
+    try {
+      console.log('🔍 유효한 기수 목록 조회 시도');
+      const data = await makeApiRequest('/gallery/valid-terms', {
+        method: 'GET'
+      });
+      console.log('✅ 유효한 기수 목록 응답:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ 유효한 기수 목록 조회 실패:', error);
+      throw error;
+    }
+  },
+
+  // 특정 기수의 갤러리 데이터 가져오기
+  getGalleryByTerm: async (term: string) => {
+    try {
+      console.log(`🎯 제${term}기 갤러리 데이터 조회 시도`);
+      const data = await makeApiRequest(`/gallery?term=${term}`, {
+        method: 'GET'
+      });
+      console.log(`✅ 제${term}기 갤러리 데이터 응답:`, data);
+      return data;
+    } catch (error) {
+      console.error(`❌ 제${term}기 갤러리 데이터 조회 실패:`, error);
+      throw error;
+    }
+  },
+
+  // 특정 기수의 갤러리 메타데이터만 가져오기 (이미지 URL 제외)
+  getGalleryMetaByTerm: async (term: string) => {
+    try {
+      console.log(`📋 제${term}기 갤러리 메타데이터 조회 시도`);
+      const data = await makeApiRequest(`/gallery?term=${term}&meta_only=true`, {
+        method: 'GET'
+      });
+      console.log(`✅ 제${term}기 갤러리 메타데이터 응답: ${Array.isArray(data) ? data.length : 0}개`);
+      return data;
+    } catch (error) {
+      console.error(`❌ 제${term}기 갤러리 메타데이터 조회 실패:`, error);
+      throw error;
+    }
+  },
+
   // 갤러리 항목 추가
   addGalleryItem: async (galleryData: any, token?: string) => {
     try {

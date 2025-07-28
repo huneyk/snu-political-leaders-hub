@@ -19,7 +19,7 @@ const gallerySchema = new mongoose.Schema({
     required: true
   },
   term: {
-    type: String,
+    type: Number,
     required: true
   },
   createdAt: {

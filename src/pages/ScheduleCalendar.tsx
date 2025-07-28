@@ -14,7 +14,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Download, Calendar as CalendarIcon, Clock, MapPin, FileText, FileSpreadsheet } from 'lucide-react';
-import * as XLSX from 'xlsx';
+// Excel 라이브러리를 CSV 다운로드로 대체
 
 // 일정 인터페이스 정의
 interface Schedule {
@@ -397,7 +397,7 @@ const ScheduleCalendar: React.FC = () => {
   };
   
   // Excel 파일 다운로드 함수
-  const downloadExcel = () => {
+  const downloadCSV = () => {
     if (!Array.isArray(downloadedSchedules) || downloadedSchedules.length === 0) {
       toast({
         title: "데이터 없음",
@@ -422,7 +422,6 @@ const ScheduleCalendar: React.FC = () => {
         
         // 시간 문자열을 24시간 형식으로 변환하여 비교
         const parseTime = (timeStr: string) => {
-          // "오후 2:00", "14:00", "2:00 PM" 등 다양한 형식 처리
           const cleanTime = timeStr.trim();
           
           if (cleanTime.includes('오후') || cleanTime.includes('PM')) {
@@ -434,7 +433,6 @@ const ScheduleCalendar: React.FC = () => {
             const [hour, minute] = time.split(':').map(Number);
             return (hour === 12 ? 0 : hour) * 60 + (minute || 0);
           } else {
-            // 24시간 형식 또는 기본 형식
             const [hour, minute] = cleanTime.split(':').map(Number);
             return (hour || 0) * 60 + (minute || 0);
           }
@@ -443,51 +441,48 @@ const ScheduleCalendar: React.FC = () => {
         return parseTime(timeA) - parseTime(timeB);
       });
 
-      // Excel 데이터 형식으로 변환
-      const excelData = sortedSchedules.map((schedule, index) => ({
-        '순번': index + 1,
-        '날짜': formatDate(schedule.date),
-        '시간': schedule.time || '-',
-        '제목': schedule.title,
-        '카테고리': getCategoryName(schedule.category),
-        '장소': schedule.location || '-',
-        '내용': schedule.description || '-'
-      }));
+      // CSV 데이터 생성
+      const headers = ['순번', '날짜', '시간', '제목', '카테고리', '장소', '내용'];
+      const csvData = sortedSchedules.map((schedule, index) => [
+        index + 1,
+        formatDate(schedule.date),
+        schedule.time || '-',
+        schedule.title,
+        getCategoryName(schedule.category),
+        schedule.location || '-',
+        schedule.description || '-'
+      ]);
 
-      // 워크북 생성
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      // CSV 문자열 생성 (BOM 추가로 한글 깨짐 방지)
+      const csvContent = '\uFEFF' + [headers, ...csvData]
+        .map(row => row.map(field => `"${field.toString().replace(/"/g, '""')}"`).join(','))
+        .join('\n');
 
-      // 컬럼 너비 설정
-      const columnWidths = [
-        { wch: 8 },   // 순번
-        { wch: 15 },  // 날짜
-        { wch: 12 },  // 시간
-        { wch: 30 },  // 제목
-        { wch: 12 },  // 카테고리
-        { wch: 20 },  // 장소
-        { wch: 40 }   // 내용
-      ];
-      worksheet['!cols'] = columnWidths;
+      // Blob 생성 및 다운로드
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        const fileName = `서울대PLP_제${selectedTerm}기_전체일정_${new Date().toISOString().split('T')[0]}.csv`;
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
 
-      // 워크시트를 워크북에 추가
-      XLSX.utils.book_append_sheet(workbook, worksheet, `제${selectedTerm}기 일정`);
-
-      // 파일명 생성
-      const fileName = `서울대PLP_제${selectedTerm}기_전체일정_${new Date().toISOString().split('T')[0]}.xlsx`;
-
-      // 파일 다운로드
-      XLSX.writeFile(workbook, fileName);
-
-      toast({
-        title: "Excel 다운로드 완료",
-        description: `${fileName} 파일이 다운로드되었습니다.`,
-        variant: "default"
-      });
+        toast({
+          title: "CSV 다운로드 완료",
+          description: `${fileName} 파일이 다운로드되었습니다.`,
+          variant: "default"
+        });
+      }
     } catch (error) {
-      console.error('Excel 다운로드 실패:', error);
+      console.error('CSV 다운로드 실패:', error);
       toast({
-        title: "Excel 다운로드 실패",
+        title: "CSV 다운로드 실패",
         description: "파일 생성 중 오류가 발생했습니다.",
         variant: "destructive"
       });
@@ -846,15 +841,15 @@ const ScheduleCalendar: React.FC = () => {
                       )}
                     </div>
                     
-                    {/* Excel 다운로드 버튼 */}
+                    {/* CSV 다운로드 버튼 */}
                     {downloadedSchedules.length > 0 && (
                       <div className="mt-6 pt-4 border-t border-gray-200 text-center">
                         <Button 
-                          onClick={downloadExcel}
+                          onClick={downloadCSV}
                           className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-base font-medium"
                         >
                           <FileSpreadsheet className="mr-2 h-5 w-5" />
-                          Excel로 다운로드 하기
+                          CSV로 다운로드 하기
                         </Button>
                       </div>
                     )}
