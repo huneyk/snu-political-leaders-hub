@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { apiService } from '@/lib/apiService';
 
 interface SubMenuItem {
@@ -19,6 +19,7 @@ const Header = () => {
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [galleryTerms, setGalleryTerms] = useState<string[]>([]);
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Check if we're on the home page
   const isHomePage = location.pathname === '/';
@@ -116,6 +117,13 @@ const Header = () => {
     return location.pathname.startsWith(path);
   };
 
+  // Handle menu item click for items with submenus
+  const handleMenuItemClick = (item: MenuItem) => {
+    if (item.submenu && item.path) {
+      navigate(item.path);
+    }
+  };
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -151,6 +159,7 @@ const Header = () => {
                       ? 'text-gray-800 hover:text-mainBlue after:bg-mainBlue' 
                       : 'text-white hover:text-white/80 after:bg-white'
                   } ${isActive(item.path) ? 'active' : ''}`}
+                  onClick={() => handleMenuItemClick(item)}
                 >
                   {item.name}
                   <svg 
@@ -176,6 +185,7 @@ const Header = () => {
                       ? 'text-gray-800 hover:text-mainBlue after:bg-mainBlue' 
                       : 'text-white hover:text-white/80 after:bg-white'
                   } ${isActive(item.path) ? 'active' : ''}`}
+                  onClick={() => handleMenuItemClick(item)}
                 >
                   {item.name}
                 </Link>
@@ -247,6 +257,11 @@ const Header = () => {
                       className={`text-lg font-medium ${
                         isActive(item.path) ? 'text-mainBlue' : 'text-gray-800'
                       }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMenuItemClick(item);
+                        setMobileMenuOpen(false);
+                      }}
                     >
                       {item.name}
                     </button>
