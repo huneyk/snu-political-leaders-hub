@@ -56,19 +56,31 @@ const AdminLogin = () => {
         throw new Error('서버에서 잘못된 응답을 받았습니다.');
       }
       
+      // 응답 상태와 데이터 확인
+      console.log('응답 상태:', response.status);
+      console.log('응답 데이터:', responseData);
+      
+      // 로그인 성공 조건: 200 상태코드 + 토큰 존재
       if (response.status === 200 && responseData.token) {
-        console.log('로그인 성공');
+        console.log('로그인 성공 - 토큰 확인됨');
         
         // 서버에서 받은 실제 토큰 사용
         const token = responseData.token;
         const user = responseData.user;
         
         if (!token) {
+          console.error('토큰이 없습니다');
           throw new Error('서버에서 토큰을 받지 못했습니다.');
         }
         
-        // 관리자 권한 확인
-        if (!user.isAdmin && user.role !== 'admin') {
+        console.log('토큰:', token);
+        console.log('사용자 정보:', user);
+        
+        // 관리자 권한 확인 (더 유연하게)
+        const isUserAdmin = user?.isAdmin === true || user?.role === 'admin';
+        console.log('관리자 권한 확인:', isUserAdmin);
+        
+        if (!isUserAdmin) {
           toast({
             title: "로그인 실패",
             description: "관리자 권한이 없습니다.",
@@ -78,11 +90,13 @@ const AdminLogin = () => {
         }
         
         // 로컬 스토리지에 저장
+        console.log('로컬 스토리지에 저장 중...');
         localStorage.setItem('adminToken', token);
         localStorage.setItem('adminAuth', 'true');
         localStorage.setItem('adminUser', JSON.stringify(user));
         
         // 로그인 처리
+        console.log('로그인 훅 호출 중...');
         login(token);
         
         toast({
@@ -90,6 +104,7 @@ const AdminLogin = () => {
           description: responseData.message || "관리자 대시보드로 이동합니다.",
         });
         
+        console.log('관리자 페이지로 이동 중...');
         navigate('/admin');
         return;
       }

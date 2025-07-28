@@ -76,5 +76,6 @@ export default defineConfig({
   define: {
     __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __CACHE_BUST__: JSON.stringify(Date.now()),
   },
 });
