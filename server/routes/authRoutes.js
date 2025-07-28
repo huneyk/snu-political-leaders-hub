@@ -7,7 +7,7 @@ const User = require('../models/User');
 // JWT 시크릿 키 설정 (환경 변수 또는 기본값)
 const JWT_SECRET = process.env.JWT_SECRET || 'snu_plp_hub_default_secret_key_2024';
 
-// 관리자 로그인 라우트
+// 관리자 로그인 라우트 (POST)
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -109,6 +109,20 @@ router.post('/login', async (req, res) => {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
+});
+
+// GET 요청에 대한 정보 응답 추가
+router.get('/login', (req, res) => {
+  res.json({
+    message: 'Login API Information',
+    method: 'POST',
+    endpoint: '/api/auth/login',
+    body: {
+      email: 'admin@snu-plp.ac.kr',
+      password: 'admin123!'
+    },
+    note: 'This endpoint requires POST method for login'
+  });
 });
 
 // 관리자 계정 생성 (개발용)
