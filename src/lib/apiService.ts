@@ -47,10 +47,9 @@ const makeApiRequest = async <T>(
       throw error;
     }
   } else {
-    // Production 환경에서는 여러 URL 시도
+    // Production 환경에서는 신뢰할 수 있는 URL만 사용
     const urls = [
       'https://snu-plp-hub-server.onrender.com/api', // 서버 로그에서 확인된 실제 작동 서버
-      'https://plp-backend.onrender.com/api', // 백업 서버 
     ];
     let lastError: any = null;
 

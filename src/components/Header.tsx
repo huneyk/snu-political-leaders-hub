@@ -27,16 +27,25 @@ const Header = () => {
   useEffect(() => {
     const loadGalleryTerms = async () => {
       try {
+        console.log('🔍 갤러리 기수 목록 로드 시도...');
         const response = await apiService.getValidTerms() as { terms: string[]; count: number };
-        if (response && response.terms) {
+        console.log('✅ 갤러리 기수 API 응답:', response);
+        
+        if (response && response.terms && Array.isArray(response.terms)) {
           // Sort terms in descending order (newest first)
           const sortedTerms = response.terms.sort((a: string, b: string) => Number(b) - Number(a));
           setGalleryTerms(sortedTerms);
+          console.log('✅ 갤러리 기수 설정 완료:', sortedTerms);
+        } else {
+          console.warn('⚠️ 잘못된 API 응답 형식:', response);
+          // Fallback to default terms if API response is invalid
+          setGalleryTerms(['2', '1']); // 기본 기수들
         }
       } catch (error) {
-        console.error('갤러리 기수 목록 로드 실패:', error);
-        // Fallback to empty array if API fails
-        setGalleryTerms([]);
+        console.error('❌ 갤러리 기수 목록 로드 실패:', error);
+        // Fallback to default terms if API fails
+        setGalleryTerms(['2', '1']); // 기본 기수들
+        console.log('🔄 기본 갤러리 기수로 fallback 설정');
       }
     };
 
