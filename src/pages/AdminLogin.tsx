@@ -6,10 +6,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
-  : 'http://localhost:5001/api';
-
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -45,16 +41,31 @@ const AdminLogin = () => {
       
       console.log('응답 상태:', response.status, response.statusText);
       
-      if (response.status === 200) {
-        console.log('로그인 성공: 상태 코드 200');
-        
-        // 실제 응답 데이터 받기
-        const responseData = await response.json();
-        console.log('응답 데이터:', responseData);
+      // 응답 텍스트 먼저 받기
+      const responseText = await response.text();
+      console.log('응답 텍스트:', responseText);
+      
+      // JSON 파싱 시도
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+        console.log('파싱된 응답 데이터:', responseData);
+      } catch (parseError) {
+        console.error('JSON 파싱 오류:', parseError);
+        console.error('응답 텍스트:', responseText);
+        throw new Error('서버에서 잘못된 응답을 받았습니다.');
+      }
+      
+      if (response.status === 200 && responseData.success) {
+        console.log('로그인 성공');
         
         // 서버에서 받은 실제 토큰 사용
         const token = responseData.token;
         const user = responseData.user;
+        
+        if (!token) {
+          throw new Error('서버에서 토큰을 받지 못했습니다.');
+        }
         
         // 관리자 권한 확인
         if (!user.isAdmin && user.role !== 'admin') {
@@ -76,7 +87,7 @@ const AdminLogin = () => {
         
         toast({
           title: "로그인 성공",
-          description: "관리자 대시보드로 이동합니다.",
+          description: responseData.message || "관리자 대시보드로 이동합니다.",
         });
         
         navigate('/admin');
@@ -86,15 +97,7 @@ const AdminLogin = () => {
       // 로그인 실패 처리
       console.log('로그인 실패: 상태 코드', response.status);
       
-      let errorMessage = "로그인에 실패했습니다.";
-      
-      try {
-        const errorData = await response.json();
-        console.log('오류 응답:', errorData);
-        errorMessage = errorData.message || errorMessage;
-      } catch (e) {
-        console.error('오류 응답 처리 실패:', e);
-      }
+      const errorMessage = responseData?.message || "로그인에 실패했습니다.";
       
       toast({
         title: "로그인 실패",
@@ -104,10 +107,17 @@ const AdminLogin = () => {
     } catch (error: any) {
       console.error('로그인 오류:', error);
       
-      // fetch API는 네트워크 오류만 catch로 잡힘
+      let errorMessage = "서버 연결에 실패했습니다.";
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = "네트워크 연결을 확인해주세요.";
+      }
+      
       toast({
         title: "로그인 실패",
-        description: "서버 연결에 실패했습니다. 네트워크 연결을 확인해주세요.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -130,6 +140,8 @@ const AdminLogin = () => {
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                placeholder="admin@snu-plp.ac.kr"
+                autoComplete="username"
                 required
               />
             </div>
@@ -140,6 +152,7 @@ const AdminLogin = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 required
               />
             </div>
