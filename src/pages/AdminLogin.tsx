@@ -56,7 +56,7 @@ const AdminLogin = () => {
         throw new Error('서버에서 잘못된 응답을 받았습니다.');
       }
       
-      if (response.status === 200 && responseData.success) {
+      if (response.status === 200 && responseData.token) {
         console.log('로그인 성공');
         
         // 서버에서 받은 실제 토큰 사용
