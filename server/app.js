@@ -76,6 +76,12 @@ const usersRoutes = require('./routes/usersRoutes');
 const contentRoutes = require('./routes/contentRoutes');
 const authRoutes = require('./routes/authRoutes');
 const galleryRoutes = require('./routes/galleryRoutes');
+
+// 갤러리 특수 라우트용 모듈들
+const Gallery = require('./models/Gallery');
+const GalleryThumbnail = require('./models/GalleryThumbnail');
+const galleryThumbnailService = require('./services/galleryThumbnailService');
+const { isAdmin } = require('./middleware/authMiddleware');
 const noticeRoutes = require('./routes/noticeRoutes');
 const graduateRoutes = require('./routes/graduateRoutes');
 const footerRoutes = require('./routes/footerRoutes');
@@ -90,7 +96,184 @@ const recommendationsRoutes = require('./routes/recommendationsRoutes');
 const greetingRoutes = require('./routes/greetingRoutes');
 const imageUploadRoutes = require('./routes/imageUploadRoutes');
 
-// 라우트 설정
+// ===== 🚨 CRITICAL: 갤러리 특수 라우트 (galleryRoutes 전에 정의) =====
+
+// 헬퍼 함수: 유효한 기수들 조회
+async function getValidTerms() {
+  try {
+    const galleryTerms = await Gallery.distinct('term').then(terms => terms.filter(term => term != null));
+    const validTerms = [...new Set(galleryTerms.map(String))].sort((a, b) => Number(a) - Number(b));
+    console.log('🔍 [APP.JS] 갤러리에 실제 존재하는 기수들:', validTerms);
+    return validTerms;
+  } catch (error) {
+    console.error('[APP.JS] 기수 조회 중 오류:', error);
+    return [];
+  }
+}
+
+// 🎯 /api/gallery/thumbnails - 최우선 라우트
+app.get('/api/gallery/thumbnails', async (req, res) => {
+  try {
+    console.log('🚀 [APP.JS DIRECT] /api/gallery/thumbnails 요청 받음!');
+    console.log('📋 [APP.JS DIRECT] 요청 정보:', {
+      method: req.method,
+      originalUrl: req.originalUrl,
+      path: req.path,
+      headers: req.headers['user-agent'] ? req.headers['user-agent'].substring(0, 50) : 'no-agent'
+    });
+    
+    const thumbnails = await galleryThumbnailService.getAllThumbnails();
+    console.log(`✅ [APP.JS DIRECT] 썸네일 조회 성공: ${thumbnails.length}개`);
+    
+    res.json(thumbnails);
+  } catch (error) {
+    console.error('❌ [APP.JS DIRECT] 썸네일 조회 실패:', error);
+    res.status(500).json({ 
+      message: '썸네일 목록을 불러오는 중 오류가 발생했습니다.',
+      error: error.message,
+      source: 'app.js-direct-route'
+    });
+  }
+});
+
+// 🎯 /api/gallery/valid-terms - 우선 라우트
+app.get('/api/gallery/valid-terms', async (req, res) => {
+  try {
+    console.log('🚀 [APP.JS DIRECT] /api/gallery/valid-terms 요청 받음!');
+    
+    const validTerms = await getValidTerms();
+    console.log(`✅ [APP.JS DIRECT] 유효한 기수 조회 성공: ${validTerms.length}개`);
+    
+    res.json({
+      terms: validTerms,
+      count: validTerms.length,
+      source: 'app.js-direct-route'
+    });
+  } catch (error) {
+    console.error('❌ [APP.JS DIRECT] 유효한 기수 조회 실패:', error);
+    res.status(500).json({ 
+      message: '기수 정보를 불러오는 중 오류가 발생했습니다.',
+      error: error.message,
+      source: 'app.js-direct-route'
+    });
+  }
+});
+
+// 🎯 /api/gallery/health - 헬스체크 라우트
+app.get('/api/gallery/health', async (req, res) => {
+  try {
+    console.log('🚀 [APP.JS DIRECT] /api/gallery/health 요청 받음!');
+    
+    const totalCount = await Gallery.countDocuments();
+    const termDistribution = await Gallery.aggregate([
+      { $group: { _id: '$term', count: { $sum: 1 } } },
+      { $sort: { _id: 1 } }
+    ]);
+    
+    const term1Sample = await Gallery.findOne({ term: 1 });
+    const term2Sample = await Gallery.findOne({ term: 2 });
+    
+    const healthData = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      database: {
+        connected: true,
+        totalGalleryItems: totalCount,
+        termDistribution: termDistribution,
+        samples: {
+          term1: term1Sample ? { 
+            id: term1Sample._id, 
+            title: term1Sample.title, 
+            term: term1Sample.term 
+          } : null,
+          term2: term2Sample ? { 
+            id: term2Sample._id, 
+            title: term2Sample.title, 
+            term: term2Sample.term 
+          } : null
+        }
+      },
+      source: 'app.js-direct-route'
+    };
+    
+    console.log('✅ [APP.JS DIRECT] 헬스체크 성공');
+    res.json(healthData);
+  } catch (error) {
+    console.error('❌ [APP.JS DIRECT] 헬스체크 실패:', error);
+    res.status(500).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error.message,
+      database: { connected: false },
+      source: 'app.js-direct-route'
+    });
+  }
+});
+
+// 🎯 /api/gallery/thumbnails/generate - 전체 썸네일 생성 (관리자 전용)
+app.post('/api/gallery/thumbnails/generate', isAdmin, async (req, res) => {
+  try {
+    console.log('🚀 [APP.JS DIRECT] /api/gallery/thumbnails/generate 요청 받음 (관리자)!');
+    
+    const results = await galleryThumbnailService.generateAllThumbnails();
+    console.log(`✅ [APP.JS DIRECT] 전체 썸네일 생성 완료: ${results.length}개`);
+    
+    res.json({
+      message: `${results.length}개 기수의 썸네일이 생성/업데이트되었습니다.`,
+      thumbnails: results,
+      source: 'app.js-direct-route'
+    });
+  } catch (error) {
+    console.error('❌ [APP.JS DIRECT] 전체 썸네일 생성 실패:', error);
+    res.status(500).json({ 
+      message: '썸네일 생성 중 오류가 발생했습니다.',
+      error: error.message,
+      source: 'app.js-direct-route'
+    });
+  }
+});
+
+// 🎯 /api/gallery/thumbnails/generate/:term - 특정 기수 썸네일 생성 (관리자 전용)
+app.post('/api/gallery/thumbnails/generate/:term', isAdmin, async (req, res) => {
+  try {
+    const { term } = req.params;
+    const termNumber = Number(term);
+    
+    console.log(`🚀 [APP.JS DIRECT] /api/gallery/thumbnails/generate/${term} 요청 받음 (관리자)!`);
+    
+    if (isNaN(termNumber)) {
+      return res.status(400).json({ 
+        message: '유효하지 않은 기수 형식입니다.',
+        source: 'app.js-direct-route'
+      });
+    }
+    
+    const result = await galleryThumbnailService.generateThumbnailForTerm(termNumber);
+    
+    if (result) {
+      console.log(`✅ [APP.JS DIRECT] 제${termNumber}기 썸네일 생성 완료`);
+      res.json({
+        message: `제${termNumber}기 썸네일이 생성/업데이트되었습니다.`,
+        thumbnail: result,
+        source: 'app.js-direct-route'
+      });
+    } else {
+      res.status(404).json({
+        message: `제${termNumber}기에 이미지가 있는 갤러리 아이템이 없습니다.`,
+        source: 'app.js-direct-route'
+      });
+    }
+  } catch (error) {
+    console.error(`❌ [APP.JS DIRECT] 제${req.params.term}기 썸네일 생성 실패:`, error);
+    res.status(500).json({ 
+      message: '썸네일 생성 중 오류가 발생했습니다.',
+      error: error.message,
+      source: 'app.js-direct-route'
+    });
+  }
+});
+
+// ===== 일반 라우트 설정 =====
 app.use('/api/users', usersRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/auth', authRoutes);
