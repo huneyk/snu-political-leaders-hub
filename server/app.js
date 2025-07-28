@@ -57,6 +57,15 @@ if (!fs.existsSync(uploadDir)) {
 }
 // 업로드된 파일의 정적 접근 경로 설정
 app.use('/uploads', express.static(uploadDir));
+
+// 이미지 업로드 디렉토리 설정
+const imageUploadDir = path.join(__dirname, 'uploads', 'images');
+if (!fs.existsSync(imageUploadDir)) {
+  fs.mkdirSync(imageUploadDir, { recursive: true });
+  console.log('이미지 업로드 디렉토리 생성됨:', imageUploadDir);
+}
+// 이미지 파일의 정적 접근 경로 설정
+app.use('/uploads/images', express.static(imageUploadDir));
 console.log('정적 파일 경로 설정됨:', '/uploads ->', uploadDir);
 
 // 정적 파일 제공 (개발 환경에서만)
@@ -79,6 +88,7 @@ const benefitsRoutes = require('./routes/benefitsRoutes');
 const professorsRoutes = require('./routes/professorsRoutes');
 const recommendationsRoutes = require('./routes/recommendationsRoutes');
 const greetingRoutes = require('./routes/greetingRoutes');
+const imageUploadRoutes = require('./routes/imageUploadRoutes');
 
 // 라우트 설정
 app.use('/api/users', usersRoutes);
@@ -97,6 +107,7 @@ app.use('/api/benefits', benefitsRoutes);
 app.use('/api/professors', professorsRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
 app.use('/api/greeting', greetingRoutes);
+app.use('/api/images', imageUploadRoutes);
 
 // 기본 경로 및 Health Check
 app.get('/api', (req, res) => {

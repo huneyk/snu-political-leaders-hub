@@ -1,32 +1,36 @@
 {
-  "name": "snu-plp-hub-server",
+  "name": "snu-plp-server",
   "version": "1.0.0",
-  "description": "SNU Political Leaders Hub Backend Server",
+  "description": "서울대학교 정치리더십과정 서버",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [
-    "api",
-    "mongodb",
-    "express"
-  ],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "express": "^4.18.2",
+    "mongoose": "^7.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^7.0.3",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "sharp": "^0.33.1",
+    "imagemin": "^8.0.1",
+    "imagemin-webp": "^8.0.0",
+    "imagemin-pngquant": "^10.0.0",
+    "imagemin-mozjpeg": "^10.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^2.0.22"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+  "keywords": [
+    "node",
+    "express",
+    "mongodb",
+    "snu"
+  ],
+  "author": "SNU PLP Team",
+  "license": "ISC"
 }
