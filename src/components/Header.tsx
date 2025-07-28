@@ -53,6 +53,12 @@ const Header = () => {
     loadGalleryTerms();
   }, []);
 
+  // Handle menu item click for items with submenus
+  const handleMenuItemClick = (item: MenuItem) => {
+    // No navigation for any submenu parent items
+    // Users must use submenu items to navigate
+  };
+
   // Create dynamic menu items with gallery submenus
   const menuItems: MenuItem[] = [
     {
@@ -87,6 +93,7 @@ const Header = () => {
       name: '갤러리',
       path: '/gallery',
       submenu: [
+        { name: '전체 보기', path: '/gallery' },
         ...galleryTerms.map(term => ({
           name: `제${term}기`,
           path: `/gallery/term/${term}`
@@ -115,13 +122,6 @@ const Header = () => {
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path);
-  };
-
-  // Handle menu item click for items with submenus
-  const handleMenuItemClick = (item: MenuItem) => {
-    if (item.submenu && item.path) {
-      navigate(item.path);
-    }
   };
 
   return (
