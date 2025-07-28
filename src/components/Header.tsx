@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import logo from '/logo.png'; // Using the logo.png file from the public directory
-import logoWhite from '/logo-white.png'; // Using the white logo for dark backgrounds
 
 interface SubMenuItem {
   name: string;
@@ -88,7 +86,7 @@ const Header = () => {
       <div className="main-container flex justify-between items-center">
         <Link to="/" className="flex items-center gap-3 animate-fade-in">
           <img
-            src={isScrolled || !isHomePage ? logo : logoWhite}
+            src={isScrolled || !isHomePage ? "/logo.png" : "/logo-white.png"}
             alt="서울대학교 정치지도자 과정 로고"
             className="h-12 w-auto object-contain"
           />
