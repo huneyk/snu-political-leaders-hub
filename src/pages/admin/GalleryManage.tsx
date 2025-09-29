@@ -493,6 +493,13 @@ const GalleryManage = () => {
       
       setGalleryItems(sortedItems);
       
+      // 헤더 메뉴 갱신을 위해 커스텀 이벤트 디스패치 (새 기수 생성 시 반영)
+      try {
+        window.dispatchEvent(new Event('gallery-terms-changed'));
+      } catch (e) {
+        console.warn('gallery-terms-changed 이벤트 디스패치 실패:', e);
+      }
+
       setIsAddDialogOpen(false);
       setPreviewImage(null);
       setFormData({

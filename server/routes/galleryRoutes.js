@@ -338,18 +338,7 @@ router.post('/', isAdmin, async (req, res) => {
   try {
     const { term } = req.body;
     
-    // 생성 시에도 유효한 기수인지 검증
-    if (term) {
-      const validTerms = await getValidTerms();
-      const requestedTerm = String(term);
-      
-      if (!validTerms.includes(requestedTerm)) {
-        return res.status(400).json({ 
-          message: `제${requestedTerm}기는 존재하지 않는 기수입니다.`,
-          validTerms: validTerms
-        });
-      }
-    }
+    // 새 기수 생성 허용: 유효성 검증을 제거하여 새로운 term도 생성 가능하도록 함
     
     const galleryItem = new Gallery(req.body);
     const savedItem = await galleryItem.save();
@@ -393,20 +382,7 @@ router.put('/:id', isAdmin, async (req, res) => {
       });
     }
     
-    const { term } = req.body;
-    
-    // 수정 시에도 유효한 기수인지 검증
-    if (term) {
-      const validTerms = await getValidTerms();
-      const requestedTerm = String(term);
-      
-      if (!validTerms.includes(requestedTerm)) {
-        return res.status(400).json({ 
-          message: `제${requestedTerm}기는 존재하지 않는 기수입니다.`,
-          validTerms: validTerms
-        });
-      }
-    }
+    // 새 기수로 수정 허용: term 유효성 검사 제거
     
     const updatedItem = await Gallery.findByIdAndUpdate(
       req.params.id,

@@ -24,33 +24,27 @@ const Header = () => {
   // Check if we're on the home page
   const isHomePage = location.pathname === '/';
 
-  // Load available gallery terms
-  useEffect(() => {
-    const loadGalleryTerms = async () => {
-      try {
-        console.log('🔍 갤러리 기수 목록 로드 시도...');
-        const response = await apiService.getValidTerms() as { terms: string[]; count: number };
-        console.log('✅ 갤러리 기수 API 응답:', response);
-        
-        if (response && response.terms && Array.isArray(response.terms)) {
-          // Sort terms in descending order (newest first)
-          const sortedTerms = response.terms.sort((a: string, b: string) => Number(b) - Number(a));
-          setGalleryTerms(sortedTerms);
-          console.log('✅ 갤러리 기수 설정 완료:', sortedTerms);
-        } else {
-          console.warn('⚠️ 잘못된 API 응답 형식:', response);
-          // Fallback to default terms if API response is invalid
-          setGalleryTerms(['2', '1']); // 기본 기수들
-        }
-      } catch (error) {
-        console.error('❌ 갤러리 기수 목록 로드 실패:', error);
-        // Fallback to default terms if API fails
-        setGalleryTerms(['2', '1']); // 기본 기수들
-        console.log('🔄 기본 갤러리 기수로 fallback 설정');
-      }
-    };
+  // Fetch gallery terms
+  const loadGalleryTerms = async () => {
+    console.log('🔍 갤러리 기수 목록 로드 시도...');
+    const response = await apiService.getValidTerms() as { terms: string[]; count: number };
+    console.log('✅ 갤러리 기수 API 응답:', response);
+    if (!response || !Array.isArray(response.terms)) return;
+    const sortedTerms = response.terms.sort((a: string, b: string) => Number(b) - Number(a));
+    setGalleryTerms(sortedTerms);
+    console.log('✅ 갤러리 기수 설정 완료:', sortedTerms);
+  };
 
+  // Load terms on mount and whenever route changes
+  useEffect(() => {
     loadGalleryTerms();
+  }, [location.pathname]);
+
+  // Listen for admin-triggered gallery term updates
+  useEffect(() => {
+    const handler = () => loadGalleryTerms();
+    window.addEventListener('gallery-terms-changed', handler as EventListener);
+    return () => window.removeEventListener('gallery-terms-changed', handler as EventListener);
   }, []);
 
   // Handle menu item click for items with submenus
