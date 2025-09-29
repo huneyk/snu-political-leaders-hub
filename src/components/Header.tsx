@@ -26,13 +26,37 @@ const Header = () => {
 
   // Fetch gallery terms
   const loadGalleryTerms = async () => {
-    console.log('🔍 갤러리 기수 목록 로드 시도...');
-    const response = await apiService.getValidTerms() as { terms: string[]; count: number };
-    console.log('✅ 갤러리 기수 API 응답:', response);
-    if (!response || !Array.isArray(response.terms)) return;
-    const sortedTerms = response.terms.sort((a: string, b: string) => Number(b) - Number(a));
-    setGalleryTerms(sortedTerms);
-    console.log('✅ 갤러리 기수 설정 완료:', sortedTerms);
+    try {
+      console.log('🔍 갤러리 기수 목록 로드 시도...');
+      const response = await apiService.getValidTerms() as { terms: string[]; count: number };
+      console.log('✅ 갤러리 기수 API 응답:', response);
+      
+      if (!response) {
+        console.warn('⚠️ API 응답이 null/undefined입니다 - 임시 기수 설정');
+        setGalleryTerms(['3', '2', '1']); // 임시 fallback
+        return;
+      }
+      
+      if (!response.terms) {
+        console.warn('⚠️ API 응답에 terms 필드가 없습니다:', response, '- 임시 기수 설정');
+        setGalleryTerms(['3', '2', '1']); // 임시 fallback
+        return;
+      }
+      
+      if (!Array.isArray(response.terms)) {
+        console.warn('⚠️ response.terms가 배열이 아닙니다:', typeof response.terms, response.terms, '- 임시 기수 설정');
+        setGalleryTerms(['3', '2', '1']); // 임시 fallback
+        return;
+      }
+      
+      console.log('📋 받은 기수 목록:', response.terms);
+      const sortedTerms = response.terms.sort((a: string, b: string) => Number(b) - Number(a));
+      setGalleryTerms(sortedTerms);
+      console.log('✅ 갤러리 기수 설정 완료:', sortedTerms);
+    } catch (error) {
+      console.error('❌ 갤러리 기수 로드 실패:', error, '- 임시 기수 설정');
+      setGalleryTerms(['3', '2', '1']); // 임시 fallback
+    }
   };
 
   // Load terms on mount and whenever route changes
@@ -88,14 +112,21 @@ const Header = () => {
       path: '/gallery',
       submenu: [
         { name: '전체 보기', path: '/gallery' },
-        ...galleryTerms.map(term => ({
-          name: `제${term}기`,
-          path: `/gallery/term/${term}`
-        }))
+        ...galleryTerms.map(term => {
+          console.log('🔧 갤러리 메뉴 항목 생성:', `제${term}기`, `/gallery/term/${term}`);
+          return {
+            name: `제${term}기`,
+            path: `/gallery/term/${term}`
+          };
+        })
       ],
     },
     { name: '공지 사항', path: '/notices' },
   ];
+
+  // 디버깅: 현재 galleryTerms 상태 로그
+  console.log('🔧 현재 galleryTerms 상태:', galleryTerms);
+  console.log('🔧 갤러리 submenu 내용:', menuItems.find(item => item.name === '갤러리')?.submenu);
 
   useEffect(() => {
     const handleScroll = () => {
