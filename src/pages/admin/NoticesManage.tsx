@@ -150,6 +150,8 @@ const NoticesManage: React.FC = () => {
     const files = Array.from(e.target.files || []);
     console.log('선택된 파일 개수:', files.length);
     console.log('선택된 파일들:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+    console.log('현재 selectedFiles 상태:', selectedFiles.length, '개');
+    console.log('현재 uploadedAttachments 상태:', uploadedAttachments.length, '개');
     
     // 파일 수 제한 확인
     if (selectedFiles.length + files.length > MAX_FILES) {
@@ -266,8 +268,17 @@ const NoticesManage: React.FC = () => {
   const convertFileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
+      reader.onload = () => {
+        const result = reader.result as string;
+        console.log(`✅ Base64 변환 성공: ${file.name}`);
+        console.log(`📊 원본 크기: ${(file.size / 1024).toFixed(2)}KB`);
+        console.log(`📊 Base64 크기: ${(result.length / 1024).toFixed(2)}KB`);
+        resolve(result);
+      };
+      reader.onerror = (error) => {
+        console.error('❌ Base64 변환 실패:', error);
+        reject(error);
+      };
       reader.readAsDataURL(file);
     });
   };
@@ -368,16 +379,20 @@ const NoticesManage: React.FC = () => {
       console.log('=== 클라이언트: 공지사항 추가 데이터 ===');
       console.log('formData:', formData);
       console.log('attachments 개수:', attachments.length);
-      console.log('attachments 내용:', attachments);
-      console.log('최종 noticeData:', noticeData);
+      console.log('attachments 내용:', JSON.stringify(attachments, null, 2));
+      console.log('최종 noticeData:', JSON.stringify(noticeData, null, 2));
+      console.log('⚠️ 중요: attachments가 비어있다면 파일 업로드가 실패한 것입니다!');
 
       // 여러 서로 다른 엔드포인트로 시도
       let success = false;
       
       try {
         // 1. 먼저 apiService로 시도
-        console.log('apiService.addNotice 호출 시작');
-        await apiService.addNotice(noticeData);
+        console.log('📤 apiService.addNotice 호출 시작');
+        console.log('📦 전송할 데이터 크기:', JSON.stringify(noticeData).length, 'bytes');
+        const response = await apiService.addNotice(noticeData);
+        console.log('✅ 서버 응답:', response);
+        console.log('✅ 서버에 저장된 attachments:', response.attachments);
         success = true;
       } catch (apiError) {
         console.log('apiService 실패, 직접 axios 요청 시도');
