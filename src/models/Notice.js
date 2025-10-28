@@ -18,6 +18,13 @@ const noticeSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  attachments: [{
+    id: String,
+    name: String,
+    size: Number,
+    type: String,
+    url: String
+  }],
   createdAt: {
     type: Date,
     default: Date.now
