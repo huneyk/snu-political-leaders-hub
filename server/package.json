@@ -4,6 +4,7 @@
   "description": "서울대학교 정치리더십과정 서버",
   "main": "app.js",
   "scripts": {
+    "prestart": "npm install",
     "start": "node app.js",
     "dev": "nodemon app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
