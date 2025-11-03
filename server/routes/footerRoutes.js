@@ -69,7 +69,21 @@ router.post('/', async (req, res) => {
     const collections = await mongoose.connection.db.listCollections().toArray();
     console.log('사용 가능한 컬렉션:', collections.map(c => c.name));
     
-    const { _id, wordFile, hwpFile, pdfFile, email, companyName, address, contactPhone, contactEmail, copyrightYear } = req.body;
+    const { 
+      _id, 
+      wordFile, 
+      wordFileName,
+      hwpFile, 
+      hwpFileName,
+      pdfFile, 
+      pdfFileName,
+      email, 
+      companyName, 
+      address, 
+      contactPhone, 
+      contactEmail, 
+      copyrightYear 
+    } = req.body;
     
     let footer;
     
@@ -81,8 +95,11 @@ router.post('/', async (req, res) => {
         _id,
         {
           wordFile,
+          wordFileName,
           hwpFile,
+          hwpFileName,
           pdfFile,
+          pdfFileName,
           email,
           companyName,
           address,
@@ -98,8 +115,11 @@ router.post('/', async (req, res) => {
         console.log('업데이트할 Footer 문서를 찾을 수 없어 새로 생성합니다.');
         footer = new Footer({
           wordFile,
+          wordFileName,
           hwpFile,
+          hwpFileName,
           pdfFile,
+          pdfFileName,
           email,
           companyName,
           address,
@@ -120,8 +140,11 @@ router.post('/', async (req, res) => {
         console.log('기존 Footer 문서 발견, 업데이트합니다:', existingFooter._id);
         
         existingFooter.wordFile = wordFile;
+        existingFooter.wordFileName = wordFileName;
         existingFooter.hwpFile = hwpFile;
+        existingFooter.hwpFileName = hwpFileName;
         existingFooter.pdfFile = pdfFile;
+        existingFooter.pdfFileName = pdfFileName;
         existingFooter.email = email;
         existingFooter.companyName = companyName;
         existingFooter.address = address;
@@ -136,8 +159,11 @@ router.post('/', async (req, res) => {
         
         footer = new Footer({
           wordFile,
+          wordFileName,
           hwpFile,
+          hwpFileName,
           pdfFile,
+          pdfFileName,
           email,
           companyName,
           address,

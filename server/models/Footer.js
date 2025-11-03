@@ -6,11 +6,23 @@ const FooterSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  wordFileName: {
+    type: String,
+    default: ''
+  },
   hwpFile: {
     type: String,
     default: ''
   },
+  hwpFileName: {
+    type: String,
+    default: ''
+  },
   pdfFile: {
+    type: String,
+    default: ''
+  },
+  pdfFileName: {
     type: String,
     default: ''
   },
