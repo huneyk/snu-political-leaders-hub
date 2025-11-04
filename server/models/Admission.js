@@ -5,7 +5,8 @@ const targetSchema = new mongoose.Schema({
 });
 
 const requiredDocumentSchema = new mongoose.Schema({
-  text: String
+  name: String,
+  description: String
 });
 
 const additionalItemSchema = new mongoose.Schema({
