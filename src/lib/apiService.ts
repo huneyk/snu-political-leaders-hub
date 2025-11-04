@@ -1008,8 +1008,8 @@ export const apiService = {
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
-        ? 'https://snu-plp-hub-server.onrender.com/api/content/schedules/all'
-        : 'http://localhost:5001/api/content/schedules/all';
+        ? 'https://snu-plp-hub-server.onrender.com/api/schedules/all'
+        : 'http://localhost:5001/api/schedules/all';
       
       console.log('요청 URL:', apiUrl);
       
@@ -1213,8 +1213,8 @@ export const apiService = {
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
-        ? 'https://snu-plp-hub-server.onrender.com/api/content/schedules'
-        : 'http://localhost:5001/api/content/schedules';
+        ? 'https://snu-plp-hub-server.onrender.com/api/schedules'
+        : 'http://localhost:5001/api/schedules';
       
       console.log('요청 URL:', apiUrl);
       
@@ -1265,8 +1265,8 @@ export const apiService = {
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
-        ? `https://snu-plp-hub-server.onrender.com/api/content/schedules/${id}`
-        : `http://localhost:5001/api/content/schedules/${id}`;
+        ? `https://snu-plp-hub-server.onrender.com/api/schedules/${id}`
+        : `http://localhost:5001/api/schedules/${id}`;
       
       console.log('요청 URL:', apiUrl);
       
@@ -1369,8 +1369,8 @@ export const apiService = {
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
-        ? `https://snu-plp-hub-server.onrender.com/api/content/schedules/${id}`
-        : `http://localhost:5001/api/content/schedules/${id}`;
+        ? `https://snu-plp-hub-server.onrender.com/api/schedules/${id}`
+        : `http://localhost:5001/api/schedules/${id}`;
       
       console.log('요청 URL:', apiUrl);
       
