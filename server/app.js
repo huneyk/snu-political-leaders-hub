@@ -399,7 +399,7 @@ app.use((err, req, res, next) => {
 // Removed catch-all route to prevent API conflicts
 
 // 서버 시작
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5002;
 app.listen(PORT, () => {
   console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
 }); 

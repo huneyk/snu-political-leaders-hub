@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -18,6 +18,8 @@ const GraduatesManage: React.FC = () => {
   const [graduates, setGraduates] = useState<Graduate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 수정 모드 상태
   const [editMode, setEditMode] = useState(false);
@@ -235,6 +237,45 @@ const GraduatesManage: React.FC = () => {
     graduatesByTerm[graduate.term].push(graduate);
   });
 
+  // Excel 파일 업로드 핸들러
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 파일 확장자 검증
+    const validExtensions = ['.xls', '.xlsx'];
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    
+    if (!validExtensions.includes(fileExtension)) {
+      alert('Excel 파일만 업로드 가능합니다. (.xls, .xlsx)');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    try {
+      setUploadLoading(true);
+      const result = await apiService.uploadGraduatesExcel(file);
+      
+      alert(result.message || `${result.count}명의 수료생 정보가 추가되었습니다.`);
+      
+      // 데이터 새로고침
+      const updatedGraduates = await apiService.getGraduates();
+      setGraduates(updatedGraduates);
+      
+      // 파일 input 초기화
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (err) {
+      console.error('Excel 파일 업로드 중 오류 발생:', err);
+      alert('Excel 파일 업로드에 실패했습니다. 파일 형식을 확인해주세요.');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
   // 기수 옵션 (1기부터 20기까지)
   const termOptions = Array.from({ length: 20 }, (_, i) => i + 1);
 
@@ -242,6 +283,52 @@ const GraduatesManage: React.FC = () => {
     <AdminLayout>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">수료생 관리</h1>
+
+        {/* Excel 파일 업로드 섹션 */}
+        <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg shadow-md mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-blue-900">📊 Excel 파일로 일괄 업로드</h2>
+          <div className="mb-4">
+            <p className="text-sm text-gray-700 mb-2">
+              <strong>Excel 파일 형식:</strong> 기수, 성명, 소속, 직위 컬럼이 포함되어야 합니다.
+            </p>
+            <div className="bg-white p-3 rounded border border-gray-300 text-sm">
+              <div className="grid grid-cols-4 gap-2 font-semibold text-gray-700 mb-1">
+                <span>기수</span>
+                <span>성명</span>
+                <span>소속</span>
+                <span>직위</span>
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-gray-600">
+                <span>1</span>
+                <span>홍길동</span>
+                <span>○○대학교</span>
+                <span>교수</span>
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-gray-600">
+                <span>1</span>
+                <span>김철수</span>
+                <span>△△연구소</span>
+                <span>연구원</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xls,.xlsx"
+              onChange={handleFileUpload}
+              disabled={uploadLoading}
+              className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-white focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+            />
+            {uploadLoading && (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-700"></div>
+                <span className="ml-2 text-sm text-gray-600">업로드 중...</span>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* 수료생 추가 폼 */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">

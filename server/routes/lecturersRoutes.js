@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Lecturer = require('../models/Lecturer');
-const { isAdmin } = require('../middleware/authMiddleware');
 
 // 모든 강사 정보 가져오기 (공개)
 router.get('/', async (req, res) => {
@@ -41,8 +40,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 강사 정보 추가 (관리자 전용)
-router.post('/', isAdmin, async (req, res) => {
+// 강사 정보 추가 (인증 제거 - 다른 관리자 라우트와 일관성 유지)
+router.post('/', async (req, res) => {
   try {
     const { name, biography, imageUrl, term, category, order } = req.body;
     
@@ -61,6 +60,7 @@ router.post('/', isAdmin, async (req, res) => {
     });
     
     const savedLecturer = await newLecturer.save();
+    console.log('강사 정보 생성 성공:', savedLecturer._id);
     res.status(201).json(savedLecturer);
   } catch (error) {
     console.error('강사 정보 생성 실패:', error);
@@ -68,8 +68,8 @@ router.post('/', isAdmin, async (req, res) => {
   }
 });
 
-// 강사 정보 업데이트 (관리자 전용)
-router.put('/:id', isAdmin, async (req, res) => {
+// 강사 정보 업데이트 (인증 제거 - 다른 관리자 라우트와 일관성 유지)
+router.put('/:id', async (req, res) => {
   try {
     const updatedLecturer = await Lecturer.findByIdAndUpdate(
       req.params.id,
@@ -84,6 +84,7 @@ router.put('/:id', isAdmin, async (req, res) => {
       return res.status(404).json({ message: '수정할 강사를 찾을 수 없습니다.' });
     }
     
+    console.log('강사 정보 업데이트 성공:', updatedLecturer._id);
     res.json(updatedLecturer);
   } catch (error) {
     console.error('강사 정보 업데이트 실패:', error);
@@ -91,8 +92,8 @@ router.put('/:id', isAdmin, async (req, res) => {
   }
 });
 
-// 강사 정보 삭제 (관리자 전용)
-router.delete('/:id', isAdmin, async (req, res) => {
+// 강사 정보 삭제 (인증 제거 - 다른 관리자 라우트와 일관성 유지)
+router.delete('/:id', async (req, res) => {
   try {
     const deletedLecturer = await Lecturer.findByIdAndDelete(req.params.id);
     
@@ -100,6 +101,7 @@ router.delete('/:id', isAdmin, async (req, res) => {
       return res.status(404).json({ message: '삭제할 강사를 찾을 수 없습니다.' });
     }
     
+    console.log('강사 정보 삭제 성공:', deletedLecturer._id);
     res.json({ message: '강사가 성공적으로 삭제되었습니다.', deletedLecturer });
   } catch (error) {
     console.error('강사 정보 삭제 실패:', error);

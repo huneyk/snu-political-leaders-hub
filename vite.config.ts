@@ -55,7 +55,7 @@ export default defineConfig({
     // 개발 서버 프록시 설정
     proxy: {
       '/api': {
-        target: 'http://localhost:5001',
+        target: 'http://localhost:5002',
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {

@@ -88,6 +88,7 @@ const Header = () => {
         { name: '과정의 목표', path: '/intro/objectives' },
         { name: '과정의 특전', path: '/intro/benefits' },
         { name: '운영 교수진', path: '/intro/professors' },
+        { name: '수료자 명단', path: '/intro/graduates' },
       ],
     },
     {

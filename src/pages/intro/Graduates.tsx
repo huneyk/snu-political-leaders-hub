@@ -110,71 +110,118 @@ const GraduatesPage: React.FC = () => {
     <>
       <Header />
       <main className="pt-24 pb-16">
-        <section className="py-16 bg-mainBlue text-white">
-          <div className="main-container">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal" style={{ wordBreak: 'keep-all' }}>정치지도자과정 수료생 명단</h1>
-          </div>
-        </section>
-        <div className="main-container mt-12">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-            <div className="flex items-center space-x-4 mb-4 md:mb-0">
-              <label className="text-gray-700 font-medium">기수 선택:</label>
-              <select
-                value={selectedTerm || ''}
-                onChange={(e) => setSelectedTerm(e.target.value ? Number(e.target.value) : null)}
-                className="border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-mainBlue"
-              >
-                <option value="">전체</option>
-                {terms.map((term) => (
-                  <option key={term} value={term}>
-                    {term}기
-                  </option>
-                ))}
-              </select>
+        <ScrollReveal>
+          <section className="py-16 bg-mainBlue text-white">
+            <div className="main-container">
+              <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal" style={{ wordBreak: 'keep-all' }}>수료자 명단</h1>
             </div>
-            <div className="flex items-center space-x-4">
-              <label className="text-gray-700 font-medium">정렬:</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'name' | 'term')}
-                className="border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-mainBlue"
-              >
-                <option value="name">이름순</option>
-                <option value="term">기수순</option>
-              </select>
-            </div>
-          </div>
+          </section>
+        </ScrollReveal>
 
-          {error && (
+        <div className="main-container mt-12">
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-mainBlue"></div>
+              <p className="mt-4 text-gray-600">수료생 명단을 불러오는 중...</p>
+            </div>
+          ) : error ? (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6">
               {error}
             </div>
-          )}
-
-          {filteredGraduates.length === 0 ? (
+          ) : terms.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500">등록된 수료생이 없습니다.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredGraduates.map((graduate) => (
-                <div
-                  key={graduate._id}
-                  className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-gray-900">{graduate.name}</h3>
-                    <span className="bg-mainBlue text-white px-3 py-1 rounded-full text-sm">
-                      {graduate.term}기
-                    </span>
+            <>
+              {/* 기수별 탭 */}
+              <div className="mb-8">
+                <div className="border-b border-gray-200">
+                  <nav className="flex flex-wrap -mb-px">
+                    <button
+                      onClick={() => setSelectedTerm(null)}
+                      className={`mr-2 mb-2 px-6 py-3 text-sm font-medium rounded-t-lg transition-colors ${
+                        selectedTerm === null
+                          ? 'border-b-2 border-mainBlue text-mainBlue bg-blue-50'
+                          : 'text-gray-600 hover:text-mainBlue hover:bg-gray-50'
+                      }`}
+                    >
+                      전체
+                    </button>
+                    {terms.map((term) => (
+                      <button
+                        key={term}
+                        onClick={() => setSelectedTerm(term)}
+                        className={`mr-2 mb-2 px-6 py-3 text-sm font-medium rounded-t-lg transition-colors ${
+                          selectedTerm === term
+                            ? 'border-b-2 border-mainBlue text-mainBlue bg-blue-50'
+                            : 'text-gray-600 hover:text-mainBlue hover:bg-gray-50'
+                        }`}
+                      >
+                        {term}기
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+              </div>
+
+              {/* 수료생 테이블 */}
+              {filteredGraduates.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">해당 기수의 수료생이 없습니다.</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            기수
+                          </th>
+                          <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            성명
+                          </th>
+                          <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            소속
+                          </th>
+                          <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            직위
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredGraduates.map((graduate) => (
+                          <tr key={graduate._id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-mainBlue text-white">
+                                {graduate.term}기
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {graduate.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              {graduate.organization || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              {graduate.position || '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="space-y-2 text-gray-600">
-                    <p>소속: {graduate.organization}</p>
-                    <p>직위: {graduate.position}</p>
+                  
+                  {/* 총 인원 표시 */}
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                    <p className="text-sm text-gray-600">
+                      총 <span className="font-semibold text-mainBlue">{filteredGraduates.length}</span>명
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </main>
