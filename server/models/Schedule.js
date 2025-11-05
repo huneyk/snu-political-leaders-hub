@@ -20,7 +20,7 @@ const scheduleSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['academic', 'special', 'overseas', 'social', 'other'],
+    enum: ['academic', 'special', 'field', 'overseas', 'social', 'other'],
     default: 'academic'
   },
   title: String,

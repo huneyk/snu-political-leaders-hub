@@ -220,13 +220,21 @@ const ScheduleCalendar: React.FC = () => {
     schedule => Number(schedule.term) === Number(selectedTerm)
   );
   
+  // 날짜를 로컬 타임존으로 변환하는 헬퍼 함수
+  const toLocalDate = (dateStr: string | Date): Date => {
+    const date = new Date(dateStr);
+    // UTC 시간을 로컬 날짜로 변환 (시간 정보 제거)
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  };
+  
   // 선택된 날짜에 해당하는 일정 필터링
   const selectedDateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
   const daySchedules = termSchedules.filter(schedule => {
     try {
-      const scheduleDate = new Date(schedule.date);
+      const scheduleDate = toLocalDate(schedule.date);
       return format(scheduleDate, 'yyyy-MM-dd') === selectedDateStr;
     } catch (error) {
+      console.error('날짜 비교 오류:', error, schedule);
       return false;
     }
   });
@@ -234,8 +242,9 @@ const ScheduleCalendar: React.FC = () => {
   // 일정이 있는 날짜 목록 (캘린더 표시용)
   const scheduleDates = termSchedules.map(schedule => {
     try {
-      return new Date(schedule.date);
+      return toLocalDate(schedule.date);
     } catch (error) {
+      console.error('날짜 변환 오류:', error, schedule);
       return new Date(); // 기본값으로 오늘 날짜 반환
     }
   });
@@ -247,9 +256,10 @@ const ScheduleCalendar: React.FC = () => {
   const upcomingSchedules = termSchedules
     .filter(schedule => {
       try {
-        const scheduleDate = new Date(schedule.date);
+        const scheduleDate = toLocalDate(schedule.date);
         return isAfter(scheduleDate, today) || format(scheduleDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
       } catch (error) {
+        console.error('다가오는 일정 필터링 오류:', error, schedule);
         return false;
       }
     })
@@ -311,6 +321,7 @@ const ScheduleCalendar: React.FC = () => {
     switch (category) {
       case 'academic': return '학사 일정';
       case 'special': return '특별 활동';
+      case 'field': return '현장 탐방';
       case 'overseas': return '해외 연수';
       case 'social': return '친교 활동';
       default: return '기타 활동';
@@ -553,13 +564,8 @@ const ScheduleCalendar: React.FC = () => {
                         modifiers={{
                           hasSchedule: scheduleDates
                         }}
-                        modifiersStyles={{
-                          hasSchedule: {
-                            fontWeight: 'bold',
-                            backgroundColor: '#e6f7ff',
-                            color: '#0066cc',
-                            borderRadius: '50%'
-                          }
+                        modifiersClassNames={{
+                          hasSchedule: 'has-schedule-day'
                         }}
                       />
                     </CardContent>
