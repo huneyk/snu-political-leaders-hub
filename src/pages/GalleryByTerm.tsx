@@ -126,6 +126,11 @@ const GalleryCard: React.FC<{
   item: GalleryItem;
   onClick: () => void;
 }> = ({ item, onClick }) => {
+  // "/" 문자를 줄바꿈으로 변환하는 함수
+  const formatDescription = (text: string) => {
+    return text.replace(/\s*\/\s*/g, '\n');
+  };
+
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border-0 shadow-sm">
       <div 
@@ -161,7 +166,7 @@ const GalleryCard: React.FC<{
           WebkitLineClamp: 2,
           WebkitBoxOrient: 'vertical',
           wordBreak: 'break-word'
-        }}>{item.description}</p>
+        }}>{formatDescription(item.description)}</p>
         <p className="text-sm text-gray-500">
           {new Intl.DateTimeFormat('ko-KR', {
             year: 'numeric',
@@ -188,6 +193,11 @@ const GalleryByTerm = () => {
   const [imageCache, setImageCache] = useState<Map<string, string>>(new Map());
   
   const ITEMS_PER_PAGE = 12; // 한 번에 표시할 이미지 수 제한
+
+  // "/" 문자를 줄바꿈으로 변환하는 함수
+  const formatDescription = (text: string) => {
+    return text.replace(/\s*\/\s*/g, '\n');
+  };
 
   useEffect(() => {
     if (!term) {
@@ -626,7 +636,7 @@ const GalleryByTerm = () => {
                       {selectedImage.term}기
                     </Badge>
                   </div>
-                  <p className="text-gray-700 mb-3 text-lg whitespace-pre-wrap break-words">{selectedImage.description}</p>
+                  <p className="text-gray-700 mb-3 text-lg whitespace-pre-wrap break-words">{formatDescription(selectedImage.description)}</p>
                   <p className="text-sm text-gray-500">
                     {new Intl.DateTimeFormat('ko-KR', {
                       year: 'numeric',

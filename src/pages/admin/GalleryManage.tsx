@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -837,12 +838,14 @@ const GalleryManage = () => {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">설명</Label>
-              <Input
+              <Textarea
                 id="description"
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                placeholder="갤러리 항목 설명"
+                placeholder="갤러리 항목 설명 (줄바꿈 가능, / 문자는 자동으로 줄바꿈 처리)"
+                rows={6}
+                className="resize-y"
               />
             </div>
             <div className="grid gap-2">
@@ -967,12 +970,14 @@ const GalleryManage = () => {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit-description">설명</Label>
-              <Input
+              <Textarea
                 id="edit-description"
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                placeholder="갤러리 항목 설명"
+                placeholder="갤러리 항목 설명 (줄바꿈 가능, / 문자는 자동으로 줄바꿈 처리)"
+                rows={6}
+                className="resize-y"
               />
             </div>
             <div className="grid gap-2">
