@@ -31,7 +31,7 @@ interface Schedule {
 }
 
 const ScheduleCalendar: React.FC = () => {
-  const [selectedTerm, setSelectedTerm] = useState<string>("1");
+  const [selectedTerm, setSelectedTerm] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [activeTab, setActiveTab] = useState('calendar');
@@ -183,10 +183,13 @@ const ScheduleCalendar: React.FC = () => {
       // 중복 없는 학기 집합 생성
       const termsSet = new Set<string>();
       
-      // 모든 일정에서 학기 정보 추출
+      // 모든 일정에서 학기 정보 추출 (공백 제거 및 정규화)
       scheduleData.forEach((schedule) => {
         if (schedule.term) {
-          termsSet.add(schedule.term);
+          const normalizedTerm = schedule.term.toString().trim();
+          if (normalizedTerm) {
+            termsSet.add(normalizedTerm);
+          }
         }
       });
       
@@ -202,12 +205,22 @@ const ScheduleCalendar: React.FC = () => {
       const sortedTerms = Array.from(termsSet)
         .sort((a, b) => Number(b) - Number(a));
         
+      console.log('[ScheduleCalendar] 사용 가능한 학기:', sortedTerms);
       setAvailableTerms(sortedTerms);
       
-      // 가장 최근 학기를 기본값으로 설정
-      setSelectedTerm(sortedTerms[0]);
+      // localStorage에서 마지막으로 선택한 기수 가져오기 (공백 제거)
+      const lastSelectedTerm = localStorage.getItem('lastSelectedTerm')?.trim();
+      console.log('[ScheduleCalendar] localStorage에서 읽은 기수:', lastSelectedTerm);
       
-      console.log('사용 가능한 학기:', sortedTerms);
+      // 마지막 선택 기수가 존재하고 현재 기수 목록에 포함되어 있으면 해당 기수 선택
+      if (lastSelectedTerm && sortedTerms.includes(lastSelectedTerm)) {
+        console.log('[ScheduleCalendar] ✓ 마지막 선택 기수로 복원:', lastSelectedTerm);
+        setSelectedTerm(lastSelectedTerm);
+      } else {
+        // 그렇지 않으면 가장 최근 기수 선택
+        console.log('[ScheduleCalendar] 가장 최근 기수로 설정:', sortedTerms[0]);
+        setSelectedTerm(sortedTerms[0]);
+      }
     } catch (error) {
       console.error('학기 목록 로드 중 오류 발생:', error);
       setAvailableTerms(["1"]);
@@ -533,7 +546,10 @@ const ScheduleCalendar: React.FC = () => {
             <>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
                 <div className="mb-4 md:mb-0">
-                  <Select value={selectedTerm} onValueChange={(value) => setSelectedTerm(value)}>
+                  <Select value={selectedTerm} onValueChange={(value) => {
+                    setSelectedTerm(value);
+                    localStorage.setItem('lastSelectedTerm', value);
+                  }}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="기수 선택" />
                     </SelectTrigger>

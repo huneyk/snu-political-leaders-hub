@@ -100,8 +100,15 @@ const ScheduleActivities: React.FC = () => {
           console.log('사용 가능한 기수:', sortedTerms);
           setAvailableTerms(sortedTerms);
           
-          // 가장 최근 기수를 기본값으로 설정
-          if (sortedTerms.length > 0) {
+          // localStorage에서 마지막으로 선택한 기수 가져오기
+          const lastSelectedTerm = localStorage.getItem('lastSelectedTerm');
+          
+          // 마지막 선택 기수가 존재하고 현재 기수 목록에 포함되어 있으면 해당 기수 선택
+          if (lastSelectedTerm && sortedTerms.includes(Number(lastSelectedTerm))) {
+            setSelectedTerm(Number(lastSelectedTerm));
+            console.log('마지막 선택 기수 복원:', lastSelectedTerm);
+          } else if (sortedTerms.length > 0) {
+            // 그렇지 않으면 가장 최근 기수 선택
             setSelectedTerm(sortedTerms[0]);
           }
           
@@ -162,7 +169,14 @@ const ScheduleActivities: React.FC = () => {
           const sortedTerms = Array.from(terms).sort((a, b) => b - a);
           setAvailableTerms(sortedTerms);
           
-          if (sortedTerms.length > 0) {
+          // localStorage에서 마지막으로 선택한 기수 가져오기
+          const lastSelectedTerm = localStorage.getItem('lastSelectedTerm');
+          
+          // 마지막 선택 기수가 존재하고 현재 기수 목록에 포함되어 있으면 해당 기수 선택
+          if (lastSelectedTerm && sortedTerms.includes(Number(lastSelectedTerm))) {
+            setSelectedTerm(Number(lastSelectedTerm));
+            console.log('마지막 선택 기수 복원 (로컬스토리지):', lastSelectedTerm);
+          } else if (sortedTerms.length > 0) {
             setSelectedTerm(sortedTerms[0]);
           }
         } else {
@@ -278,7 +292,10 @@ const ScheduleActivities: React.FC = () => {
                 {availableTerms.length > 0 ? (
                   <Select 
                     value={selectedTerm?.toString()} 
-                    onValueChange={(value) => setSelectedTerm(parseInt(value, 10))}
+                    onValueChange={(value) => {
+                      setSelectedTerm(parseInt(value, 10));
+                      localStorage.setItem('lastSelectedTerm', value);
+                    }}
                   >
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="기수 선택" />

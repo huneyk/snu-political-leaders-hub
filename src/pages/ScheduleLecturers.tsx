@@ -118,6 +118,17 @@ const ScheduleLecturers = () => {
         console.log(`${groupByTerm.length}개 기수로 그룹화됨`);
         setTermGroups(groupByTerm);
         
+        // localStorage에서 마지막으로 선택한 기수 가져오기
+        const lastSelectedTerm = localStorage.getItem('lastSelectedTerm');
+        if (lastSelectedTerm && groupByTerm.length > 0) {
+          // 저장된 기수와 일치하는 인덱스 찾기
+          const termIndex = groupByTerm.findIndex(group => group.term === lastSelectedTerm);
+          if (termIndex !== -1) {
+            setActiveTermIndex(termIndex);
+            console.log('마지막 선택 기수 복원:', lastSelectedTerm, '(인덱스:', termIndex, ')');
+          }
+        }
+        
         setError(null);
       } else {
         console.error('API 응답에 강사진 데이터가 없거나 비어 있습니다:', data);
@@ -141,6 +152,17 @@ const ScheduleLecturers = () => {
           // 기수별, 카테고리별로 강사 그룹화
           const groupByTerm = groupLecturersByTermAndCategory(apiData);
           setTermGroups(groupByTerm);
+          
+          // localStorage에서 마지막으로 선택한 기수 가져오기
+          const lastSelectedTerm = localStorage.getItem('lastSelectedTerm');
+          if (lastSelectedTerm && groupByTerm.length > 0) {
+            const termIndex = groupByTerm.findIndex(group => group.term === lastSelectedTerm);
+            if (termIndex !== -1) {
+              setActiveTermIndex(termIndex);
+              console.log('마지막 선택 기수 복원 (apiService):', lastSelectedTerm, '(인덱스:', termIndex, ')');
+            }
+          }
+          
           setError(null);
           return;
         }
@@ -177,6 +199,17 @@ const ScheduleLecturers = () => {
         // 기수별, 카테고리별로 강사 그룹화
         const groupByTerm = groupLecturersByTermAndCategory(parsedData);
         setTermGroups(groupByTerm);
+        
+        // localStorage에서 마지막으로 선택한 기수 가져오기
+        const lastSelectedTerm = localStorage.getItem('lastSelectedTerm');
+        if (lastSelectedTerm && groupByTerm.length > 0) {
+          const termIndex = groupByTerm.findIndex(group => group.term === lastSelectedTerm);
+          if (termIndex !== -1) {
+            setActiveTermIndex(termIndex);
+            console.log('마지막 선택 기수 복원 (로컬스토리지):', lastSelectedTerm, '(인덱스:', termIndex, ')');
+          }
+        }
+        
         setError(null);
       } else {
         console.warn('로컬 스토리지에 강사진 데이터 없음');
@@ -304,6 +337,7 @@ const ScheduleLecturers = () => {
                       onClick={() => {
                         setActiveTermIndex(index);
                         setActiveCategoryIndex(0); // 기수 변경 시 카테고리는 첫 번째(특별강사진)로 리셋
+                        localStorage.setItem('lastSelectedTerm', termGroup.term);
                       }}
                     >
                       {`${termGroup.term}기`}
