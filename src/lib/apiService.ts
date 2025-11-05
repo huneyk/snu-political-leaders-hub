@@ -1008,8 +1008,8 @@ export const apiService = {
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
-        ? 'https://snu-plp-hub-server.onrender.com/api/content/schedules/all'
-        : 'http://localhost:5001/api/content/schedules/all';
+        ? 'https://snu-plp-hub-server.onrender.com/api/schedules/all'
+        : 'http://localhost:5001/api/schedules/all';
       
       console.log('요청 URL:', apiUrl);
       
@@ -1213,8 +1213,8 @@ export const apiService = {
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
-        ? 'https://snu-plp-hub-server.onrender.com/api/content/schedules'
-        : 'http://localhost:5001/api/content/schedules';
+        ? 'https://snu-plp-hub-server.onrender.com/api/schedules'
+        : 'http://localhost:5001/api/schedules';
       
       console.log('요청 URL:', apiUrl);
       
@@ -1265,8 +1265,8 @@ export const apiService = {
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
-        ? `https://snu-plp-hub-server.onrender.com/api/content/schedules/${id}`
-        : `http://localhost:5001/api/content/schedules/${id}`;
+        ? `https://snu-plp-hub-server.onrender.com/api/schedules/${id}`
+        : `http://localhost:5001/api/schedules/${id}`;
       
       console.log('요청 URL:', apiUrl);
       
@@ -1369,8 +1369,8 @@ export const apiService = {
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
-        ? `https://snu-plp-hub-server.onrender.com/api/content/schedules/${id}`
-        : `http://localhost:5001/api/content/schedules/${id}`;
+        ? `https://snu-plp-hub-server.onrender.com/api/schedules/${id}`
+        : `http://localhost:5001/api/schedules/${id}`;
       
       console.log('요청 URL:', apiUrl);
       
@@ -1481,25 +1481,12 @@ export const apiService = {
       console.log('▶️▶️▶️ getLecturers 함수 호출 시작 ▶️▶️▶️');
       console.log('현재 환경:', import.meta.env.MODE);
       
-      let data;
-      
-      // 첫 번째 시도: /lecturers
-      try {
-        console.log('🔄 첫 번째 경로 시도: /lecturers');
-        data = await makeApiRequest('/lecturers', {
-          method: 'GET'
-        });
-        console.log('✅ 첫 번째 경로 성공');
-      } catch (firstError) {
-        console.warn('⚠️ 첫 번째 경로 실패:', firstError.message);
-        console.warn('⚠️ 두 번째 경로 시도: /content/lecturers');
-        
-        // 두 번째 시도: content 경로
-        data = await makeApiRequest('/content/lecturers', {
-          method: 'GET'
-        });
-        console.log('✅ 두 번째 경로 성공');
-      }
+      // /lecturers 엔드포인트 사용
+      console.log('🔄 /lecturers 경로로 요청');
+      const data = await makeApiRequest('/lecturers', {
+        method: 'GET'
+      });
+      console.log('✅ 강사진 데이터 요청 성공');
       
       console.log('===== 서버 응답 확인 =====');
       console.log('강사진 API 응답 데이터 타입:', typeof data);
@@ -1581,7 +1568,8 @@ export const apiService = {
     try {
       console.log('관리자용 모든 강사진 데이터 조회 시작');
       
-      const data = await makeApiRequest('/content/lecturers/all', {
+      // /lecturers 엔드포인트 사용 (일반 페이지와 동일한 엔드포인트)
+      const data = await makeApiRequest('/lecturers', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -1597,7 +1585,7 @@ export const apiService = {
       
       // 로컬 스토리지에서 백업 데이터 시도
       try {
-        const backup = localStorage.getItem('faculty-data');
+        const backup = localStorage.getItem('lecturers-data');
         if (backup) {
           console.log('로컬 스토리지에서 강사진 백업 데이터 복원 시도');
           return JSON.parse(backup);
@@ -2191,17 +2179,19 @@ export const apiService = {
   createLecturer: async (lecturerData) => {
     try {
       console.log('새 강사 정보 생성 시작');
-      console.log('요청 URL:', `${baseURL}/content/lecturers`);
       console.log('강사 정보:', lecturerData.name);
       
-      const response = await axios.post(`${baseURL}/content/lecturers`, lecturerData, {
+      // /lecturers 엔드포인트 사용
+      const data = await makeApiRequest('/lecturers', {
+        method: 'POST',
+        data: lecturerData,
         headers: {
           'Content-Type': 'application/json'
         }
       });
       
-      console.log('강사 정보 생성 결과:', response.status);
-      return response.data;
+      console.log('강사 정보 생성 결과 성공');
+      return data;
     } catch (error) {
       console.error('강사 정보 생성 실패:', error);
       throw error;
@@ -2212,16 +2202,18 @@ export const apiService = {
   updateLecturer: async (id, lecturerData) => {
     try {
       console.log(`ID ${id}를 가진 강사 정보 수정 시작`);
-      console.log('요청 URL:', `${baseURL}/content/lecturers/${id}`);
       
-      const response = await axios.put(`${baseURL}/content/lecturers/${id}`, lecturerData, {
+      // /lecturers/:id 엔드포인트 사용
+      const data = await makeApiRequest(`/lecturers/${id}`, {
+        method: 'PUT',
+        data: lecturerData,
         headers: {
           'Content-Type': 'application/json'
         }
       });
       
-      console.log('강사 정보 수정 결과:', response.status);
-      return response.data;
+      console.log('강사 정보 수정 결과 성공');
+      return data;
     } catch (error) {
       console.error('강사 정보 수정 실패:', error);
       throw error;
@@ -2232,18 +2224,132 @@ export const apiService = {
   deleteLecturer: async (id) => {
     try {
       console.log(`ID ${id}를 가진 강사 정보 삭제 시작`);
-      console.log('요청 URL:', `${baseURL}/content/lecturers/${id}`);
       
-      const response = await axios.delete(`${baseURL}/content/lecturers/${id}`, {
+      // /lecturers/:id 엔드포인트 사용
+      const data = await makeApiRequest(`/lecturers/${id}`, {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'
         }
       });
       
-      console.log('강사 정보 삭제 결과:', response.status);
-      return response.data;
+      console.log('강사 정보 삭제 결과 성공');
+      return data;
     } catch (error) {
       console.error('강사 정보 삭제 실패:', error);
+      throw error;
+    }
+  },
+
+  // 수료자(Graduates) 관련 API
+  getGraduates: async () => {
+    try {
+      console.log('▶️▶️▶️ getGraduates 함수 호출 시작 ▶️▶️▶️');
+      console.log('현재 환경:', import.meta.env.MODE);
+      
+      const data = await makeApiRequest('/graduates', {
+        method: 'GET'
+      });
+      
+      console.log('수료자 API 응답 데이터:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ 수료자 데이터 가져오기 실패:', error);
+      throw error;
+    }
+  },
+
+  // 수료자 추가 API
+  addGraduate: async (graduateData: any, token?: string) => {
+    try {
+      console.log('새 수료자 추가 시작');
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await axios.post(`${baseURL}/graduates`, graduateData, { headers });
+      console.log('수료자 추가 성공:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('수료자 추가 실패:', error);
+      throw error;
+    }
+  },
+
+  // 수료자 정보 수정 API
+  updateGraduate: async (id: string, graduateData: any, token?: string) => {
+    try {
+      console.log(`ID ${id}를 가진 수료자 정보 수정 시작`);
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await axios.put(`${baseURL}/graduates/${id}`, graduateData, { headers });
+      console.log('수료자 정보 수정 성공:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('수료자 정보 수정 실패:', error);
+      throw error;
+    }
+  },
+
+  // 수료자 정보 삭제 API
+  deleteGraduate: async (id: string, token?: string) => {
+    try {
+      console.log(`ID ${id}를 가진 수료자 정보 삭제 시작`);
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await axios.delete(`${baseURL}/graduates/${id}`, { headers });
+      console.log('수료자 정보 삭제 성공:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('수료자 정보 삭제 실패:', error);
+      throw error;
+    }
+  },
+
+  // 수료자 정보 일괄 추가 API
+  addGraduatesBatch: async (graduatesData: any[], token?: string) => {
+    try {
+      console.log('수료자 정보 일괄 추가 시작:', graduatesData.length, '명');
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await axios.post(`${baseURL}/graduates/batch`, graduatesData, { headers });
+      console.log('수료자 정보 일괄 추가 성공:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('수료자 정보 일괄 추가 실패:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('API 오류 세부정보:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
       throw error;
     }
   },
