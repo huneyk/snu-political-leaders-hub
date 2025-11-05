@@ -179,7 +179,11 @@ const Professors = () => {
                           
                           {professor.profile && (
                             <div className="mt-4 pt-4 border-t border-gray-100">
-                              <p className="text-gray-700 text-sm whitespace-pre-line">{professor.profile}</p>
+                              <div className="text-gray-700 text-sm space-y-1">
+                                {professor.profile.split(',').map((line, idx) => (
+                                  <p key={idx}>{line.trim()}</p>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>

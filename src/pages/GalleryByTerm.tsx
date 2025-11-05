@@ -156,10 +156,11 @@ const GalleryCard: React.FC<{
             {item.term}기
           </Badge>
         </div>
-        <p className="text-gray-600 mb-2 text-sm overflow-hidden" style={{
+        <p className="text-gray-600 mb-2 text-sm overflow-hidden whitespace-pre-wrap break-words" style={{
           display: '-webkit-box',
           WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical'
+          WebkitBoxOrient: 'vertical',
+          wordBreak: 'break-word'
         }}>{item.description}</p>
         <p className="text-sm text-gray-500">
           {new Intl.DateTimeFormat('ko-KR', {
@@ -625,7 +626,7 @@ const GalleryByTerm = () => {
                       {selectedImage.term}기
                     </Badge>
                   </div>
-                  <p className="text-gray-700 mb-3 text-lg">{selectedImage.description}</p>
+                  <p className="text-gray-700 mb-3 text-lg whitespace-pre-wrap break-words">{selectedImage.description}</p>
                   <p className="text-sm text-gray-500">
                     {new Intl.DateTimeFormat('ko-KR', {
                       year: 'numeric',

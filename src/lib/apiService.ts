@@ -9,7 +9,7 @@ import axios from 'axios';
 
 // API 서버 URL 설정 - fallback 시스템 구현
 const PRODUCTION_API = 'https://snu-plp-hub-server.onrender.com/api'; // 서버 로그에서 확인된 실제 작동 URL
-const LOCALHOST_API = 'http://localhost:5002/api';
+const LOCALHOST_API = 'http://localhost:5001/api';
 
 // 개발 환경에 따른 baseURL 설정
 const baseURL = import.meta.env.MODE === 'production' 
@@ -1008,8 +1008,8 @@ export const apiService = {
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
-        ? 'https://snu-plp-hub-server.onrender.com/api/schedules/all'
-        : 'http://localhost:5001/api/schedules/all';
+        ? 'https://snu-plp-hub-server.onrender.com/api/content/schedules/all'
+        : 'http://localhost:5001/api/content/schedules/all';
       
       console.log('요청 URL:', apiUrl);
       
@@ -1213,8 +1213,8 @@ export const apiService = {
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
-        ? 'https://snu-plp-hub-server.onrender.com/api/schedules'
-        : 'http://localhost:5001/api/schedules';
+        ? 'https://snu-plp-hub-server.onrender.com/api/content/schedules'
+        : 'http://localhost:5001/api/content/schedules';
       
       console.log('요청 URL:', apiUrl);
       
@@ -1265,8 +1265,8 @@ export const apiService = {
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
-        ? `https://snu-plp-hub-server.onrender.com/api/schedules/${id}`
-        : `http://localhost:5001/api/schedules/${id}`;
+        ? `https://snu-plp-hub-server.onrender.com/api/content/schedules/${id}`
+        : `http://localhost:5001/api/content/schedules/${id}`;
       
       console.log('요청 URL:', apiUrl);
       
@@ -1369,8 +1369,8 @@ export const apiService = {
       
       // 완전한 URL 경로 사용
       const apiUrl = import.meta.env.MODE === 'production' 
-        ? `https://snu-plp-hub-server.onrender.com/api/schedules/${id}`
-        : `http://localhost:5001/api/schedules/${id}`;
+        ? `https://snu-plp-hub-server.onrender.com/api/content/schedules/${id}`
+        : `http://localhost:5001/api/content/schedules/${id}`;
       
       console.log('요청 URL:', apiUrl);
       
@@ -1581,8 +1581,7 @@ export const apiService = {
     try {
       console.log('관리자용 모든 강사진 데이터 조회 시작');
       
-      // /lecturers 엔드포인트 사용 (일반 페이지와 동일한 엔드포인트)
-      const data = await makeApiRequest('/lecturers', {
+      const data = await makeApiRequest('/content/lecturers/all', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -1598,7 +1597,7 @@ export const apiService = {
       
       // 로컬 스토리지에서 백업 데이터 시도
       try {
-        const backup = localStorage.getItem('lecturers-data');
+        const backup = localStorage.getItem('faculty-data');
         if (backup) {
           console.log('로컬 스토리지에서 강사진 백업 데이터 복원 시도');
           return JSON.parse(backup);
@@ -2192,19 +2191,17 @@ export const apiService = {
   createLecturer: async (lecturerData) => {
     try {
       console.log('새 강사 정보 생성 시작');
+      console.log('요청 URL:', `${baseURL}/content/lecturers`);
       console.log('강사 정보:', lecturerData.name);
       
-      // /lecturers 엔드포인트 사용
-      const data = await makeApiRequest('/lecturers', {
-        method: 'POST',
-        data: lecturerData,
+      const response = await axios.post(`${baseURL}/content/lecturers`, lecturerData, {
         headers: {
           'Content-Type': 'application/json'
         }
       });
       
-      console.log('강사 정보 생성 결과 성공');
-      return data;
+      console.log('강사 정보 생성 결과:', response.status);
+      return response.data;
     } catch (error) {
       console.error('강사 정보 생성 실패:', error);
       throw error;
@@ -2215,18 +2212,16 @@ export const apiService = {
   updateLecturer: async (id, lecturerData) => {
     try {
       console.log(`ID ${id}를 가진 강사 정보 수정 시작`);
+      console.log('요청 URL:', `${baseURL}/content/lecturers/${id}`);
       
-      // /lecturers/:id 엔드포인트 사용
-      const data = await makeApiRequest(`/lecturers/${id}`, {
-        method: 'PUT',
-        data: lecturerData,
+      const response = await axios.put(`${baseURL}/content/lecturers/${id}`, lecturerData, {
         headers: {
           'Content-Type': 'application/json'
         }
       });
       
-      console.log('강사 정보 수정 결과 성공');
-      return data;
+      console.log('강사 정보 수정 결과:', response.status);
+      return response.data;
     } catch (error) {
       console.error('강사 정보 수정 실패:', error);
       throw error;
@@ -2237,135 +2232,18 @@ export const apiService = {
   deleteLecturer: async (id) => {
     try {
       console.log(`ID ${id}를 가진 강사 정보 삭제 시작`);
+      console.log('요청 URL:', `${baseURL}/content/lecturers/${id}`);
       
-      // /lecturers/:id 엔드포인트 사용
-      const data = await makeApiRequest(`/lecturers/${id}`, {
-        method: 'DELETE',
+      const response = await axios.delete(`${baseURL}/content/lecturers/${id}`, {
         headers: {
           'Content-Type': 'application/json'
         }
       });
       
-      console.log('강사 정보 삭제 결과 성공');
-      return data;
+      console.log('강사 정보 삭제 결과:', response.status);
+      return response.data;
     } catch (error) {
       console.error('강사 정보 삭제 실패:', error);
-      throw error;
-    }
-  },
-
-  // 수료자(Graduates) 관련 API
-  getGraduates: async () => {
-    try {
-      console.log('▶️▶️▶️ getGraduates 함수 호출 시작 ▶️▶️▶️');
-      console.log('현재 환경:', import.meta.env.MODE);
-      
-      const data = await makeApiRequest('/graduates', {
-        method: 'GET'
-      });
-      
-      console.log('수료자 API 응답 데이터:', data);
-      return data;
-    } catch (error) {
-      console.error('❌ 수료자 데이터 가져오기 실패:', error);
-      throw error;
-    }
-  },
-
-  // 수료자 추가 API
-  addGraduate: async (graduateData: any, token?: string) => {
-    try {
-      console.log('새 수료자 추가 시작');
-      
-      const headers: any = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      
-      const response = await axios.post(`${baseURL}/graduates`, graduateData, { headers });
-      console.log('수료자 추가 성공:', response.status);
-      return response.data;
-    } catch (error) {
-      console.error('수료자 추가 실패:', error);
-      throw error;
-    }
-  },
-
-  // 수료자 정보 수정 API
-  updateGraduate: async (id: string, graduateData: any, token?: string) => {
-    try {
-      console.log(`ID ${id}를 가진 수료자 정보 수정 시작`);
-      
-      const headers: any = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      
-      const response = await axios.put(`${baseURL}/graduates/${id}`, graduateData, { headers });
-      console.log('수료자 정보 수정 성공:', response.status);
-      return response.data;
-    } catch (error) {
-      console.error('수료자 정보 수정 실패:', error);
-      throw error;
-    }
-  },
-
-  // 수료자 정보 삭제 API
-  deleteGraduate: async (id: string, token?: string) => {
-    try {
-      console.log(`ID ${id}를 가진 수료자 정보 삭제 시작`);
-      
-      const headers: any = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      
-      const response = await axios.delete(`${baseURL}/graduates/${id}`, { headers });
-      console.log('수료자 정보 삭제 성공:', response.status);
-      return response.data;
-    } catch (error) {
-      console.error('수료자 정보 삭제 실패:', error);
-      throw error;
-    }
-  },
-
-  // Excel 파일로 수료자 일괄 업로드 API
-  uploadGraduatesExcel: async (file: File, token?: string) => {
-    try {
-      console.log('Excel 파일 업로드 시작:', file.name);
-      
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const headers: any = {
-        'Content-Type': 'multipart/form-data'
-      };
-      
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      
-      const response = await axios.post(`${baseURL}/graduates/upload-excel`, formData, { headers });
-      console.log('Excel 파일 업로드 성공:', response.status);
-      return response.data;
-    } catch (error) {
-      console.error('Excel 파일 업로드 실패:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('API 오류 세부정보:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
-      }
       throw error;
     }
   },

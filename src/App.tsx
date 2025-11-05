@@ -14,7 +14,6 @@ const Recommendations = lazy(() => import("./pages/intro/Recommendations"));
 const Objectives = lazy(() => import("./pages/intro/Objectives"));
 const CourseBenefits = lazy(() => import("./pages/intro/CourseBenefits"));
 const Professors = lazy(() => import("./pages/intro/Professors"));
-const Graduates = lazy(() => import("./pages/intro/Graduates"));
 const Rules = lazy(() => import("./pages/admission/Rules"));
 const ScheduleLecturers = lazy(() => import("./pages/ScheduleLecturers"));
 const ScheduleCalendar = lazy(() => import("./pages/ScheduleCalendar"));
@@ -39,7 +38,6 @@ const GalleryManage = lazy(() => import("./pages/admin/GalleryManage"));
 const NoticesManage = lazy(() => import("./pages/admin/NoticesManage"));
 const AdmissionManage = lazy(() => import("./pages/admin/AdmissionManage"));
 const FooterManage = lazy(() => import("./pages/admin/FooterManage"));
-const GraduatesManage = lazy(() => import("./pages/admin/GraduatesManage"));
 
 // Loading component
 const Loading = () => (
@@ -59,7 +57,6 @@ const ProfessorsManageWithButton = withAdminHomeButton(ProfessorsManage);
 const FacultyManageWithButton = withAdminHomeButton(FacultyManage);
 const UsersManageWithButton = withAdminHomeButton(UsersManage);
 const ScheduleManageWithButton = withAdminHomeButton(ScheduleManage);
-const GraduatesManageWithButton = withAdminHomeButton(GraduatesManage);
 
 const queryClient = new QueryClient();
 
@@ -77,7 +74,6 @@ const App = () => (
             <Route path="/intro/objectives" element={<Objectives />} />
             <Route path="/intro/benefits" element={<CourseBenefits />} />
             <Route path="/intro/professors" element={<Professors />} />
-            <Route path="/intro/graduates" element={<Graduates />} />
             <Route path="/admission/info" element={<AdmissionInfo />} />
             <Route path="/admission/rules" element={<Rules />} />
             <Route path="/schedule/lecturers" element={<ScheduleLecturers />} />
@@ -102,7 +98,6 @@ const App = () => (
             <Route path="/admin/notices" element={<NoticesManage />} />
             <Route path="/admin/admission" element={<AdmissionManage />} />
             <Route path="/admin/footer" element={<FooterManage />} />
-            <Route path="/admin/graduates" element={<GraduatesManageWithButton />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
