@@ -10,6 +10,7 @@ import AdminNavTabs from '@/components/admin/AdminNavTabs';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
 import AdminHomeButton from '@/components/admin/AdminHomeButton';
+import { LoadingModal } from '@/components/admin/LoadingModal';
 import { apiService } from '@/lib/apiService';
 import { Loader } from 'lucide-react';
 
@@ -130,6 +131,18 @@ const ProfessorsManage = () => {
     try {
       console.log('교수진 데이터 저장 시작...');
       
+      // 저장 전 profile 데이터 확인
+      sections.forEach((section, idx) => {
+        section.professors.forEach((prof, profIdx) => {
+          console.log(`섹션 ${idx}, 교수 ${profIdx} (${prof.name}) profile:`, {
+            원본: prof.profile,
+            길이: prof.profile.length,
+            줄바꿈포함: prof.profile.includes('\n'),
+            줄바꿈개수: (prof.profile.match(/\n/g) || []).length
+          });
+        });
+      });
+      
       // 빈 항목 필터링
       const filteredSections = sections.map(section => ({
         ...section,
@@ -230,6 +243,7 @@ const ProfessorsManage = () => {
 
   return (
     <>
+      <LoadingModal isOpen={isFetching} message="교수진 데이터를 불러오는 중입니다..." />
       <Header />
       <AdminHomeButton />
       <div className="main-container py-10">
@@ -240,12 +254,7 @@ const ProfessorsManage = () => {
             <CardTitle>교수진 관리</CardTitle>
           </CardHeader>
           <CardContent>
-            {isFetching ? (
-              <div className="py-20 flex flex-col items-center justify-center">
-                <Loader className="animate-spin mb-4" />
-                <p>교수진 정보를 불러오는 중...</p>
-              </div>
-            ) : sections.length === 0 ? (
+            {sections.length === 0 && !isFetching ? (
               <div className="py-10 text-center">
                 <p className="mb-4">등록된 교수진 섹션이 없습니다.</p>
                 <Button onClick={addSection}>새 섹션 추가</Button>

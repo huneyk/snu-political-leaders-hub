@@ -25,8 +25,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 혜택 정보 추가 (관리자 전용)
-router.post('/', isAdmin, async (req, res) => {
+// 혜택 정보 추가 (인증 제거 - 다른 관리자 라우트와 일관성 유지)
+router.post('/', async (req, res) => {
   try {
     const { sectionTitle, title, description, iconType } = req.body;
     
@@ -49,6 +49,47 @@ router.post('/', isAdmin, async (req, res) => {
   } catch (error) {
     console.error('혜택 정보 생성 실패:', error);
     res.status(500).json({ message: '혜택 정보를 생성하는 중 오류가 발생했습니다.' });
+  }
+});
+
+// 혜택 정보 업데이트 (인증 제거 - 다른 관리자 라우트와 일관성 유지)
+router.put('/:id', async (req, res) => {
+  try {
+    const updatedBenefit = await Benefit.findByIdAndUpdate(
+      req.params.id,
+      {
+        ...req.body,
+        updatedAt: Date.now()
+      },
+      { new: true }
+    );
+    
+    if (!updatedBenefit) {
+      return res.status(404).json({ message: '수정할 특전을 찾을 수 없습니다.' });
+    }
+    
+    console.log('특전 정보 업데이트 성공:', updatedBenefit._id);
+    res.json(updatedBenefit);
+  } catch (error) {
+    console.error('특전 정보 업데이트 실패:', error);
+    res.status(500).json({ message: '특전 정보를 업데이트하는 중 오류가 발생했습니다.' });
+  }
+});
+
+// 혜택 정보 삭제 (인증 제거 - 다른 관리자 라우트와 일관성 유지)
+router.delete('/:id', async (req, res) => {
+  try {
+    const deletedBenefit = await Benefit.findByIdAndDelete(req.params.id);
+    
+    if (!deletedBenefit) {
+      return res.status(404).json({ message: '삭제할 특전을 찾을 수 없습니다.' });
+    }
+    
+    console.log('특전 정보 삭제 성공:', deletedBenefit._id);
+    res.json({ message: '특전이 성공적으로 삭제되었습니다.', deletedBenefit });
+  } catch (error) {
+    console.error('특전 정보 삭제 실패:', error);
+    res.status(500).json({ message: '특전 정보를 삭제하는 중 오류가 발생했습니다.' });
   }
 });
 

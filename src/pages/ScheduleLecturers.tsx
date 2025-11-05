@@ -382,8 +382,8 @@ const ScheduleLecturers = () => {
                       </div>
                       
                       {lecturer.biography && (
-                        <div className="text-gray-600 text-center mt-4">
-                          <div className="biography-multiline whitespace-pre-line">
+                        <div className="text-gray-600 text-left mt-4">
+                          <div className="biography-multiline" style={{ whiteSpace: 'pre-line' }}>
                             {lecturer.biography}
                           </div>
                         </div>

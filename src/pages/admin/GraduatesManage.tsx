@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
+import * as XLSX from 'xlsx';
 
 interface Graduate {
   _id: string;
@@ -22,6 +23,9 @@ const GraduatesManage: React.FC = () => {
   // 수정 모드 상태
   const [editMode, setEditMode] = useState(false);
   const [editGraduate, setEditGraduate] = useState<Graduate | null>(null);
+  
+  // Excel 업로드 관련 상태
+  const [uploadStatus, setUploadStatus] = useState<string>('');
 
   // 입력 폼 상태
   const [newGraduate, setNewGraduate] = useState<Omit<Graduate, '_id'>>({
@@ -41,8 +45,8 @@ const GraduatesManage: React.FC = () => {
         setGraduates(data);
         setError(null);
       } catch (err) {
-        console.error('수료생 데이터 로드 중 오류 발생:', err);
-        setError('수료생 명단을 불러오는 중 오류가 발생했습니다.');
+        console.error('수료 원우 데이터 로드 중 오류 발생:', err);
+        setError('수료 원우 명단을 불러오는 중 오류가 발생했습니다.');
       } finally {
         setLoading(false);
       }
@@ -103,18 +107,18 @@ const GraduatesManage: React.FC = () => {
         position: '',
       });
       
-      alert('수료생이 성공적으로 추가되었습니다.');
+      alert('수료 원우가 성공적으로 추가되었습니다.');
     } catch (err) {
-      console.error('수료생 추가 중 오류 발생:', err);
-      alert('수료생 추가에 실패했습니다.');
+      console.error('수료 원우 추가 중 오류 발생:', err);
+      alert('수료 원우 추가에 실패했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-  // 수료생 삭제 핸들러
+  // 수료 원우 삭제 핸들러
   const handleDeleteGraduate = async (id: string) => {
-    if (!window.confirm('정말로 이 수료생 정보를 삭제하시겠습니까?')) {
+    if (!window.confirm('정말로 이 수료 원우 정보를 삭제하시겠습니까?')) {
       return;
     }
     
@@ -125,10 +129,10 @@ const GraduatesManage: React.FC = () => {
       // 삭제된 수료생 제거
       setGraduates(prev => prev.filter(g => g._id !== id));
       
-      alert('수료생 정보가 성공적으로 삭제되었습니다.');
+      alert('수료 원우 정보가 성공적으로 삭제되었습니다.');
     } catch (err) {
-      console.error('수료생 삭제 중 오류 발생:', err);
-      alert('수료생 삭제에 실패했습니다.');
+      console.error('수료 원우 삭제 중 오류 발생:', err);
+      alert('수료 원우 삭제에 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -217,12 +221,106 @@ const GraduatesManage: React.FC = () => {
       setEditMode(false);
       setEditGraduate(null);
       
-      alert('수료생 정보가 성공적으로 수정되었습니다.');
+      alert('수료 원우 정보가 성공적으로 수정되었습니다.');
     } catch (err) {
-      console.error('수료생 수정 중 오류 발생:', err);
-      alert('수료생 수정에 실패했습니다.');
+      console.error('수료 원우 수정 중 오류 발생:', err);
+      alert('수료 원우 수정에 실패했습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Excel 파일 업로드 핸들러
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Excel 파일 확인
+    const validExtensions = ['.xlsx', '.xls'];
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    
+    if (!validExtensions.includes(fileExtension)) {
+      alert('Excel 파일(.xlsx, .xls)만 업로드 가능합니다.');
+      e.target.value = '';
+      return;
+    }
+    
+    setUploadStatus('파일을 읽는 중...');
+    
+    try {
+      const reader = new FileReader();
+      
+      reader.onload = async (event) => {
+        try {
+          const data = event.target?.result;
+          if (!data) {
+            throw new Error('파일을 읽을 수 없습니다.');
+          }
+          
+          // Excel 파일 파싱
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          
+          // JSON으로 변환
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+          
+          if (jsonData.length < 2) {
+            throw new Error('Excel 파일에 데이터가 없습니다.');
+          }
+          
+          // 헤더 행 제거
+          const dataRows = jsonData.slice(1);
+          
+          // 데이터 변환 (기수, 성명, 소속, 직책 순서 가정)
+          const graduatesData = dataRows
+            .filter(row => row && row.length > 0 && row[1]) // 성명이 있는 행만
+            .map(row => ({
+              term: typeof row[0] === 'number' ? row[0] : parseInt(String(row[0]), 10) || 1,
+              name: String(row[1] || '').trim(),
+              organization: row[2] ? String(row[2]).trim() : '',
+              position: row[3] ? String(row[3]).trim() : '',
+              isGraduated: true
+            }));
+          
+          if (graduatesData.length === 0) {
+            throw new Error('유효한 데이터가 없습니다. 기수와 성명은 필수 입력 항목입니다.');
+          }
+          
+          setUploadStatus(`${graduatesData.length}명의 수료 원우 데이터를 업로드하는 중...`);
+          
+          // 일괄 추가 API 호출
+          const result = await apiService.addGraduatesBatch(graduatesData);
+          
+          // 리스트 업데이트
+          const updatedGraduates = await apiService.getGraduates();
+          setGraduates(updatedGraduates);
+          
+          setUploadStatus('');
+          alert(`${graduatesData.length}명의 수료 원우가 성공적으로 추가되었습니다.`);
+          
+          // 파일 input 초기화
+          e.target.value = '';
+        } catch (parseError) {
+          console.error('Excel 파일 파싱 중 오류:', parseError);
+          setUploadStatus('');
+          alert(`Excel 파일 처리 중 오류가 발생했습니다: ${parseError instanceof Error ? parseError.message : '알 수 없는 오류'}`);
+          e.target.value = '';
+        }
+      };
+      
+      reader.onerror = () => {
+        setUploadStatus('');
+        alert('파일을 읽는 중 오류가 발생했습니다.');
+        e.target.value = '';
+      };
+      
+      reader.readAsBinaryString(file);
+    } catch (error) {
+      console.error('Excel 파일 업로드 중 오류:', error);
+      setUploadStatus('');
+      alert('Excel 파일 업로드에 실패했습니다.');
+      e.target.value = '';
     }
   };
 
@@ -241,11 +339,11 @@ const GraduatesManage: React.FC = () => {
   return (
     <AdminLayout>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">수료생 관리</h1>
+        <h1 className="text-3xl font-bold mb-6">수료 원우 관리</h1>
 
-        {/* 수료생 추가 폼 */}
+        {/* 수료 원우 추가 폼 */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-semibold mb-4">수료생 추가</h2>
+          <h2 className="text-xl font-semibold mb-4">수료 원우 추가</h2>
           <form onSubmit={handleAddGraduate}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
@@ -310,15 +408,70 @@ const GraduatesManage: React.FC = () => {
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
               disabled={loading}
             >
-              {loading ? '처리 중...' : '수료생 추가'}
+              {loading ? '처리 중...' : '수료 원우 추가'}
             </button>
           </form>
         </div>
 
-        {/* 수료생 수정 폼 */}
+        {/* Excel 파일 업로드 섹션 */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+          <h2 className="text-xl font-semibold mb-4">Excel 파일로 일괄 추가</h2>
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 mb-2">
+              Excel 파일 형식: 첫 번째 행은 헤더이며, 데이터는 두 번째 행부터 시작합니다.
+            </p>
+            <p className="text-sm text-gray-600 mb-4">
+              열 순서: <span className="font-medium">기수</span> | <span className="font-medium">성명</span> | <span className="font-medium">소속</span> | <span className="font-medium">직책</span>
+            </p>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors cursor-pointer">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleExcelUpload}
+                  className="hidden"
+                  disabled={loading}
+                />
+                <span>Excel 파일 선택</span>
+              </label>
+              {uploadStatus && (
+                <span className="text-sm text-gray-600">{uploadStatus}</span>
+              )}
+            </div>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <p className="text-sm text-blue-800 mb-2"><strong>예시 Excel 파일 형식:</strong></p>
+            <table className="min-w-full text-sm border-collapse border border-gray-300">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="border border-gray-300 px-2 py-1">기수</th>
+                  <th className="border border-gray-300 px-2 py-1">성명</th>
+                  <th className="border border-gray-300 px-2 py-1">소속</th>
+                  <th className="border border-gray-300 px-2 py-1">직책</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-gray-300 px-2 py-1">1</td>
+                  <td className="border border-gray-300 px-2 py-1">홍길동</td>
+                  <td className="border border-gray-300 px-2 py-1">서울대학교</td>
+                  <td className="border border-gray-300 px-2 py-1">교수</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-300 px-2 py-1">1</td>
+                  <td className="border border-gray-300 px-2 py-1">김영희</td>
+                  <td className="border border-gray-300 px-2 py-1">고려대학교</td>
+                  <td className="border border-gray-300 px-2 py-1">연구원</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* 수료 원우 수정 폼 */}
         {editMode && editGraduate && (
           <div className="bg-white p-6 rounded-lg shadow-md mb-8 border-2 border-blue-400">
-            <h2 className="text-xl font-semibold mb-4">수료생 정보 수정</h2>
+            <h2 className="text-xl font-semibold mb-4">수료 원우 정보 수정</h2>
             <form onSubmit={handleSaveEdit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
@@ -399,11 +552,11 @@ const GraduatesManage: React.FC = () => {
           </div>
         )}
 
-        {/* 수료생 목록 */}
+        {/* 수료 원우 목록 */}
         {loading && graduates.length === 0 ? (
           <div className="text-center py-8">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
-            <p className="mt-2 text-gray-600">수료생 데이터를 불러오는 중...</p>
+            <p className="mt-2 text-gray-600">수료 원우 데이터를 불러오는 중...</p>
           </div>
         ) : error ? (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md">
@@ -411,10 +564,10 @@ const GraduatesManage: React.FC = () => {
           </div>
         ) : (
           <div>
-            <h2 className="text-xl font-semibold mb-4">수료생 목록</h2>
+            <h2 className="text-xl font-semibold mb-4">수료 원우 목록</h2>
             
             {Object.keys(graduatesByTerm).length === 0 ? (
-              <p className="text-gray-500 text-center py-4">등록된 수료생이 없습니다.</p>
+              <p className="text-gray-500 text-center py-4">등록된 수료 원우가 없습니다.</p>
             ) : (
               Object.entries(graduatesByTerm)
                 .sort(([termA], [termB]) => Number(termB) - Number(termA)) // 최신 기수가 먼저 오도록 정렬

@@ -126,9 +126,30 @@ const GalleryCard: React.FC<{
   item: GalleryItem;
   onClick: () => void;
 }> = ({ item, onClick }) => {
-  // "/" 문자를 줄바꿈으로 변환하는 함수
+  // "/" 문자를 줄바꿈으로 변환하는 함수 (URL 보호)
   const formatDescription = (text: string) => {
-    return text.replace(/\s*\/\s*/g, '\n');
+    // URL을 임시 토큰으로 치환
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+    const urls: string[] = [];
+    const urlPlaceholder = '___URL_PLACEHOLDER___';
+    
+    let processedText = text.replace(urlPattern, (match) => {
+      urls.push(match);
+      return `${urlPlaceholder}${urls.length - 1}${urlPlaceholder}`;
+    });
+    
+    // "/" 문자를 줄바꿈으로 변환
+    processedText = processedText.replace(/\s*\/\s*/g, '\n');
+    
+    // URL 복원
+    urls.forEach((url, index) => {
+      processedText = processedText.replace(
+        `${urlPlaceholder}${index}${urlPlaceholder}`,
+        url
+      );
+    });
+    
+    return processedText;
   };
 
   return (
@@ -163,7 +184,7 @@ const GalleryCard: React.FC<{
         </div>
         <p className="text-gray-600 mb-2 text-sm overflow-hidden whitespace-pre-wrap break-words" style={{
           display: '-webkit-box',
-          WebkitLineClamp: 2,
+          WebkitLineClamp: 3,
           WebkitBoxOrient: 'vertical',
           wordBreak: 'break-word'
         }}>{formatDescription(item.description)}</p>
@@ -194,9 +215,30 @@ const GalleryByTerm = () => {
   
   const ITEMS_PER_PAGE = 12; // 한 번에 표시할 이미지 수 제한
 
-  // "/" 문자를 줄바꿈으로 변환하는 함수
+  // "/" 문자를 줄바꿈으로 변환하는 함수 (URL 보호)
   const formatDescription = (text: string) => {
-    return text.replace(/\s*\/\s*/g, '\n');
+    // URL을 임시 토큰으로 치환
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+    const urls: string[] = [];
+    const urlPlaceholder = '___URL_PLACEHOLDER___';
+    
+    let processedText = text.replace(urlPattern, (match) => {
+      urls.push(match);
+      return `${urlPlaceholder}${urls.length - 1}${urlPlaceholder}`;
+    });
+    
+    // "/" 문자를 줄바꿈으로 변환
+    processedText = processedText.replace(/\s*\/\s*/g, '\n');
+    
+    // URL 복원
+    urls.forEach((url, index) => {
+      processedText = processedText.replace(
+        `${urlPlaceholder}${index}${urlPlaceholder}`,
+        url
+      );
+    });
+    
+    return processedText;
   };
 
   useEffect(() => {

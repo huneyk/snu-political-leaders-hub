@@ -595,7 +595,7 @@ export const apiService = {
       //   headers.Authorization = `Bearer ${token}`;
       // }
       
-      const data = await makeApiRequest('/content/benefits/all', {
+      const data = await makeApiRequest('/benefits', {
         method: 'GET',
         headers
       });
@@ -612,7 +612,7 @@ export const apiService = {
   createBenefit: async (benefitData: any, token?: string) => {
     try {
       console.log('새 특전 생성 시작');
-      console.log('요청 URL:', `${baseURL}/content/benefits`);
+      console.log('요청 URL:', `${baseURL}/benefits`);
       
       const headers: any = {
         'Content-Type': 'application/json'
@@ -623,7 +623,7 @@ export const apiService = {
       //   headers.Authorization = `Bearer ${token}`;
       // }
       
-      const response = await axios.post(`${baseURL}/content/benefits`, benefitData, { headers });
+      const response = await axios.post(`${baseURL}/benefits`, benefitData, { headers });
       console.log('특전 생성 결과:', response.status);
       return response.data;
     } catch (error) {
@@ -636,7 +636,7 @@ export const apiService = {
   updateBenefit: async (id: string, benefitData: any, token?: string) => {
     try {
       console.log(`ID ${id}를 가진 특전 업데이트 시작`);
-      console.log('요청 URL:', `${baseURL}/content/benefits/${id}`);
+      console.log('요청 URL:', `${baseURL}/benefits/${id}`);
       
       const headers: any = {
         'Content-Type': 'application/json'
@@ -647,7 +647,7 @@ export const apiService = {
       //   headers.Authorization = `Bearer ${token}`;
       // }
       
-      const response = await axios.put(`${baseURL}/content/benefits/${id}`, benefitData, { headers });
+      const response = await axios.put(`${baseURL}/benefits/${id}`, benefitData, { headers });
       console.log('특전 업데이트 결과:', response.status);
       return response.data;
     } catch (error) {
@@ -660,7 +660,7 @@ export const apiService = {
   deleteBenefit: async (id: string, token?: string) => {
     try {
       console.log(`ID ${id}를 가진 특전 삭제 시작`);
-      console.log('요청 URL:', `${baseURL}/content/benefits/${id}`);
+      console.log('요청 URL:', `${baseURL}/benefits/${id}`);
       
       const headers: any = {
         'Content-Type': 'application/json'
@@ -671,7 +671,7 @@ export const apiService = {
       //   headers.Authorization = `Bearer ${token}`;
       // }
       
-      const response = await axios.delete(`${baseURL}/content/benefits/${id}`, { headers });
+      const response = await axios.delete(`${baseURL}/benefits/${id}`, { headers });
       console.log('특전 삭제 결과:', response.status);
       return response.data;
     } catch (error) {
@@ -777,7 +777,7 @@ export const apiService = {
       //   headers.Authorization = `Bearer ${token}`;
       // }
       
-      const data = await makeApiRequest('/content/professors/all', {
+      const data = await makeApiRequest('/professors', {
         method: 'GET',
         headers
       });
@@ -794,7 +794,7 @@ export const apiService = {
   createProfessorSection: async (sectionData: any, token?: string) => {
     try {
       console.log('새 교수진 섹션 생성 시작');
-      console.log('요청 URL:', `${baseURL}/content/professors`);
+      console.log('요청 URL:', `${baseURL}/professors`);
       
       const headers: any = {
         'Content-Type': 'application/json'
@@ -805,7 +805,7 @@ export const apiService = {
       //   headers.Authorization = `Bearer ${token}`;
       // }
       
-      const response = await axios.post(`${baseURL}/content/professors`, sectionData, { headers });
+      const response = await axios.post(`${baseURL}/professors`, sectionData, { headers });
       console.log('교수진 섹션 생성 결과:', response.status);
       return response.data;
     } catch (error) {
@@ -818,7 +818,7 @@ export const apiService = {
   updateProfessorSection: async (sectionId: string, sectionData: any, token?: string) => {
     try {
       console.log(`ID ${sectionId}를 가진 교수진 섹션 업데이트 시작`);
-      console.log('요청 URL:', `${baseURL}/content/professors/${sectionId}`);
+      console.log('요청 URL:', `${baseURL}/professors/${sectionId}`);
       
       const headers: any = {
         'Content-Type': 'application/json'
@@ -829,7 +829,7 @@ export const apiService = {
       //   headers.Authorization = `Bearer ${token}`;
       // }
       
-      const response = await axios.put(`${baseURL}/content/professors/${sectionId}`, sectionData, { headers });
+      const response = await axios.put(`${baseURL}/professors/${sectionId}`, sectionData, { headers });
       console.log('교수진 섹션 업데이트 결과:', response.status);
       return response.data;
     } catch (error) {
@@ -842,7 +842,7 @@ export const apiService = {
   deleteProfessorSection: async (sectionId: string, token?: string) => {
     try {
       console.log(`ID ${sectionId}를 가진 교수진 섹션 삭제 시작`);
-      console.log('요청 URL:', `${baseURL}/content/professors/${sectionId}`);
+      console.log('요청 URL:', `${baseURL}/professors/${sectionId}`);
       
       const headers: any = {
         'Content-Type': 'application/json'
@@ -853,7 +853,7 @@ export const apiService = {
       //   headers.Authorization = `Bearer ${token}`;
       // }
       
-      const response = await axios.delete(`${baseURL}/content/professors/${sectionId}`, { headers });
+      const response = await axios.delete(`${baseURL}/professors/${sectionId}`, { headers });
       console.log('교수진 섹션 삭제 결과:', response.status);
       return response.data;
     } catch (error) {

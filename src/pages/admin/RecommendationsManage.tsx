@@ -11,6 +11,7 @@ import AdminNavTabs from '@/components/admin/AdminNavTabs';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
 import AdminHomeButton from '@/components/admin/AdminHomeButton';
+import { LoadingModal } from '@/components/admin/LoadingModal';
 import axios from 'axios';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { apiService } from '@/lib/apiService';
@@ -385,12 +386,7 @@ const RecommendationsManage = () => {
   if (isLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center p-8">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
-            <p className="text-mainBlue font-medium">데이터를 불러오는 중...</p>
-          </div>
-        </div>
+        <LoadingModal isOpen={true} message="추천의 글 데이터를 불러오는 중입니다..." />
       </AdminLayout>
     );
   }
@@ -402,6 +398,7 @@ const RecommendationsManage = () => {
   
   return (
     <AdminLayout>
+      <LoadingModal isOpen={isSaving} message="데이터를 저장하는 중입니다..." />
       <Card className="w-full">
         <CardHeader>
           <CardTitle>추천의 글 관리</CardTitle>

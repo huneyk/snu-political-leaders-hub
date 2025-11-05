@@ -5,10 +5,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { LoadingModal } from '@/components/admin/LoadingModal';
 import axios from 'axios';
 import { apiService } from '@/lib/apiService';
 
@@ -504,12 +504,12 @@ const FacultyManage = () => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
       
-      // 파일 크기 제한 (5MB)
-      const maxSize = 5 * 1024 * 1024;
+      // 파일 크기 제한 (10MB - 업로드 전 원본 크기)
+      const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
         toast({
           title: "파일 크기 초과",
-          description: "이미지 크기는 5MB 이하여야 합니다.",
+          description: "원본 이미지 크기는 10MB 이하여야 합니다.",
           variant: "destructive",
         });
         return;
@@ -535,18 +535,19 @@ const FacultyManage = () => {
           let width = img.width;
           let height = img.height;
           
-          // 이미지 크기 조정 (최대 크기: 800x800)
-          const maxWidth = 800;
-          const maxHeight = 800;
+          // 프로필 이미지 최적 크기: 400x400 (웹 표시용으로 충분)
+          const maxWidth = 400;
+          const maxHeight = 400;
           
+          // 비율 유지하며 리사이징
           if (width > height) {
             if (width > maxWidth) {
-              height *= maxWidth / width;
+              height = Math.round(height * (maxWidth / width));
               width = maxWidth;
             }
           } else {
             if (height > maxHeight) {
-              width *= maxHeight / height;
+              width = Math.round(width * (maxHeight / height));
               height = maxHeight;
             }
           }
@@ -557,10 +558,38 @@ const FacultyManage = () => {
           // 이미지 그리기
           const ctx = canvas.getContext('2d');
           if (ctx) {
+            // 고품질 렌더링 설정
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, width, height);
             
-            // 압축 및 Base64 변환 (JPEG 포맷, 품질 0.85)
-            const base64String = canvas.toDataURL('image/jpeg', 0.85);
+            // 최적 품질로 압축 (JPEG 포맷, 품질 0.75)
+            let base64String = canvas.toDataURL('image/jpeg', 0.75);
+            let quality = 0.75;
+            
+            // Base64 문자열 크기 계산 (대략적인 바이트 크기)
+            const getBase64Size = (str: string) => {
+              return Math.round((str.length * 3) / 4);
+            };
+            
+            // 최종 이미지 크기가 500KB를 초과하면 품질을 더 낮춤
+            const targetSize = 500 * 1024; // 500KB
+            let imageSize = getBase64Size(base64String);
+            
+            while (imageSize > targetSize && quality > 0.5) {
+              quality -= 0.05;
+              base64String = canvas.toDataURL('image/jpeg', quality);
+              imageSize = getBase64Size(base64String);
+            }
+            
+            // 최종 크기 로그 출력
+            console.log(`이미지 최적화 완료:
+              - 원본 크기: ${Math.round(file.size / 1024)}KB
+              - 최종 크기: ${Math.round(imageSize / 1024)}KB
+              - 해상도: ${width}x${height}
+              - 압축 품질: ${Math.round(quality * 100)}%
+              - 용량 절감: ${Math.round((1 - imageSize / file.size) * 100)}%`
+            );
             
             // 이미지 URL 설정
             const newTerms = [...terms];
@@ -581,7 +610,7 @@ const FacultyManage = () => {
             
             toast({
               title: "이미지 업로드 성공",
-              description: "이미지가 성공적으로 처리되었습니다.",
+              description: `이미지가 최적화되었습니다. (${Math.round(file.size / 1024)}KB → ${Math.round(imageSize / 1024)}KB, ${width}x${height})`,
             });
           }
         };
@@ -741,7 +770,15 @@ const FacultyManage = () => {
       if (changes.created.length > 0) {
         console.log(`${changes.created.length}명의 새 강사 생성 시작...`);
         for (const faculty of changes.created) {
-                     const lecturerData = {
+          // biography 줄바꿈 확인
+          console.log(`강사 ${faculty.name} biography:`, {
+            원본: faculty.biography,
+            길이: faculty.biography?.length || 0,
+            줄바꿈포함: faculty.biography?.includes('\n') || false,
+            줄바꿈개수: (faculty.biography?.match(/\n/g) || []).length
+          });
+          
+          const lecturerData = {
              name: faculty.name,
              biography: faculty.biography || '',
              imageUrl: faculty.imageUrl || '',
@@ -781,7 +818,15 @@ const FacultyManage = () => {
         console.log(`${changes.updated.length}명의 강사 업데이트 시작...`);
         for (const faculty of changes.updated) {
           if (faculty._id) {
-                         const updateData = {
+            // biography 줄바꿈 확인
+            console.log(`강사 ${faculty.name} biography 업데이트:`, {
+              원본: faculty.biography,
+              길이: faculty.biography?.length || 0,
+              줄바꿈포함: faculty.biography?.includes('\n') || false,
+              줄바꿈개수: (faculty.biography?.match(/\n/g) || []).length
+            });
+            
+            const updateData = {
                name: faculty.name,
                biography: faculty.biography || '',
                imageUrl: faculty.imageUrl || '',
@@ -810,8 +855,18 @@ const FacultyManage = () => {
         return;
       }
 
-      // 로컬 스토리지에도 백업으로 저장
-      localStorage.setItem('faculty-data', JSON.stringify(terms));
+      // 로컬 스토리지에도 백업으로 저장 (이미지 제외하여 용량 절약)
+      const termsWithoutImages = terms.map(term => ({
+        ...term,
+        categories: term.categories.map(cat => ({
+          ...cat,
+          faculty: cat.faculty.map(f => ({
+            ...f,
+            imageUrl: f.imageUrl ? '[이미지 있음]' : ''
+          }))
+        }))
+      }));
+      localStorage.setItem('faculty-data', JSON.stringify(termsWithoutImages));
       
       // 원본 데이터 업데이트 (다음 변경 사항 감지를 위해)
       setOriginalTerms(JSON.parse(JSON.stringify(terms)));
@@ -826,26 +881,18 @@ const FacultyManage = () => {
       console.error('강사 정보 저장 실패:', error);
       toast({
         title: "저장 실패",
-        description: "MongoDB에 데이터를 저장하는 중 오류가 발생했습니다. 로컬에만 저장됩니다.",
+        description: "MongoDB에 데이터를 저장하는 중 오류가 발생했습니다.",
         variant: "destructive"
       });
-      
-      // 실패해도 로컬 스토리지에는 저장
-      localStorage.setItem('faculty-data', JSON.stringify(terms));
     } finally {
       setIsSaving(false);
     }
   };
   
-  if (authLoading) {
+  if (authLoading || isLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center p-8">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mainBlue"></div>
-            <p className="text-mainBlue font-medium">데이터를 불러오는 중...</p>
-          </div>
-        </div>
+        <LoadingModal isOpen={true} message="강사진 데이터를 불러오는 중입니다..." />
       </AdminLayout>
     );
   }
@@ -865,7 +912,7 @@ const FacultyManage = () => {
           </p>
         </CardHeader>
         <CardContent>
-          <Tabs value={terms[activeTermIndex]?.term || '1'} className="space-y-6">
+          <div className="space-y-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium text-lg text-mainBlue">기수 선택</h3>
               <Button 
@@ -885,22 +932,26 @@ const FacultyManage = () => {
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
               <p className="text-sm text-slate-600 mb-3">현재 선택된 기수: <span className="font-bold text-mainBlue">{activeTermIndex + 1}기</span></p>
               
-              <TabsList className="w-full overflow-x-auto flex-wrap bg-white p-2 rounded-xl border border-mainBlue/20 shadow-sm">
+              <div className="inline-flex flex-wrap gap-2 bg-white p-3 rounded-xl border border-mainBlue/20 shadow-sm">
                 {terms.map((term, index) => (
-                  <div key={index} className="flex items-center m-1">
-                    <TabsTrigger 
-                      value={term.term} 
+                  <div key={index} className="flex items-center gap-1">
+                    <Button
+                      type="button"
                       onClick={() => setActiveTermIndex(index)}
-                      className="flex-shrink-0 px-8 py-3 text-base font-semibold rounded-lg data-[state=active]:bg-mainBlue data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 border-2 border-transparent data-[state=active]:border-mainBlue"
+                      className={`flex-shrink-0 px-6 py-2.5 text-base font-semibold rounded-lg transition-all duration-200 border-2 ${
+                        activeTermIndex === index
+                          ? 'bg-mainBlue text-white shadow-md border-mainBlue'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-mainBlue/50'
+                      }`}
                     >
                       {index + 1}기
-                    </TabsTrigger>
+                    </Button>
                     {terms.length > 1 && (
                       <Button 
                         onClick={() => removeTerm(index)} 
                         variant="ghost" 
                         size="sm"
-                        className="h-6 w-6 p-0 ml-1 text-gray-400 hover:text-red-500"
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -910,11 +961,11 @@ const FacultyManage = () => {
                     )}
                   </div>
                 ))}
-              </TabsList>
+              </div>
             </div>
             
-            {terms.map((term, termIndex) => (
-              <TabsContent key={termIndex} value={term.term} className="space-y-6">
+            {terms[activeTermIndex] && (
+              <div className="space-y-6">
                 {/* 카테고리 선택 */}
                 <div className="space-y-4">
                   <div className="mb-4">
@@ -929,8 +980,8 @@ const FacultyManage = () => {
                   
                   {/* 카테고리 버튼 */}
                   <div className="grid grid-cols-1 gap-4 mb-8">
-                    {term.categories && term.categories.length > 0 ? (
-                      term.categories.map((category, categoryIndex) => (
+                    {terms[activeTermIndex].categories && terms[activeTermIndex].categories.length > 0 ? (
+                      terms[activeTermIndex].categories.map((category, categoryIndex) => (
                         <button
                           key={categoryIndex}
                           type="button"
@@ -1074,9 +1125,9 @@ const FacultyManage = () => {
                     )}
                   </div>
                 </div>
-              </TabsContent>
-            ))}
-          </Tabs>
+              </div>
+            )}
+          </div>
         </CardContent>
         <CardFooter className="flex justify-between">
           {selectedCategory && (

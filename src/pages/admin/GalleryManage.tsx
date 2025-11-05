@@ -12,6 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { apiService } from '@/lib/apiService';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { LoadingModal } from '@/components/admin/LoadingModal';
 import axios from 'axios';
 
 interface GalleryItem {
@@ -74,6 +75,7 @@ const GalleryManage = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState('1');
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   // 단순화된 인증 체크
   useEffect(() => {
@@ -94,6 +96,7 @@ const GalleryManage = () => {
   useEffect(() => {
     const loadGalleryItems = async () => {
       try {
+        setIsLoadingData(true);
         console.log('🔄 갤러리 데이터 로드 시작');
         console.log('🌐 현재 환경:', import.meta.env.MODE);
         console.log('🔗 API URL:', import.meta.env.MODE === 'production' 
@@ -185,6 +188,8 @@ const GalleryManage = () => {
         
         // 빈 배열로 설정하여 UI가 깨지지 않도록 함
         setGalleryItems([]);
+      } finally {
+        setIsLoadingData(false);
       }
     };
     
@@ -692,6 +697,7 @@ const GalleryManage = () => {
 
   return (
     <AdminLayout>
+      <LoadingModal isOpen={isLoadingData} message="갤러리 데이터를 불러오는 중입니다..." />
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold">갤러리 관리</CardTitle>

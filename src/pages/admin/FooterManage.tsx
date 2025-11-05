@@ -148,10 +148,6 @@ const FooterManage: React.FC = () => {
           });
         }
         
-        // 백업 저장
-        localStorage.setItem('footer-config', JSON.stringify(data));
-        localStorage.setItem('footer-config-timestamp', new Date().toISOString());
-        
         toast({
           title: "Footer 정보 로드 성공",
           description: "최신 설정을 불러왔습니다."
@@ -159,61 +155,22 @@ const FooterManage: React.FC = () => {
       }
     } catch (error) {
       console.error('Footer 정보 로드 실패:', error);
+      
+      // 자세한 에러 정보 로깅
+      if (error.response) {
+        console.error('응답 상태:', error.response.status);
+        console.error('응답 데이터:', error.response.data);
+      } else if (error.request) {
+        console.error('요청은 보냈지만 응답이 없습니다:', error.request);
+      } else {
+        console.error('요청 설정 중 오류:', error.message);
+      }
+      
       toast({
         title: "Footer 정보 로드 실패",
-        description: "설정을 불러오는 중 오류가 발생했습니다.",
+        description: error.response?.data?.message || error.message || "설정을 불러오는 중 오류가 발생했습니다.",
         variant: "destructive",
       });
-      
-      // 에러가 발생하면 localStorage에서 로드 시도 (fallback)
-      const savedConfig = localStorage.getItem('footer-config');
-      if (savedConfig) {
-        try {
-          const parsedConfig = JSON.parse(savedConfig);
-          setFooterConfig(parsedConfig);
-          
-          // 파일 정보 설정
-          if (parsedConfig.wordFile) {
-            const fileName = parsedConfig.wordFileName || parsedConfig.wordFile.split('/').pop() || '입학지원서.docx';
-            setWordFileInfo({
-              name: fileName,
-              originalName: parsedConfig.wordFileName,
-              size: 0,
-              type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-              url: parsedConfig.wordFile
-            });
-          }
-          
-          if (parsedConfig.hwpFile) {
-            const fileName = parsedConfig.hwpFileName || parsedConfig.hwpFile.split('/').pop() || '입학지원서.hwp';
-            setHwpFileInfo({
-              name: fileName,
-              originalName: parsedConfig.hwpFileName,
-              size: 0,
-              type: 'application/x-hwp',
-              url: parsedConfig.hwpFile
-            });
-          }
-          
-          if (parsedConfig.pdfFile) {
-            const fileName = parsedConfig.pdfFileName || parsedConfig.pdfFile.split('/').pop() || '과정안내서.pdf';
-            setPdfFileInfo({
-              name: fileName,
-              originalName: parsedConfig.pdfFileName,
-              size: 0,
-              type: 'application/pdf',
-              url: parsedConfig.pdfFile
-            });
-          }
-          
-          toast({
-            title: "로컬 저장 설정 로드",
-            description: "서버에서 불러오기 실패. 로컬에 저장된 설정을 불러왔습니다."
-          });
-        } catch (error) {
-          console.error('Failed to parse footer config from localStorage:', error);
-        }
-      }
     } finally {
       setIsLoading(false);
     }

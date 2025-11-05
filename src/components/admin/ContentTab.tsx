@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { FileText, MessageSquare, Target, Award, Users, GraduationCap, BookOpen, Calendar, Image, Bell, FileDown, UserCheck } from 'lucide-react';
+import { FileText, MessageSquare, Target, Award, Users, GraduationCap, BookOpen, Calendar, Image, Bell, FileDown, UserCheck, ScrollText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const ContentTab = () => {
@@ -65,6 +65,14 @@ const ContentTab = () => {
             <UserCheck size={24} />
             <span className="text-lg font-medium">강사진 관리</span>
             <span className="text-sm opacity-80">강사진 정보 수정</span>
+          </button>
+          <button 
+            onClick={() => handleNavigation('/admin/graduates')}
+            className="h-32 w-full bg-mainBlue hover:bg-blue-900 text-white flex flex-col items-center justify-center gap-2 rounded-md transition-colors cursor-pointer"
+          >
+            <ScrollText size={24} />
+            <span className="text-lg font-medium">수료 원우 명단 관리</span>
+            <span className="text-sm opacity-80">수료 원우 정보 관리</span>
           </button>
           <button 
             onClick={() => handleNavigation('/admin/schedule')}

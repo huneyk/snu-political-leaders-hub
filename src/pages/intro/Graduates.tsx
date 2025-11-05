@@ -89,7 +89,7 @@ const GraduatesPage: React.FC = () => {
         setGraduates([]);
         setTerms([]);
         setSelectedTerm(null);
-        setError('수료생 명단을 불러오는 중 오류가 발생했습니다.');
+        setError('수료 원우 명단을 불러오는 중 오류가 발생했습니다.');
       } finally {
         setLoading(false);
       }
@@ -110,11 +110,13 @@ const GraduatesPage: React.FC = () => {
     <>
       <Header />
       <main className="pt-24 pb-16">
-        <section className="py-16 bg-mainBlue text-white">
-          <div className="main-container">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4 reveal" style={{ wordBreak: 'keep-all' }}>정치지도자과정 수료생 명단</h1>
-          </div>
-        </section>
+        <ScrollReveal>
+          <section className="py-16 bg-mainBlue text-white">
+            <div className="main-container">
+              <h1 className="text-3xl md:text-4xl font-bold mb-4" style={{ wordBreak: 'keep-all' }}>수료 원우 명단</h1>
+            </div>
+          </section>
+        </ScrollReveal>
         <div className="main-container mt-12">
           <div className="flex flex-col md:flex-row justify-between items-center mb-8">
             <div className="flex items-center space-x-4 mb-4 md:mb-0">
@@ -153,7 +155,7 @@ const GraduatesPage: React.FC = () => {
 
           {filteredGraduates.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">등록된 수료생이 없습니다.</p>
+              <p className="text-gray-500">등록된 수료 원우가 없습니다.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

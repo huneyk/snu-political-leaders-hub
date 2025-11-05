@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { LoadingModal } from '@/components/admin/LoadingModal';
 import { apiService } from '@/lib/apiService';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import axios from 'axios';
@@ -922,6 +923,7 @@ const NoticesManage: React.FC = () => {
 
   return (
     <AdminLayout>
+      <LoadingModal isOpen={isLoading} message="공지사항 데이터를 불러오는 중입니다..." />
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">

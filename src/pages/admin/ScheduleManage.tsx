@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { LoadingModal } from '@/components/admin/LoadingModal';
 import { apiService } from '@/lib/apiService';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -550,12 +551,9 @@ const ScheduleManage = () => {
   // 로딩 중 표시
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-          <p>로딩 중...</p>
-        </div>
-      </div>
+      <AdminLayout>
+        <LoadingModal isOpen={true} message="일정 데이터를 불러오는 중입니다..." />
+      </AdminLayout>
     );
   }
 
@@ -566,6 +564,7 @@ const ScheduleManage = () => {
 
   return (
     <AdminLayout>
+      <LoadingModal isOpen={isLoading} message="일정 데이터를 불러오는 중입니다..." />
       <div className="container mx-auto py-8 px-4">
         <h1 className="text-3xl font-bold text-mainBlue mb-6">일정 관리</h1>
         
