@@ -105,3 +105,4 @@ db.galleryImages.chunks.findOne()
 - 로그에서 실패한 항목 확인
 - 해당 Gallery 문서를 수동으로 재처리
 
+# Gallery GridFS Migration Complete
