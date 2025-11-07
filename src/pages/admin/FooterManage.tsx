@@ -565,6 +565,86 @@ const FooterManage: React.FC = () => {
     }
   };
 
+  const handleDeleteFile = async (fileType: 'wordFile' | 'hwpFile' | 'pdfFile') => {
+    let fileId: string | null | undefined;
+    let fileTypeName: string;
+    
+    switch (fileType) {
+      case 'wordFile':
+        fileId = footerConfig.wordFileId;
+        fileTypeName = "Word 입학지원서";
+        break;
+      case 'hwpFile':
+        fileId = footerConfig.hwpFileId;
+        fileTypeName = "HWP 입학지원서";
+        break;
+      case 'pdfFile':
+        fileId = footerConfig.pdfFileId;
+        fileTypeName = "PDF 과정안내서";
+        break;
+      default:
+        return;
+    }
+    
+    if (!fileId) {
+      toast({
+        title: "삭제 실패",
+        description: "삭제할 파일이 존재하지 않습니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // 사용자 확인
+    if (!window.confirm(`${fileTypeName} 파일을 삭제하시겠습니까?`)) {
+      return;
+    }
+    
+    try {
+      // API를 통해 파일 삭제
+      const response = await axios.delete(`${API_BASE_URL}/footer/delete/${fileType}`, {
+        headers: {
+          'Authorization': 'Bearer admin-auth'
+        }
+      });
+      
+      console.log('파일 삭제 성공:', response.data);
+      
+      // 상태 업데이트
+      setFooterConfig(prev => ({
+        ...prev,
+        ...(fileType === 'wordFile' && { wordFileId: null, wordFileName: '' }),
+        ...(fileType === 'hwpFile' && { hwpFileId: null, hwpFileName: '' }),
+        ...(fileType === 'pdfFile' && { pdfFileId: null, pdfFileName: '' })
+      }));
+      
+      // 파일 정보 상태 초기화
+      switch (fileType) {
+        case 'wordFile':
+          setWordFileInfo(null);
+          break;
+        case 'hwpFile':
+          setHwpFileInfo(null);
+          break;
+        case 'pdfFile':
+          setPdfFileInfo(null);
+          break;
+      }
+      
+      toast({
+        title: "파일 삭제 성공",
+        description: `${fileTypeName} 파일이 삭제되었습니다.`
+      });
+    } catch (error) {
+      console.error('파일 삭제 오류:', error);
+      toast({
+        title: "파일 삭제 실패",
+        description: "파일 삭제 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleEmailSubmit = () => {
     const email = footerConfig.email || 'plp@snu.ac.kr';
     const subject = encodeURIComponent('서울대학교 정치지도자과정 지원서 제출');
@@ -613,12 +693,20 @@ const FooterManage: React.FC = () => {
                             </div>
                           </div>
                           {footerConfig.wordFileId && (
-                            <button 
-                              className="text-xs text-blue-600 hover:underline"
-                              onClick={() => handleDownloadFile('wordFile')}
-                            >
-                              다운로드
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button 
+                                className="text-xs text-blue-600 hover:underline"
+                                onClick={() => handleDownloadFile('wordFile')}
+                              >
+                                다운로드
+                              </button>
+                              <button 
+                                className="text-xs text-red-600 hover:underline"
+                                onClick={() => handleDeleteFile('wordFile')}
+                              >
+                                삭제
+                              </button>
+                            </div>
                           )}
                         </div>
                       ) : (
@@ -665,12 +753,22 @@ const FooterManage: React.FC = () => {
                               )}
                             </div>
                           </div>
-                          <button 
-                            className="text-xs text-red-600 hover:underline"
-                            onClick={() => handleDownloadFile('hwpFile')}
-                          >
-                            다운로드
-                          </button>
+                          {footerConfig.hwpFileId && (
+                            <div className="flex items-center gap-2">
+                              <button 
+                                className="text-xs text-red-600 hover:underline"
+                                onClick={() => handleDownloadFile('hwpFile')}
+                              >
+                                다운로드
+                              </button>
+                              <button 
+                                className="text-xs text-red-600 hover:underline"
+                                onClick={() => handleDeleteFile('hwpFile')}
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span className="text-gray-500 text-sm">파일을 선택해주세요</span>
@@ -716,12 +814,22 @@ const FooterManage: React.FC = () => {
                               )}
                             </div>
                           </div>
-                          <button 
-                            className="text-xs text-red-700 hover:underline"
-                            onClick={() => handleDownloadFile('pdfFile')}
-                          >
-                            다운로드
-                          </button>
+                          {footerConfig.pdfFileId && (
+                            <div className="flex items-center gap-2">
+                              <button 
+                                className="text-xs text-red-700 hover:underline"
+                                onClick={() => handleDownloadFile('pdfFile')}
+                              >
+                                다운로드
+                              </button>
+                              <button 
+                                className="text-xs text-red-700 hover:underline"
+                                onClick={() => handleDeleteFile('pdfFile')}
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span className="text-gray-500 text-sm">파일을 선택해주세요</span>

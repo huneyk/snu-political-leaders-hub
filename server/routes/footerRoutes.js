@@ -486,13 +486,13 @@ router.get('/download/:fileType', async (req, res) => {
     let fileId, fileName;
     if (fileType === 'wordFile') {
       fileId = footer.wordFileId;
-      fileName = footer.wordFileName || '입학지원서.docx';
+      fileName = '입학지원서.docx';
     } else if (fileType === 'hwpFile') {
       fileId = footer.hwpFileId;
-      fileName = footer.hwpFileName || '입학지원서.hwp';
+      fileName = '입학지원서.hwp';
     } else if (fileType === 'pdfFile') {
       fileId = footer.pdfFileId;
-      fileName = footer.pdfFileName || '과정안내서.pdf';
+      fileName = '과정안내서.pdf';
     } else {
       return res.status(400).json({ message: '유효하지 않은 파일 타입입니다.' });
     }
@@ -540,6 +540,97 @@ router.get('/download/:fileType', async (req, res) => {
     if (!res.headersSent) {
       res.status(500).json({ message: 'Error downloading file', error: error.message });
     }
+  }
+});
+
+/**
+ * @route   DELETE /api/footer/delete/:fileType
+ * @desc    Delete file from GridFS and update footer
+ * @access  Public
+ */
+router.delete('/delete/:fileType', async (req, res) => {
+  try {
+    const { fileType } = req.params; // 'wordFile', 'hwpFile', 'pdfFile'
+    
+    console.log(`파일 삭제 요청: ${fileType}`);
+    
+    // MongoDB 연결 상태 확인
+    if (mongoose.connection.readyState !== 1) {
+      console.log('MongoDB 연결이 활성화되지 않았습니다.');
+      return res.status(500).json({ message: 'Database connection is not active' });
+    }
+    
+    // Footer 문서 조회
+    const footer = await Footer.findOne().sort({ updatedAt: -1 });
+    
+    if (!footer) {
+      return res.status(404).json({ message: 'Footer 정보를 찾을 수 없습니다.' });
+    }
+    
+    // 파일 ID 가져오기
+    let fileId;
+    if (fileType === 'wordFile') {
+      fileId = footer.wordFileId;
+    } else if (fileType === 'hwpFile') {
+      fileId = footer.hwpFileId;
+    } else if (fileType === 'pdfFile') {
+      fileId = footer.pdfFileId;
+    } else {
+      return res.status(400).json({ message: '유효하지 않은 파일 타입입니다.' });
+    }
+    
+    if (!fileId) {
+      return res.status(404).json({ message: '삭제할 파일이 존재하지 않습니다.' });
+    }
+    
+    // GridFS 버킷 생성
+    const bucket = new GridFSBucket(mongoose.connection.db, {
+      bucketName: 'footerFiles'
+    });
+    
+    // GridFS에서 파일 삭제
+    try {
+      await bucket.delete(fileId);
+      console.log(`파일 삭제 완료: ${fileId}`);
+    } catch (err) {
+      console.error('GridFS 파일 삭제 실패:', err);
+      return res.status(500).json({ message: 'GridFS에서 파일 삭제 중 오류가 발생했습니다.' });
+    }
+    
+    // Footer 문서에서 파일 정보 제거
+    if (fileType === 'wordFile') {
+      footer.wordFileId = null;
+      footer.wordFileName = '';
+    } else if (fileType === 'hwpFile') {
+      footer.hwpFileId = null;
+      footer.hwpFileName = '';
+    } else if (fileType === 'pdfFile') {
+      footer.pdfFileId = null;
+      footer.pdfFileName = '';
+    }
+    
+    footer.updatedAt = new Date();
+    await footer.save();
+    
+    console.log('Footer 업데이트 성공 (파일 정보 제거)');
+    
+    res.json({
+      message: '파일 삭제 성공',
+      fileType: fileType,
+      footer: {
+        _id: footer._id,
+        wordFileId: footer.wordFileId,
+        wordFileName: footer.wordFileName,
+        hwpFileId: footer.hwpFileId,
+        hwpFileName: footer.hwpFileName,
+        pdfFileId: footer.pdfFileId,
+        pdfFileName: footer.pdfFileName,
+        email: footer.email
+      }
+    });
+  } catch (error) {
+    console.error('파일 삭제 오류:', error);
+    res.status(500).json({ message: 'Error deleting file', error: error.message });
   }
 });
 
