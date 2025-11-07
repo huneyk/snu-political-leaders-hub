@@ -140,21 +140,24 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     // 기존 파일이 있다면 GridFS에서 삭제
     if (fileType === 'wordFile' && footer.wordFileId) {
       try {
-        await bucket.delete(footer.wordFileId);
+        const oldFileId = new mongoose.Types.ObjectId(footer.wordFileId);
+        await bucket.delete(oldFileId);
         console.log(`기존 Word 파일 삭제됨: ${footer.wordFileId}`);
       } catch (err) {
         console.error('기존 파일 삭제 실패:', err);
       }
     } else if (fileType === 'hwpFile' && footer.hwpFileId) {
       try {
-        await bucket.delete(footer.hwpFileId);
+        const oldFileId = new mongoose.Types.ObjectId(footer.hwpFileId);
+        await bucket.delete(oldFileId);
         console.log(`기존 HWP 파일 삭제됨: ${footer.hwpFileId}`);
       } catch (err) {
         console.error('기존 파일 삭제 실패:', err);
       }
     } else if (fileType === 'pdfFile' && footer.pdfFileId) {
       try {
-        await bucket.delete(footer.pdfFileId);
+        const oldFileId = new mongoose.Types.ObjectId(footer.pdfFileId);
+        await bucket.delete(oldFileId);
         console.log(`기존 PDF 파일 삭제됨: ${footer.pdfFileId}`);
       } catch (err) {
         console.error('기존 파일 삭제 실패:', err);
@@ -509,8 +512,17 @@ router.get('/download/:fileType', async (req, res) => {
       bucketName: 'footerFiles'
     });
     
+    // ObjectId로 변환
+    let objectId;
+    try {
+      objectId = new mongoose.Types.ObjectId(fileId);
+    } catch (error) {
+      console.error('유효하지 않은 파일 ID:', fileId);
+      return res.status(400).json({ message: '유효하지 않은 파일 ID입니다.' });
+    }
+    
     // 파일 정보 조회
-    const files = await bucket.find({ _id: fileId }).toArray();
+    const files = await bucket.find({ _id: objectId }).toArray();
     
     if (!files || files.length === 0) {
       return res.status(404).json({ message: 'GridFS에서 파일을 찾을 수 없습니다.' });
@@ -532,7 +544,7 @@ router.get('/download/:fileType', async (req, res) => {
     });
     
     // GridFS에서 파일 스트리밍
-    const downloadStream = bucket.openDownloadStream(fileId);
+    const downloadStream = bucket.openDownloadStream(objectId);
     
     downloadStream.on('error', (error) => {
       console.error('파일 다운로드 스트림 오류:', error);
@@ -595,9 +607,18 @@ router.delete('/delete/:fileType', async (req, res) => {
       bucketName: 'footerFiles'
     });
     
+    // ObjectId로 변환
+    let objectId;
+    try {
+      objectId = new mongoose.Types.ObjectId(fileId);
+    } catch (error) {
+      console.error('유효하지 않은 파일 ID:', fileId);
+      return res.status(400).json({ message: '유효하지 않은 파일 ID입니다.' });
+    }
+    
     // GridFS에서 파일 삭제
     try {
-      await bucket.delete(fileId);
+      await bucket.delete(objectId);
       console.log(`파일 삭제 완료: ${fileId}`);
     } catch (err) {
       console.error('GridFS 파일 삭제 실패:', err);
