@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight, Image, Calendar } from 'lucide-react';
 import { apiService } from '@/lib/apiService';
+import { getGalleryImageUrl } from '@/utils/imageUtils';
 import './Gallery.css';
 
 // 기수별 갤러리 썸네일 정보 인터페이스
@@ -143,7 +144,7 @@ const Gallery = () => {
               term,
               count: items.length,
               latestDate: sortedItems[0].date,
-              thumbnailUrl: sortedItems[0].imageUrl || ''
+              thumbnailUrl: getGalleryImageUrl(sortedItems[0].imageUrl)
             };
           } else {
             return {
