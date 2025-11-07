@@ -533,8 +533,9 @@ router.get('/download/:fileType', async (req, res) => {
     console.log(`파일 다운로드 시작: ${fileName} (ID: ${fileId})`);
     
     // RFC 6266에 따른 한글 파일명 처리
+    // HTTP 헤더는 ASCII만 허용하므로 filename*만 사용
     const encodedFileName = encodeURIComponent(fileName);
-    const contentDisposition = `attachment; filename="${fileName}"; filename*=UTF-8''${encodedFileName}`;
+    const contentDisposition = `attachment; filename*=UTF-8''${encodedFileName}`;
     
     // 응답 헤더 설정
     res.set({
