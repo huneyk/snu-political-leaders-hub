@@ -486,13 +486,13 @@ router.get('/download/:fileType', async (req, res) => {
     let fileId, fileName;
     if (fileType === 'wordFile') {
       fileId = footer.wordFileId;
-      fileName = '입학지원서.docx';
+      fileName = footer.wordFileName || '입학지원서.docx';
     } else if (fileType === 'hwpFile') {
       fileId = footer.hwpFileId;
-      fileName = '입학지원서.hwp';
+      fileName = footer.hwpFileName || '입학지원서.hwp';
     } else if (fileType === 'pdfFile') {
       fileId = footer.pdfFileId;
-      fileName = '과정안내서.pdf';
+      fileName = footer.pdfFileName || '과정안내서.pdf';
     } else {
       return res.status(400).json({ message: '유효하지 않은 파일 타입입니다.' });
     }
@@ -517,10 +517,14 @@ router.get('/download/:fileType', async (req, res) => {
     
     console.log(`파일 다운로드 시작: ${fileName} (ID: ${fileId})`);
     
+    // RFC 6266에 따른 한글 파일명 처리
+    const encodedFileName = encodeURIComponent(fileName);
+    const contentDisposition = `attachment; filename="${fileName}"; filename*=UTF-8''${encodedFileName}`;
+    
     // 응답 헤더 설정
     res.set({
       'Content-Type': file.contentType || 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
+      'Content-Disposition': contentDisposition,
       'Content-Length': file.length
     });
     
