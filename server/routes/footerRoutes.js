@@ -94,7 +94,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     }
     
     const { fileType } = req.body; // 'wordFile', 'hwpFile', 'pdfFile'
-    const fileName = req.file.originalname;
+    
+    // multer가 한글 파일명을 깨뜨리는 문제 해결
+    // Buffer를 통해 올바르게 디코딩
+    const fileName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
     
     console.log(`파일 업로드 중: ${fileName} (타입: ${fileType})`);
     
