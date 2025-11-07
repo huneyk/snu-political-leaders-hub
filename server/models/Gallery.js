@@ -11,7 +11,7 @@ const gallerySchema = new mongoose.Schema({
     trim: true
   },
   imageUrl: {
-    type: String,
+    type: String,  // GridFS 파일 ID (ObjectId를 문자열로 저장)
     required: true
   },
   date: {

@@ -13,6 +13,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { apiService } from '@/lib/apiService';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { LoadingModal } from '@/components/admin/LoadingModal';
+import { getGalleryImageUrl } from '@/utils/imageUtils';
 import axios from 'axios';
 
 interface GalleryItem {
@@ -788,7 +789,7 @@ const GalleryManage = () => {
                 <div key={item._id} className="border rounded-md overflow-hidden shadow-sm">
                   <div className="aspect-w-16 aspect-h-9 w-full">
                     <img
-                      src={item.imageUrl}
+                      src={getGalleryImageUrl(item.imageUrl)}
                       alt={item.title}
                       className="object-cover w-full h-40"
                     />

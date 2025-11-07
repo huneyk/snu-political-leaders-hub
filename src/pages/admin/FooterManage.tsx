@@ -17,11 +17,11 @@ const API_BASE_URL = import.meta.env.MODE === 'production'
 
 interface FooterConfig {
   _id?: string;
-  wordFile: string;
+  wordFileId?: string | null;
   wordFileName?: string;
-  hwpFile: string;
+  hwpFileId?: string | null;
   hwpFileName?: string;
-  pdfFile: string;
+  pdfFileId?: string | null;
   pdfFileName?: string;
   email: string;
   companyName?: string;
@@ -46,9 +46,12 @@ const FooterManage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [footerConfig, setFooterConfig] = useState<FooterConfig>({
-    wordFile: '',
-    hwpFile: '',
-    pdfFile: '',
+    wordFileId: null,
+    wordFileName: '',
+    hwpFileId: null,
+    hwpFileName: '',
+    pdfFileId: null,
+    pdfFileName: '',
     email: ''
   });
 
@@ -102,9 +105,12 @@ const FooterManage: React.FC = () => {
         const data = response.data;
         setFooterConfig({
           _id: data._id,
-          wordFile: data.wordFile || '',
-          hwpFile: data.hwpFile || '',
-          pdfFile: data.pdfFile || '',
+          wordFileId: data.wordFileId || null,
+          wordFileName: data.wordFileName || '',
+          hwpFileId: data.hwpFileId || null,
+          hwpFileName: data.hwpFileName || '',
+          pdfFileId: data.pdfFileId || null,
+          pdfFileName: data.pdfFileName || '',
           email: data.email || '',
           companyName: data.companyName,
           address: data.address,
@@ -114,37 +120,31 @@ const FooterManage: React.FC = () => {
           updatedAt: data.updatedAt
         });
         
-        // 파일 정보 설정
-        if (data.wordFile) {
-          const fileName = data.wordFileName || data.wordFile.split('/').pop() || '입학지원서.docx';
+        // 파일 정보 설정 (메타데이터만)
+        if (data.wordFileId) {
           setWordFileInfo({
-            name: fileName,
+            name: data.wordFileName || '입학지원서.docx',
             originalName: data.wordFileName,
             size: 0,
-            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            url: data.wordFile
+            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
           });
         }
         
-        if (data.hwpFile) {
-          const fileName = data.hwpFileName || data.hwpFile.split('/').pop() || '입학지원서.hwp';
+        if (data.hwpFileId) {
           setHwpFileInfo({
-            name: fileName,
+            name: data.hwpFileName || '입학지원서.hwp',
             originalName: data.hwpFileName,
             size: 0,
-            type: 'application/x-hwp',
-            url: data.hwpFile
+            type: 'application/x-hwp'
           });
         }
         
-        if (data.pdfFile) {
-          const fileName = data.pdfFileName || data.pdfFile.split('/').pop() || '과정안내서.pdf';
+        if (data.pdfFileId) {
           setPdfFileInfo({
-            name: fileName,
+            name: data.pdfFileName || '과정안내서.pdf',
             originalName: data.pdfFileName,
             size: 0,
-            type: 'application/pdf',
-            url: data.pdfFile
+            type: 'application/pdf'
           });
         }
         
@@ -277,60 +277,81 @@ const FooterManage: React.FC = () => {
     setIsSaving(true);
     
     try {
-      // 중요: 기존 구성에서 시작하되, 기존 파일 이름 필드도 유지합니다
-      let updatedConfig = { 
-        ...footerConfig,
-        // 기존 파일 이름 필드가 있다면 유지
-        wordFileName: footerConfig.wordFileName || '',
-        hwpFileName: footerConfig.hwpFileName || '',
-        pdfFileName: footerConfig.pdfFileName || ''
-      };
+      // 파일 업로드가 있는 경우 먼저 처리
+      const uploadPromises = [];
       
-      // Word 파일 처리
+      // Word 파일 업로드
       if (wordFileInfo?.file) {
-        try {
-          const base64 = await fileToBase64(wordFileInfo.file);
-          updatedConfig.wordFile = base64;
-          updatedConfig.wordFileName = wordFileInfo.name; // 명시적으로 파일명 설정
-          console.log('Word 파일명 저장:', updatedConfig.wordFileName); // 디버깅용
-        } catch (error) {
-          console.error('Word 파일 처리 실패:', error);
-        }
+        const formData = new FormData();
+        formData.append('file', wordFileInfo.file);
+        formData.append('fileType', 'wordFile');
+        
+        uploadPromises.push(
+          axios.post(`${API_BASE_URL}/footer/upload`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Authorization': 'Bearer admin-auth'
+            }
+          }).then(response => {
+            console.log('Word 파일 업로드 성공:', response.data);
+            return response.data;
+          })
+        );
       }
       
-      // HWP 파일 처리
+      // HWP 파일 업로드
       if (hwpFileInfo?.file) {
-        try {
-          const base64 = await fileToBase64(hwpFileInfo.file);
-          updatedConfig.hwpFile = base64;
-          updatedConfig.hwpFileName = hwpFileInfo.name; // 명시적으로 파일명 설정
-          console.log('HWP 파일명 저장:', updatedConfig.hwpFileName); // 디버깅용
-        } catch (error) {
-          console.error('HWP 파일 처리 실패:', error);
-        }
+        const formData = new FormData();
+        formData.append('file', hwpFileInfo.file);
+        formData.append('fileType', 'hwpFile');
+        
+        uploadPromises.push(
+          axios.post(`${API_BASE_URL}/footer/upload`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Authorization': 'Bearer admin-auth'
+            }
+          }).then(response => {
+            console.log('HWP 파일 업로드 성공:', response.data);
+            return response.data;
+          })
+        );
       }
       
-      // PDF 파일 처리
+      // PDF 파일 업로드
       if (pdfFileInfo?.file) {
-        try {
-          const base64 = await fileToBase64(pdfFileInfo.file);
-          updatedConfig.pdfFile = base64;
-          updatedConfig.pdfFileName = pdfFileInfo.name; // 명시적으로 파일명 설정
-          console.log('PDF 파일명 저장:', updatedConfig.pdfFileName); // 디버깅용
-        } catch (error) {
-          console.error('PDF 파일 처리 실패:', error);
-        }
+        const formData = new FormData();
+        formData.append('file', pdfFileInfo.file);
+        formData.append('fileType', 'pdfFile');
+        
+        uploadPromises.push(
+          axios.post(`${API_BASE_URL}/footer/upload`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Authorization': 'Bearer admin-auth'
+            }
+          }).then(response => {
+            console.log('PDF 파일 업로드 성공:', response.data);
+            return response.data;
+          })
+        );
       }
       
-      // 저장 전 데이터 로깅
-      console.log('서버로 보내는 데이터:', {
-        wordFileName: updatedConfig.wordFileName,
-        hwpFileName: updatedConfig.hwpFileName,
-        pdfFileName: updatedConfig.pdfFileName
-      });
+      // 모든 파일 업로드 완료 대기
+      if (uploadPromises.length > 0) {
+        await Promise.all(uploadPromises);
+      }
       
-      // 서버에 데이터 저장
-      const response = await axios.post(`${API_BASE_URL}/footer`, updatedConfig, {
+      // 메타데이터 업데이트 (이메일 등)
+      const response = await axios.post(`${API_BASE_URL}/footer`, {
+        _id: footerConfig._id,
+        email: footerConfig.email,
+        companyName: footerConfig.companyName,
+        address: footerConfig.address,
+        contactPhone: footerConfig.contactPhone,
+        contactEmail: footerConfig.contactEmail,
+        copyrightYear: footerConfig.copyrightYear
+      }, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer admin-auth'
@@ -342,28 +363,25 @@ const FooterManage: React.FC = () => {
       // Update state with the response
       setFooterConfig(response.data);
       
-      // Update file info objects with filename info
+      // Update file info objects (파일 객체 제거)
       if (wordFileInfo) {
         setWordFileInfo({
           ...wordFileInfo,
-          file: undefined,
-          url: response.data.wordFile
+          file: undefined
         });
       }
       
       if (hwpFileInfo) {
         setHwpFileInfo({
           ...hwpFileInfo,
-          file: undefined,
-          url: response.data.hwpFile
+          file: undefined
         });
       }
       
       if (pdfFileInfo) {
         setPdfFileInfo({
           ...pdfFileInfo,
-          file: undefined,
-          url: response.data.pdfFile
+          file: undefined
         });
       }
       
@@ -484,28 +502,28 @@ const FooterManage: React.FC = () => {
       })
     : '업데이트 정보 없음';
 
-  const handleDownloadFile = (fileType: 'wordFile' | 'hwpFile' | 'pdfFile') => {
-    let fileData: string;
+  const handleDownloadFile = async (fileType: 'wordFile' | 'hwpFile' | 'pdfFile') => {
+    let fileId: string | null | undefined;
     let fileName: string;
     
     switch (fileType) {
       case 'wordFile':
-        fileData = footerConfig.wordFile;
+        fileId = footerConfig.wordFileId;
         fileName = footerConfig.wordFileName || "입학지원서.docx";
         break;
       case 'hwpFile':
-        fileData = footerConfig.hwpFile;
+        fileId = footerConfig.hwpFileId;
         fileName = footerConfig.hwpFileName || "입학지원서.hwp";
         break;
       case 'pdfFile':
-        fileData = footerConfig.pdfFile;
+        fileId = footerConfig.pdfFileId;
         fileName = footerConfig.pdfFileName || "과정안내서.pdf";
         break;
       default:
         return;
     }
     
-    if (!fileData) {
+    if (!fileId) {
       toast({
         title: "다운로드 실패",
         description: "파일이 존재하지 않습니다.",
@@ -515,13 +533,23 @@ const FooterManage: React.FC = () => {
     }
     
     try {
-      // Create download link
+      // API를 통해 파일 다운로드
+      const response = await axios.get(`${API_BASE_URL}/footer/download/${fileType}`, {
+        responseType: 'blob',
+        headers: {
+          'Authorization': 'Bearer admin-auth'
+        }
+      });
+      
+      // Blob을 사용하여 다운로드 링크 생성
+      const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
-      link.href = fileData; // The base64 data URL
+      link.href = url;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       
       toast({
         title: "다운로드 시작",
@@ -584,7 +612,7 @@ const FooterManage: React.FC = () => {
                               )}
                             </div>
                           </div>
-                          {wordFileInfo.url && (
+                          {footerConfig.wordFileId && (
                             <button 
                               className="text-xs text-blue-600 hover:underline"
                               onClick={() => handleDownloadFile('wordFile')}

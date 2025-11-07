@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft } from 'lucide-react';
 import { apiService } from '@/lib/apiService';
+import { getGalleryImageUrl } from '@/utils/imageUtils';
 import './Gallery.css';
 
 // 갤러리 아이템 인터페이스
@@ -159,7 +160,7 @@ const GalleryCard: React.FC<{
         onClick={onClick}
       >
         <LazyImage
-          src={item.imageUrl}
+          src={getGalleryImageUrl(item.imageUrl)}
           alt={item.title}
           className="w-full h-full"
         />
@@ -665,7 +666,7 @@ const GalleryByTerm = () => {
               <div className="flex flex-col">
                 <div className="relative bg-gray-100" style={{ maxHeight: '80vh' }}>
                   <img 
-                    src={selectedImage.imageUrl} 
+                    src={getGalleryImageUrl(selectedImage.imageUrl)} 
                     alt={selectedImage.title}
                     className="w-full object-contain max-h-[80vh]"
                     style={{ maxWidth: '1080px', margin: '0 auto' }}

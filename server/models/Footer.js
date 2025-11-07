@@ -2,25 +2,25 @@ const mongoose = require('mongoose');
 
 // Footer 스키마 정의
 const FooterSchema = new mongoose.Schema({
-  wordFile: {
-    type: String,
-    default: ''
+  wordFileId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
   },
   wordFileName: {
     type: String,
     default: ''
   },
-  hwpFile: {
-    type: String,
-    default: ''
+  hwpFileId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
   },
   hwpFileName: {
     type: String,
     default: ''
   },
-  pdfFile: {
-    type: String,
-    default: ''
+  pdfFileId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
   },
   pdfFileName: {
     type: String,

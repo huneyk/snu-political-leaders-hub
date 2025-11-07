@@ -6,6 +6,8 @@ const Schedule = require('../models/Schedule');
 const Graduate = require('../models/Graduate');
 const { isAdmin } = require('../middleware/authMiddleware');
 const galleryThumbnailService = require('../services/galleryThumbnailService');
+const mongoose = require('mongoose');
+const { GridFSBucket } = require('mongodb');
 
 const router = express.Router();
 
@@ -198,6 +200,75 @@ router.post('/thumbnails/generate/:term', isAdmin, async (req, res) => {
       message: '썸네일 생성 중 오류가 발생했습니다.',
       error: error.message 
     });
+  }
+});
+
+/**
+ * @route   GET /api/gallery/image/:imageId
+ * @desc    GridFS에서 갤러리 이미지 다운로드
+ * @access  Public
+ */
+router.get('/image/:imageId', async (req, res) => {
+  try {
+    const { imageId } = req.params;
+    
+    console.log(`🖼️ 갤러리 이미지 다운로드 요청: ${imageId}`);
+    
+    // MongoDB 연결 상태 확인
+    if (mongoose.connection.readyState !== 1) {
+      console.log('MongoDB 연결이 활성화되지 않았습니다.');
+      return res.status(500).json({ message: 'Database connection is not active' });
+    }
+    
+    // GridFS 버킷 생성
+    const bucket = new GridFSBucket(mongoose.connection.db, {
+      bucketName: 'galleryImages'
+    });
+    
+    // ObjectId 변환
+    let fileId;
+    try {
+      fileId = new mongoose.Types.ObjectId(imageId);
+    } catch (error) {
+      console.error('유효하지 않은 이미지 ID:', imageId);
+      return res.status(400).json({ message: '유효하지 않은 이미지 ID입니다.' });
+    }
+    
+    // 파일 정보 조회
+    const files = await bucket.find({ _id: fileId }).toArray();
+    
+    if (!files || files.length === 0) {
+      console.error(`GridFS에서 이미지를 찾을 수 없습니다: ${imageId}`);
+      return res.status(404).json({ message: 'GridFS에서 이미지를 찾을 수 없습니다.' });
+    }
+    
+    const file = files[0];
+    
+    console.log(`✅ 이미지 다운로드 시작: ${file.filename} (크기: ${(file.length / 1024).toFixed(2)} KB)`);
+    
+    // 응답 헤더 설정
+    res.set({
+      'Content-Type': file.contentType || 'image/jpeg',
+      'Content-Length': file.length,
+      'Cache-Control': 'public, max-age=31536000' // 1년 캐싱
+    });
+    
+    // GridFS에서 파일 스트리밍
+    const downloadStream = bucket.openDownloadStream(fileId);
+    
+    downloadStream.on('error', (error) => {
+      console.error('이미지 다운로드 스트림 오류:', error);
+      if (!res.headersSent) {
+        res.status(500).json({ message: 'Error downloading image', error: error.message });
+      }
+    });
+    
+    downloadStream.pipe(res);
+  } catch (error) {
+    console.error('이미지 다운로드 오류:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Error downloading image', error: error.message });
+    }
   }
 });
 

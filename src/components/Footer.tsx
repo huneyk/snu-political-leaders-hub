@@ -12,11 +12,11 @@ interface FooterProps {
 
 interface FooterConfig {
   _id?: string;
-  wordFile: string;
+  wordFileId?: string | null;
   wordFileName?: string;
-  hwpFile: string;
+  hwpFileId?: string | null;
   hwpFileName?: string;
-  pdfFile: string;
+  pdfFileId?: string | null;
   pdfFileName?: string;
   email: string;
   companyName?: string;
@@ -28,9 +28,12 @@ interface FooterConfig {
 
 const Footer: React.FC<FooterProps> = ({ className }) => {
   const [footerConfig, setFooterConfig] = useState<FooterConfig>({
-    wordFile: '',
-    hwpFile: '',
-    pdfFile: '',
+    wordFileId: null,
+    wordFileName: '',
+    hwpFileId: null,
+    hwpFileName: '',
+    pdfFileId: null,
+    pdfFileName: '',
     email: 'plp@snu.ac.kr'
   });
   
@@ -73,8 +76,8 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
     loadFooterConfig();
   }, []);
 
-  const handleDownload = (fileData: string, fileName: string) => {
-    if (!fileData) {
+  const handleDownload = async (fileType: string, fileName: string) => {
+    if (!fileType) {
       toast({
         title: "다운로드 실패",
         description: "파일이 존재하지 않습니다.",
@@ -85,32 +88,27 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
     
     // 다운로드 시작
     try {
-      // Check if the data is base64 encoded (starts with data:)
-      if (fileData.startsWith('data:')) {
-        // It's a base64 string - create a direct download
-        const link = document.createElement('a');
-        link.href = fileData; // The base64 data URL can be used directly
-        link.download = fileName; // Use the provided filename
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        console.log(`Base64 파일 다운로드: ${fileName}`);
-      } else {
-        // It's a regular URL - extract filename from URL
-        const extractedFileName = fileData.split('/').pop() || fileName;
-        
-        // Create download link
-        const link = document.createElement('a');
-        link.href = fileData;
-        link.setAttribute('download', extractedFileName);
-        link.setAttribute('target', '_blank');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        console.log(`URL 파일 다운로드: ${extractedFileName}`);
-      }
+      // API 기본 URL 설정
+      const API_BASE_URL = import.meta.env.MODE === 'production' 
+        ? 'https://snu-plp-hub-server.onrender.com/api' 
+        : 'http://localhost:5001/api';
+      
+      // API를 통해 파일 다운로드
+      const response = await axios.get(`${API_BASE_URL}/footer/download/${fileType}`, {
+        responseType: 'blob'
+      });
+      
+      // Blob을 사용하여 다운로드 링크 생성
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log(`파일 다운로드 완료: ${fileName}`);
     } catch (error) {
       console.error('파일 다운로드 오류:', error);
       toast({
@@ -152,12 +150,12 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
           
           <div className="flex flex-col md:flex-row gap-2 md:gap-4">
             {/* 입학지원서 다운로드 (Word) */}
-            {footerConfig.wordFile && (
+            {footerConfig.wordFileId && (
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2"
                 onClick={() => handleDownload(
-                  footerConfig.wordFile, 
+                  'wordFile', 
                   footerConfig.wordFileName || '입학지원서.docx'
                 )}
                 disabled={loading}
@@ -168,12 +166,12 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
             )}
             
             {/* 입학지원서 다운로드 (HWP) */}
-            {footerConfig.hwpFile && (
+            {footerConfig.hwpFileId && (
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2"
                 onClick={() => handleDownload(
-                  footerConfig.hwpFile, 
+                  'hwpFile', 
                   footerConfig.hwpFileName || '입학지원서.hwp'
                 )}
                 disabled={loading}
@@ -184,12 +182,12 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
             )}
             
             {/* 과정안내서 다운로드 (PDF) */}
-            {footerConfig.pdfFile && (
+            {footerConfig.pdfFileId && (
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2"
                 onClick={() => handleDownload(
-                  footerConfig.pdfFile, 
+                  'pdfFile', 
                   footerConfig.pdfFileName || '과정안내서.pdf'
                 )}
                 disabled={loading}
