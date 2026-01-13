@@ -4,9 +4,34 @@ const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
 const fs = require('fs');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
 
 // 환경 변수 로드
 dotenv.config();
+
+// ============================================
+// CWE 보안 정책 적용
+// ============================================
+
+// CWE-798: 환경변수 필수 검증 (프로덕션 환경)
+if (process.env.NODE_ENV === 'production') {
+  const requiredEnvVars = ['JWT_SECRET', 'MONGODB_URI'];
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    console.error('❌ [CWE-798] 필수 환경변수가 설정되지 않았습니다:', missingVars.join(', '));
+    process.exit(1);
+  }
+  
+  // JWT_SECRET이 기본값인지 확인
+  if (process.env.JWT_SECRET === 'snu_plp_hub_default_secret_key_2024') {
+    console.error('❌ [CWE-798] JWT_SECRET이 기본값입니다. 프로덕션 환경에서는 안전한 시크릿 키를 설정해주세요.');
+    process.exit(1);
+  }
+}
 
 // Express 앱 생성
 const app = express();
@@ -28,17 +53,81 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '50mb' })); // 이미지 Base64 처리를 위해 용량 제한 증가
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// 보안 헤더 추가
+// ============================================
+// CWE-16: 보안 헤더 설정 (Helmet)
+// ============================================
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", "https://snu-plp-hub-server.onrender.com", "https://plpsnu.ne.kr"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
+    }
+  },
+  crossOriginEmbedderPolicy: false, // 이미지 로딩을 위해 비활성화
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // CORS 지원
+  hsts: {
+    maxAge: 31536000, // 1년
+    includeSubDomains: true,
+    preload: true
+  },
+  noSniff: true,
+  xssFilter: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
+
+// X-Powered-By 헤더 커스터마이징
 app.use((req, res, next) => {
-  res.header('X-Powered-By', 'SNU-PLP-Server');
-  res.header('X-Content-Type-Options', 'nosniff');
-  res.header('X-Frame-Options', 'DENY');
-  res.header('X-XSS-Protection', '1; mode=block');
+  res.removeHeader('X-Powered-By');
   next();
 });
+
+// ============================================
+// CWE-89: NoSQL Injection 방지
+// ============================================
+app.use(mongoSanitize({
+  replaceWith: '_',
+  onSanitize: ({ req, key }) => {
+    console.warn(`🚨 [CWE-89] NoSQL Injection 시도 감지 - Key: ${key}, IP: ${req.ip}`);
+  }
+}));
+
+// ============================================
+// CWE-235: HTTP Parameter Pollution 방지
+// ============================================
+app.use(hpp({
+  whitelist: ['term', 'limit', 'page'] // 허용할 중복 파라미터
+}));
+
+// ============================================
+// CWE-307: Rate Limiting (전역)
+// ============================================
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15분
+  max: 1000, // 15분당 최대 1000개 요청
+  message: {
+    success: false,
+    message: '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.',
+    retryAfter: '15분'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    console.warn(`🚨 [CWE-307] Rate limit 초과 - IP: ${req.ip}, Path: ${req.path}`);
+    res.status(options.statusCode).json(options.message);
+  }
+});
+
+app.use('/api/', globalLimiter);
+
+app.use(express.json({ limit: '50mb' })); // 이미지 Base64 처리를 위해 용량 제한 증가
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // 요청 로깅 (production에서만)
 if (process.env.NODE_ENV === 'production') {
@@ -379,19 +468,49 @@ app.use('*', (req, res) => {
   });
 });
 
-// 전역 에러 핸들링 미들웨어
+// ============================================
+// CWE-209: 전역 에러 핸들링 미들웨어 (민감정보 노출 방지)
+// ============================================
 app.use((err, req, res, next) => {
-  console.error('서버 오류:', err);
+  // 에러 로깅 (내부용)
+  const errorId = `ERR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  console.error(`[${errorId}] 서버 오류:`, {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    ip: req.ip,
+    timestamp: new Date().toISOString()
+  });
   
   if (res.headersSent) {
     return next(err);
   }
   
-  res.status(500).json({
-    message: process.env.NODE_ENV === 'production' 
-      ? '서버 내부 오류가 발생했습니다.' 
-      : err.message,
-    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+  // 클라이언트 응답 (민감정보 제외)
+  const statusCode = err.statusCode || err.status || 500;
+  
+  // 알려진 에러 유형별 안전한 메시지 반환
+  let safeMessage = '서버 내부 오류가 발생했습니다.';
+  
+  if (err.name === 'ValidationError') {
+    safeMessage = '입력값 검증에 실패했습니다.';
+  } else if (err.name === 'CastError') {
+    safeMessage = '잘못된 데이터 형식입니다.';
+  } else if (err.name === 'MongoServerError' && err.code === 11000) {
+    safeMessage = '중복된 데이터가 존재합니다.';
+  } else if (err.name === 'JsonWebTokenError') {
+    safeMessage = '인증 토큰이 유효하지 않습니다.';
+  } else if (err.name === 'TokenExpiredError') {
+    safeMessage = '인증 토큰이 만료되었습니다.';
+  } else if (err.type === 'entity.too.large') {
+    safeMessage = '요청 데이터가 너무 큽니다.';
+  }
+  
+  res.status(statusCode).json({
+    success: false,
+    message: safeMessage,
+    errorId: errorId // 고객 지원 시 참조용
   });
 });
 

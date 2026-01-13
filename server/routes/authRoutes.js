@@ -2,63 +2,177 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 
-// JWT 시크릿 키 설정 (환경 변수 또는 기본값)
-const JWT_SECRET = process.env.JWT_SECRET || 'snu_plp_hub_default_secret_key_2024';
+// ============================================
+// CWE-798: JWT 시크릿 키 보안 강화
+// ============================================
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// 관리자 로그인 라우트 (POST)
-router.post('/login', async (req, res) => {
+// 프로덕션 환경에서 JWT_SECRET 필수 검증
+if (process.env.NODE_ENV === 'production' && !JWT_SECRET) {
+  throw new Error('[CWE-798] JWT_SECRET 환경변수가 설정되지 않았습니다.');
+}
+
+// 개발 환경에서만 기본값 사용 (경고 출력)
+const getJWTSecret = () => {
+  if (JWT_SECRET) return JWT_SECRET;
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('⚠️ [CWE-798] JWT_SECRET이 설정되지 않아 개발용 기본값을 사용합니다.');
+    return 'dev_only_secret_key_change_in_production';
+  }
+  throw new Error('[CWE-798] JWT_SECRET 환경변수가 필요합니다.');
+};
+
+// ============================================
+// 환경변수 기반 관리자 계정 설정
+// ============================================
+const getEnvAdminCredentials = () => {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  
+  if (adminEmail && adminPassword) {
+    return { email: adminEmail.toLowerCase().trim(), password: adminPassword };
+  }
+  return null;
+};
+
+// 환경변수 관리자 계정 검증 함수
+const validateEnvAdmin = async (email, password) => {
+  const envAdmin = getEnvAdminCredentials();
+  
+  if (!envAdmin) {
+    return null; // 환경변수에 관리자 계정이 설정되지 않음
+  }
+  
+  // 이메일 비교 (대소문자 무시)
+  if (email.toLowerCase().trim() !== envAdmin.email) {
+    return null;
+  }
+  
+  // 비밀번호 비교
+  if (password !== envAdmin.password) {
+    return null;
+  }
+  
+  // 환경변수 관리자 계정 인증 성공
+  return {
+    id: 'env-admin',
+    email: envAdmin.email,
+    isAdmin: true,
+    role: 'admin',
+    source: 'env'
+  };
+};
+
+// ============================================
+// CWE-307: 로그인 Rate Limiting (Brute Force 방지)
+// ============================================
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15분
+  max: 5, // 15분당 최대 5번 로그인 시도
+  message: {
+    success: false,
+    message: '로그인 시도 횟수가 초과되었습니다. 15분 후에 다시 시도해주세요.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // 성공한 요청은 카운트에서 제외
+  handler: (req, res, next, options) => {
+    console.warn(`🚨 [CWE-307] 로그인 시도 횟수 초과 - IP: ${req.ip}, Email: ${req.body?.email || 'unknown'}`);
+    res.status(429).json(options.message);
+  }
+});
+
+// 입력값 검증 함수
+const validateLoginInput = (email, password) => {
+  const errors = [];
+  
+  // 이메일 형식 검증
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || typeof email !== 'string' || !emailRegex.test(email)) {
+    errors.push('유효한 이메일 주소를 입력해주세요.');
+  }
+  
+  // 비밀번호 검증
+  if (!password || typeof password !== 'string' || password.length < 1) {
+    errors.push('비밀번호를 입력해주세요.');
+  }
+  
+  // 입력값 길이 제한 (CWE-20: Improper Input Validation)
+  if (email && email.length > 100) {
+    errors.push('이메일이 너무 깁니다.');
+  }
+  if (password && password.length > 100) {
+    errors.push('비밀번호가 너무 깁니다.');
+  }
+  
+  return errors;
+};
+
+// 관리자 로그인 라우트 (POST) - CWE-307 Rate Limiting 적용
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    console.log('로그인 요청:', { email, nodeEnv: process.env.NODE_ENV });
+    // 로그인 시도 로깅 (비밀번호 제외)
+    console.log('로그인 요청:', { 
+      email: email ? email.substring(0, 3) + '***' : 'undefined',
+      ip: req.ip,
+      timestamp: new Date().toISOString()
+    });
     
-    // 필수 필드 검사
-    if (!email || !password) {
+    // CWE-20: 입력값 검증
+    const validationErrors = validateLoginInput(email, password);
+    if (validationErrors.length > 0) {
       return res.status(400).json({ 
         success: false,
-        message: '이메일과 비밀번호를 모두 입력해주세요.' 
+        message: validationErrors[0] // 첫 번째 에러만 반환 (정보 노출 최소화)
       });
     }
     
-    // 개발 모드에서는 간단한 인증
-    if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
-      console.log('개발 모드 로그인 처리');
+    // 이메일 정규화 (소문자 변환, 공백 제거)
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    // 1단계: 환경변수 관리자 계정 확인 (.env의 ADMIN_EMAIL, ADMIN_PASSWORD)
+    const envAdminUser = await validateEnvAdmin(normalizedEmail, password);
+    
+    if (envAdminUser) {
+      // 환경변수 관리자 로그인 성공
+      const token = jwt.sign({ 
+        id: envAdminUser.id, 
+        email: envAdminUser.email,
+        isAdmin: true,
+        role: 'admin',
+        source: 'env',
+        iat: Math.floor(Date.now() / 1000)
+      }, getJWTSecret(), { 
+        expiresIn: '8h',
+        issuer: 'snu-plp-server'
+      });
       
-      // 기본 관리자 계정 확인
-      if (email === 'admin@snu-plp.ac.kr' && password === 'admin123!') {
-        const token = jwt.sign({ 
-          id: 'admin123', 
-          email: email,
+      console.log(`✅ 환경변수 관리자 로그인 성공 - Email: ${normalizedEmail.substring(0, 3)}***, IP: ${req.ip}`);
+      
+      return res.json({ 
+        success: true,
+        message: '로그인 성공',
+        token,
+        user: {
+          email: envAdminUser.email,
           isAdmin: true,
           role: 'admin'
-        }, JWT_SECRET, { expiresIn: '1d' });
-        
-        return res.json({ 
-          success: true,
-          message: '로그인 성공',
-          token,
-          user: {
-            email: email,
-            isAdmin: true,
-            role: 'admin'
-          }
-        });
-      } else {
-        return res.status(401).json({ 
-          success: false,
-          message: '이메일 또는 비밀번호가 일치하지 않습니다.' 
-        });
-      }
+        }
+      });
     }
     
-    // 프로덕션 모드에서는 실제 사용자 검증
-    console.log('프로덕션 모드 로그인 처리');
+    // 2단계: MongoDB 사용자 확인
+    const user = await User.findOne({ email: normalizedEmail });
     
-    const user = await User.findOne({ email });
-    
+    // CWE-209: 사용자 존재 여부를 노출하지 않음 (일관된 응답)
     if (!user) {
+      // 타이밍 공격 방지를 위한 더미 비밀번호 비교
+      await bcrypt.compare(password, '$2a$10$dummyhashfortiminattackprevention');
       return res.status(401).json({ 
         success: false,
         message: '이메일 또는 비밀번호가 일치하지 않습니다.' 
@@ -68,6 +182,7 @@ router.post('/login', async (req, res) => {
     const isPasswordValid = await user.comparePassword(password);
     
     if (!isPasswordValid) {
+      console.warn(`🚨 [CWE-307] 로그인 실패 - Email: ${normalizedEmail.substring(0, 3)}***, IP: ${req.ip}`);
       return res.status(401).json({ 
         success: false,
         message: '이메일 또는 비밀번호가 일치하지 않습니다.' 
@@ -84,12 +199,20 @@ router.post('/login', async (req, res) => {
       });
     }
     
+    // CWE-613: 세션 만료 시간 단축 (8시간)
     const token = jwt.sign({ 
       id: user._id, 
       email: user.email,
       isAdmin: isAdmin,
-      role: user.role || 'admin'
-    }, JWT_SECRET, { expiresIn: '1d' });
+      role: user.role || 'admin',
+      source: 'db',
+      iat: Math.floor(Date.now() / 1000)
+    }, getJWTSecret(), { 
+      expiresIn: '8h',
+      issuer: 'snu-plp-server'
+    });
+    
+    console.log(`✅ DB 관리자 로그인 성공 - Email: ${normalizedEmail.substring(0, 3)}***, IP: ${req.ip}`);
     
     res.json({ 
       success: true,
@@ -103,23 +226,23 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('로그인 오류:', error);
+    // CWE-209: 에러 상세 정보 노출 방지
     res.status(500).json({ 
       success: false,
-      message: '서버 오류가 발생했습니다.',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: '서버 오류가 발생했습니다.'
     });
   }
 });
 
-// GET 요청에 대한 정보 응답 추가
+// GET 요청에 대한 정보 응답 (CWE-798: 하드코딩된 credentials 제거)
 router.get('/login', (req, res) => {
   res.json({
     message: 'Login API Information',
     method: 'POST',
     endpoint: '/api/auth/login',
     body: {
-      email: 'admin@snu-plp.ac.kr',
-      password: 'admin123!'
+      email: 'string (required)',
+      password: 'string (required)'
     },
     note: 'This endpoint requires POST method for login'
   });
@@ -181,17 +304,8 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// 토큰 인증 테스트 라우트
+// 토큰 인증 테스트 라우트 - CWE-287: 항상 실제 토큰 검증 수행
 router.get('/verify', (req, res) => {
-  // 개발 모드에서는 항상 성공
-  if (process.env.NODE_ENV === 'development') {
-    return res.json({ 
-      success: true,
-      authenticated: true,
-      message: '개발 모드: 인증이 유효합니다.'
-    });
-  }
-  
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   
@@ -199,21 +313,25 @@ router.get('/verify', (req, res) => {
     return res.status(401).json({ authenticated: false, message: '인증 토큰이 필요합니다.' });
   }
   
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ authenticated: false, message: '유효하지 않은 토큰입니다.' });
-    }
+  try {
+    const decoded = jwt.verify(token, getJWTSecret(), {
+      issuer: 'snu-plp-server'
+    });
     
     res.json({ 
       success: true,
       authenticated: true,
       user: {
-        email: user.email,
-        isAdmin: user.isAdmin
+        email: decoded.email,
+        isAdmin: decoded.isAdmin
       },
       message: '인증이 유효합니다.'
     });
-  });
+  } catch (err) {
+    // CWE-209: 구체적인 에러 유형 노출 방지
+    console.warn(`🚨 토큰 검증 실패 - IP: ${req.ip}, Error: ${err.name}`);
+    return res.status(403).json({ authenticated: false, message: '유효하지 않은 토큰입니다.' });
+  }
 });
 
 module.exports = router; 

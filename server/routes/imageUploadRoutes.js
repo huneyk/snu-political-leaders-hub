@@ -3,9 +3,40 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const imageOptimizer = require('../middleware/imageOptimization');
-const { authenticateToken } = require('../middleware/authMiddleware');
+const { authenticateToken, isAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+// ============================================
+// CWE-22: Path Traversal 방지 유틸리티
+// ============================================
+const sanitizeFilename = (filename) => {
+  if (!filename || typeof filename !== 'string') {
+    return null;
+  }
+  
+  // 경로 구분자 및 특수 문자 제거
+  const sanitized = path.basename(filename)
+    .replace(/\.\./g, '') // 상위 디렉토리 이동 방지
+    .replace(/[<>:"|?*\x00-\x1f]/g, '') // 위험한 문자 제거
+    .replace(/^\.+/, ''); // 숨김 파일 방지
+  
+  // 빈 문자열이 되면 null 반환
+  if (!sanitized || sanitized.length === 0) {
+    return null;
+  }
+  
+  return sanitized;
+};
+
+// 안전한 파일 경로 확인
+const isPathSafe = (baseDir, filePath) => {
+  const resolvedPath = path.resolve(filePath);
+  const resolvedBaseDir = path.resolve(baseDir);
+  
+  // 파일 경로가 기준 디렉토리 내에 있는지 확인
+  return resolvedPath.startsWith(resolvedBaseDir + path.sep);
+};
 
 // 이미지 업로드 디렉토리 설정
 const uploadDir = path.join(__dirname, '../uploads/images');
@@ -62,9 +93,9 @@ const uploadImage = multer({
 /**
  * @route   POST /api/images/upload
  * @desc    단일 이미지 업로드 및 최적화
- * @access  Protected
+ * @access  Protected (CWE-862: 관리자 인증 필수)
  */
-router.post('/upload', uploadImage.single('image'), imageOptimizer.processUploadedImage(), async (req, res) => {
+router.post('/upload', isAdmin, uploadImage.single('image'), imageOptimizer.processUploadedImage(), async (req, res) => {
   try {
     console.log('이미지 업로드 요청 수신:', req.file?.originalname);
     
@@ -122,9 +153,9 @@ router.post('/upload', uploadImage.single('image'), imageOptimizer.processUpload
 /**
  * @route   POST /api/images/upload/multiple
  * @desc    다중 이미지 업로드 및 최적화
- * @access  Protected
+ * @access  Protected (CWE-862: 관리자 인증 필수)
  */
-router.post('/upload/multiple', uploadImage.array('images', 10), async (req, res) => {
+router.post('/upload/multiple', isAdmin, uploadImage.array('images', 10), async (req, res) => {
   try {
     console.log(`다중 이미지 업로드 요청: ${req.files?.length || 0}개 파일`);
     
@@ -262,12 +293,32 @@ router.get('/', async (req, res) => {
 /**
  * @route   DELETE /api/images/:filename
  * @desc    이미지 파일 삭제
- * @access  Protected
+ * @access  Protected (CWE-862: 관리자 인증 필수)
  */
-router.delete('/:filename', async (req, res) => {
+router.delete('/:filename', isAdmin, async (req, res) => {
   try {
-    const { filename } = req.params;
+    const rawFilename = req.params.filename;
+    
+    // CWE-22: Path Traversal 방지
+    const filename = sanitizeFilename(rawFilename);
+    if (!filename) {
+      console.warn(`🚨 [CWE-22] 의심스러운 이미지 파일명 시도 - IP: ${req.ip}, Filename: ${rawFilename}`);
+      return res.status(400).json({
+        success: false,
+        message: '유효하지 않은 파일명입니다.'
+      });
+    }
+    
     const filePath = path.join(uploadDir, filename);
+    
+    // CWE-22: 경로 안전성 확인
+    if (!isPathSafe(uploadDir, filePath)) {
+      console.warn(`🚨 [CWE-22] Path Traversal 시도 감지 - IP: ${req.ip}, Path: ${rawFilename}`);
+      return res.status(400).json({
+        success: false,
+        message: '잘못된 파일 경로입니다.'
+      });
+    }
     
     // 파일 존재 확인
     try {
@@ -283,14 +334,21 @@ router.delete('/:filename', async (req, res) => {
     await fs.promises.unlink(filePath);
     
     // 관련된 최적화된 이미지들도 삭제 (같은 base name을 가진 파일들)
+    // CWE-22: sanitizeFilename으로 이미 검증된 파일명만 사용
     const baseName = path.parse(filename).name.split('_')[0];
     const allFiles = await fs.promises.readdir(uploadDir);
-    const relatedFiles = allFiles.filter(file => file.startsWith(baseName + '_'));
+    const relatedFiles = allFiles.filter(file => {
+      const sanitizedRelated = sanitizeFilename(file);
+      return sanitizedRelated && sanitizedRelated.startsWith(baseName + '_');
+    });
     
     for (const relatedFile of relatedFiles) {
       try {
-        await fs.promises.unlink(path.join(uploadDir, relatedFile));
-        console.log(`🗑️ 관련 파일 삭제: ${relatedFile}`);
+        const relatedPath = path.join(uploadDir, relatedFile);
+        if (isPathSafe(uploadDir, relatedPath)) {
+          await fs.promises.unlink(relatedPath);
+          console.log(`🗑️ 관련 파일 삭제: ${relatedFile}`);
+        }
       } catch (error) {
         console.warn(`⚠️ 관련 파일 삭제 실패: ${relatedFile}`, error.message);
       }
@@ -305,10 +363,10 @@ router.delete('/:filename', async (req, res) => {
     
   } catch (error) {
     console.error('이미지 삭제 실패:', error);
+    // CWE-209: 에러 상세 정보 노출 방지
     res.status(500).json({
       success: false,
-      message: '이미지 삭제 중 오류가 발생했습니다.',
-      error: error.message
+      message: '이미지 삭제 중 오류가 발생했습니다.'
     });
   }
 });

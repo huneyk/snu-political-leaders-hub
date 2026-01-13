@@ -4,9 +4,40 @@ const path = require('path');
 const fs = require('fs');
 const Footer = require('../models/Footer');
 const mongoose = require('mongoose');
-const { authenticateToken } = require('../middleware/authMiddleware');
+const { authenticateToken, isAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+// ============================================
+// CWE-22: Path Traversal 방지 유틸리티
+// ============================================
+const sanitizeFilename = (filename) => {
+  if (!filename || typeof filename !== 'string') {
+    return null;
+  }
+  
+  // 경로 구분자 및 특수 문자 제거
+  const sanitized = path.basename(filename)
+    .replace(/\.\./g, '') // 상위 디렉토리 이동 방지
+    .replace(/[<>:"|?*\x00-\x1f]/g, '') // 위험한 문자 제거
+    .replace(/^\.+/, ''); // 숨김 파일 방지
+  
+  // 빈 문자열이 되면 null 반환
+  if (!sanitized || sanitized.length === 0) {
+    return null;
+  }
+  
+  return sanitized;
+};
+
+// 안전한 파일 경로 확인
+const isPathSafe = (uploadDir, filePath) => {
+  const resolvedPath = path.resolve(filePath);
+  const resolvedUploadDir = path.resolve(uploadDir);
+  
+  // 파일 경로가 업로드 디렉토리 내에 있는지 확인
+  return resolvedPath.startsWith(resolvedUploadDir + path.sep);
+};
 
 // 업로드 디렉토리 설정
 const uploadDir = path.join(__dirname, '../uploads');
@@ -64,9 +95,9 @@ const upload = multer({
 /**
  * @route   POST /api/upload
  * @desc    파일 업로드 처리 및 MongoDB Footer 컬렉션 업데이트
- * @access  Public (authentication removed)
+ * @access  Protected (CWE-862: 인증 필수)
  */
-router.post('/', upload.single('file'), async (req, res) => {
+router.post('/', isAdmin, upload.single('file'), async (req, res) => {
   try {
     console.log('파일 업로드 요청 수신:', req.file?.originalname);
     
@@ -236,12 +267,26 @@ router.get('/files', async (req, res) => {
 /**
  * @route   DELETE /api/upload/:filename
  * @desc    파일 삭제
- * @access  Public (authentication removed)
+ * @access  Protected (CWE-862: 인증 필수)
  */
-router.delete('/:filename', async (req, res) => {
+router.delete('/:filename', isAdmin, async (req, res) => {
   try {
-    const filename = req.params.filename;
+    const rawFilename = req.params.filename;
+    
+    // CWE-22: Path Traversal 방지
+    const filename = sanitizeFilename(rawFilename);
+    if (!filename) {
+      console.warn(`🚨 [CWE-22] 의심스러운 파일명 시도 - IP: ${req.ip}, Filename: ${rawFilename}`);
+      return res.status(400).json({ message: '유효하지 않은 파일명입니다.' });
+    }
+    
     const filePath = path.join(uploadDir, filename);
+    
+    // CWE-22: 경로 안전성 확인
+    if (!isPathSafe(uploadDir, filePath)) {
+      console.warn(`🚨 [CWE-22] Path Traversal 시도 감지 - IP: ${req.ip}, Path: ${rawFilename}`);
+      return res.status(400).json({ message: '잘못된 파일 경로입니다.' });
+    }
     
     // 파일 존재 여부 확인
     if (!fs.existsSync(filePath)) {
