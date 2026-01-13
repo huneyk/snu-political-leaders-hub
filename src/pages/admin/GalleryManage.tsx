@@ -485,9 +485,9 @@ const GalleryManage = () => {
     };
     
     try {
-      // 서버에 새 항목 추가
+      // 서버에 새 항목 추가 (토큰 전달)
       console.log('새 항목 추가 요청:', newItem);
-      const createdItem = await apiService.addGalleryItem(newItem);
+      const createdItem = await apiService.addGalleryItem(newItem, token || undefined);
       console.log('새 항목 추가 응답:', createdItem);
       
       // 상태 업데이트
@@ -574,9 +574,9 @@ const GalleryManage = () => {
     };
     
     try {
-      // 서버에 항목 업데이트
+      // 서버에 항목 업데이트 (토큰 전달)
       console.log(`항목 수정 요청 (ID: ${selectedItem._id}):`, updatedItem);
-      await apiService.updateGalleryItem(selectedItem._id, updatedItem);
+      await apiService.updateGalleryItem(selectedItem._id, updatedItem, token || undefined);
       console.log('항목 수정 성공');
       
       // 상태 업데이트
@@ -622,9 +622,9 @@ const GalleryManage = () => {
   const handleDeleteItem = async (id: string) => {
     if (window.confirm('정말로 이 갤러리 항목을 삭제하시겠습니까?')) {
       try {
-        // 서버에서 항목 삭제
+        // 서버에서 항목 삭제 (토큰 전달)
         console.log(`항목 삭제 시도 (ID: ${id})`);
-        await apiService.deleteGalleryItem(id);
+        await apiService.deleteGalleryItem(id, token || undefined);
         console.log(`항목 삭제 성공 (ID: ${id})`);
         
         // 상태 업데이트

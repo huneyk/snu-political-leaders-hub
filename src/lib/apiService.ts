@@ -1806,7 +1806,11 @@ export const apiService = {
         'Content-Type': 'application/json'
       };
       
-      // 인증 미들웨어 제거 - 토큰 없이도 작동하도록 수정
+      // 토큰이 있으면 Authorization 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
       const response = await axios.post(`${baseURL}/gallery`, galleryData, {
         headers,
         withCredentials: true
@@ -1832,12 +1836,15 @@ export const apiService = {
     try {
       console.log(`갤러리 항목 수정 시작 (ID: ${id})`);
       
-      // 인증 미들웨어 제거 - 헤더 단순화
       const headers: any = {
         'Content-Type': 'application/json'
       };
       
-      // API 요청 시도 - 인증 요구 없이
+      // 토큰이 있으면 Authorization 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
       const response = await axios.put(`${baseURL}/gallery/${id}`, galleryData, {
         headers,
         withCredentials: true
@@ -1863,12 +1870,15 @@ export const apiService = {
     try {
       console.log(`갤러리 항목 삭제 시작 (ID: ${id})`);
       
-      // 인증 미들웨어 제거 - 헤더 단순화
       const headers: any = {
         'Content-Type': 'application/json'
       };
       
-      // API 요청 시도 - 인증 요구 없이
+      // 토큰이 있으면 Authorization 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
       const response = await axios.delete(`${baseURL}/gallery/${id}`, {
         headers,
         withCredentials: true
