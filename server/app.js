@@ -9,8 +9,8 @@ const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 
-// 환경 변수 로드
-dotenv.config();
+// 환경 변수 로드 (프로젝트 루트의 .env 파일 사용)
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // ============================================
 // CWE 보안 정책 적용

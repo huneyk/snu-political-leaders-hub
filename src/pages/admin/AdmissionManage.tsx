@@ -176,10 +176,9 @@ const AdmissionManage = () => {
       // MongoDB API를 통해 데이터 저장
       let response;
       
-      // 임시 테스트를 위해 토큰 검증 우회
       // 토큰 가져오기 (없으면 빈 문자열 사용)
-      const token = localStorage.getItem('token') || '';
-      console.log('저장 시도 중... 토큰 인증 우회 (테스트용)');
+      const token = localStorage.getItem('adminToken') || '';
+      console.log('저장 시도 중... 토큰:', token ? '있음' : '없음');
       
       // _id가 있으면 PUT(수정), 없으면 POST(신규 추가)
       if (admissionInfo._id) {

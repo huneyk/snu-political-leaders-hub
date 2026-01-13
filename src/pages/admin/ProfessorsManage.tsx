@@ -34,7 +34,7 @@ const ProfessorsManage = () => {
   const [sections, setSections] = useState<ProfessorSection[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
+  const { isAuthenticated, isLoading: authLoading, token } = useAdminAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -160,16 +160,16 @@ const ProfessorsManage = () => {
         return;
       }
       
-      // 모든 섹션을 병렬로 저장 또는 업데이트 (토큰 제거)
+      // 모든 섹션을 병렬로 저장 또는 업데이트 (토큰 전달)
       const savePromises = filteredSections.map(async section => {
         if (section._id) {
           // 기존 섹션 업데이트
           console.log(`ID ${section._id}를 가진 교수진 섹션 업데이트`);
-          return await apiService.updateProfessorSection(section._id, section);
+          return await apiService.updateProfessorSection(section._id, section, token || undefined);
         } else {
           // 새 섹션 생성
           console.log('새 교수진 섹션 생성');
-          return await apiService.createProfessorSection(section);
+          return await apiService.createProfessorSection(section, token || undefined);
         }
       });
       
@@ -206,8 +206,8 @@ const ProfessorsManage = () => {
     try {
       setIsLoading(true);
       console.log(`ID ${sectionId}를 가진 교수진 섹션 삭제 시도`);
-      // 토큰 없이 호출
-      await apiService.deleteProfessorSection(sectionId);
+      // 토큰 전달
+      await apiService.deleteProfessorSection(sectionId, token || undefined);
       
       // 삭제 후 목록에서 제거
       setSections(sections.filter(section => section._id !== sectionId));

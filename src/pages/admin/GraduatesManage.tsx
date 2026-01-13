@@ -17,6 +17,9 @@ interface Graduate {
 const GraduatesManage: React.FC = () => {
   const navigate = useNavigate();
   const [graduates, setGraduates] = useState<Graduate[]>([]);
+  
+  // 인증 토큰 가져오기
+  const getToken = () => localStorage.getItem('adminToken') || '';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -93,7 +96,7 @@ const GraduatesManage: React.FC = () => {
     
     try {
       setLoading(true);
-      const addedGraduate = await apiService.addGraduate(graduateData);
+      const addedGraduate = await apiService.addGraduate(graduateData, getToken());
       
       // 리스트에 추가된 수료생 추가
       setGraduates(prev => [...prev, addedGraduate]);
@@ -124,7 +127,7 @@ const GraduatesManage: React.FC = () => {
     
     try {
       setLoading(true);
-      await apiService.deleteGraduate(id);
+      await apiService.deleteGraduate(id, getToken());
       
       // 삭제된 수료생 제거
       setGraduates(prev => prev.filter(g => g._id !== id));
@@ -142,7 +145,7 @@ const GraduatesManage: React.FC = () => {
   const handleToggleGraduated = async (id: string, currentStatus: boolean) => {
     try {
       setLoading(true);
-      const updatedGraduate = await apiService.updateGraduate(id, { isGraduated: !currentStatus });
+      const updatedGraduate = await apiService.updateGraduate(id, { isGraduated: !currentStatus }, getToken());
       
       // 수정된 수료생 정보 업데이트
       setGraduates(prev => 
@@ -211,7 +214,7 @@ const GraduatesManage: React.FC = () => {
         term: typeof editGraduate.term === 'string' ? parseInt(editGraduate.term, 10) : editGraduate.term
       };
       
-      const updatedGraduate = await apiService.updateGraduate(editGraduate._id, graduateData);
+      const updatedGraduate = await apiService.updateGraduate(editGraduate._id, graduateData, getToken());
       
       // 수정된 수료생 정보 업데이트
       setGraduates(prev => 
@@ -289,8 +292,8 @@ const GraduatesManage: React.FC = () => {
           
           setUploadStatus(`${graduatesData.length}명의 수료 원우 데이터를 업로드하는 중...`);
           
-          // 일괄 추가 API 호출
-          const result = await apiService.addGraduatesBatch(graduatesData);
+          // 일괄 추가 API 호출 (토큰 전달)
+          const result = await apiService.addGraduatesBatch(graduatesData, getToken());
           
           // 리스트 업데이트
           const updatedGraduates = await apiService.getGraduates();

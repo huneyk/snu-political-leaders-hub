@@ -2160,12 +2160,19 @@ export const apiService = {
   },
 
   // 추천의 글 생성/업데이트 함수
-  async createRecommendation(recommendationData: any) {
+  async createRecommendation(recommendationData: any, token?: string) {
     try {
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 Authorization 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
       const response = await axios.post(`${baseURL}/content/recommendations`, recommendationData, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers
       });
       return response.data;
     } catch (error) {
@@ -2175,9 +2182,20 @@ export const apiService = {
   },
   
   // 추천의 글 삭제 함수
-  async deleteRecommendation(id: string) {
+  async deleteRecommendation(id: string, token?: string) {
     try {
-      const response = await axios.delete(`${baseURL}/content/recommendations/${id}`);
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 Authorization 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await axios.delete(`${baseURL}/content/recommendations/${id}`, {
+        headers
+      });
       return response.data;
     } catch (error) {
       console.error('추천의 글 삭제 실패:', error);

@@ -223,16 +223,16 @@ const RecommendationsManage = () => {
       // 1. 기존 데이터 불러오기
       const existingRecommendations = await apiService.getRecommendations();
       
-      // 2. 기존 데이터 삭제
+      // 2. 기존 데이터 삭제 (토큰 전달)
       if (existingRecommendations && Array.isArray(existingRecommendations)) {
         for (const rec of existingRecommendations) {
           if (rec._id) {
-            await apiService.deleteRecommendation(rec._id);
+            await apiService.deleteRecommendation(rec._id, token || undefined);
           }
         }
       }
       
-      // 3. 새 데이터 저장
+      // 3. 새 데이터 저장 (토큰 전달)
       const savedItems = [];
       for (let i = 0; i < validRecommendations.length; i++) {
         const rec = validRecommendations[i];
@@ -248,7 +248,7 @@ const RecommendationsManage = () => {
           order: i
         }, sectionTitle);
         
-        const savedItem = await apiService.createRecommendation(dbItem);
+        const savedItem = await apiService.createRecommendation(dbItem, token || undefined);
         savedItems.push(savedItem);
       }
       
