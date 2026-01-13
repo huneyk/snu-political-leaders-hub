@@ -146,6 +146,32 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
                 <p className="text-xs text-gray-600">Tel: 02-880-4107  Email: plp@snu.ac.kr</p>
               </div>
             </div>
+            <div className="flex flex-wrap gap-3 mt-2 text-xs">
+              <a 
+                href="https://www.snu.ac.kr/index.html" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-gray-600 hover:text-blue-600 hover:underline"
+              >
+                서울대학교 공식 홈페이지
+              </a>
+              <a 
+                href="https://social.snu.ac.kr/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-gray-600 hover:text-blue-600 hover:underline"
+              >
+                서울대학교 사회과학대학
+              </a>
+              <a 
+                href="https://social.snu.ac.kr/%EC%A0%95%EC%B9%98%EC%99%B8%EA%B5%90%ED%95%99%EB%B6%80/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-gray-600 hover:text-blue-600 hover:underline"
+              >
+                서울대학교 정치외교학부
+              </a>
+            </div>
           </div>
           
           <div className="flex flex-col md:flex-row gap-2 md:gap-4">
