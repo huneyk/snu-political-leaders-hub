@@ -164,7 +164,7 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
                 서울대학교 사회과학대학
               </a>
               <a 
-                href="https://social.snu.ac.kr/%EC%A0%95%EC%B9%98%EC%99%B8%EA%B5%90%ED%95%99%EB%B6%80/" 
+                href="https://psir.snu.ac.kr/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-gray-600 hover:text-blue-600 hover:underline"
