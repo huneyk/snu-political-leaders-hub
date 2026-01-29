@@ -1801,6 +1801,8 @@ export const apiService = {
   addGalleryItem: async (galleryData: any, token?: string) => {
     try {
       console.log('새 갤러리 항목 추가 시작');
+      console.log('🔗 현재 환경:', import.meta.env.MODE);
+      console.log('🔗 토큰 존재 여부:', !!token);
       
       const headers: any = {
         'Content-Type': 'application/json'
@@ -1809,11 +1811,21 @@ export const apiService = {
       // 토큰이 있으면 Authorization 헤더에 추가
       if (token) {
         headers.Authorization = `Bearer ${token}`;
+      } else {
+        console.warn('⚠️ 갤러리 항목 추가: 인증 토큰이 없습니다!');
       }
       
-      const response = await axios.post(`${baseURL}/gallery`, galleryData, {
+      // 개발 환경에서는 프록시를 사용하고, 프로덕션에서는 전체 URL 사용
+      const apiUrl = import.meta.env.MODE === 'development' 
+        ? '/api/gallery' 
+        : `${baseURL}/gallery`;
+      
+      console.log('🔗 API 요청 URL:', apiUrl);
+      
+      const response = await axios.post(apiUrl, galleryData, {
         headers,
-        withCredentials: true
+        withCredentials: true,
+        timeout: 60000 // 대용량 이미지를 위해 타임아웃 60초로 설정
       });
       
       console.log('갤러리 항목 추가 성공:', response.status);
@@ -1823,6 +1835,7 @@ export const apiService = {
       if (axios.isAxiosError(error)) {
         console.error('API 오류 세부정보:', {
           status: error.response?.status,
+          statusText: error.response?.statusText,
           data: error.response?.data,
           message: error.message
         });
@@ -1835,6 +1848,8 @@ export const apiService = {
   updateGalleryItem: async (id: string, galleryData: any, token?: string) => {
     try {
       console.log(`갤러리 항목 수정 시작 (ID: ${id})`);
+      console.log('🔗 현재 환경:', import.meta.env.MODE);
+      console.log('🔗 토큰 존재 여부:', !!token);
       
       const headers: any = {
         'Content-Type': 'application/json'
@@ -1843,11 +1858,21 @@ export const apiService = {
       // 토큰이 있으면 Authorization 헤더에 추가
       if (token) {
         headers.Authorization = `Bearer ${token}`;
+      } else {
+        console.warn('⚠️ 갤러리 항목 수정: 인증 토큰이 없습니다!');
       }
       
-      const response = await axios.put(`${baseURL}/gallery/${id}`, galleryData, {
+      // 개발 환경에서는 프록시를 사용하고, 프로덕션에서는 전체 URL 사용
+      const apiUrl = import.meta.env.MODE === 'development' 
+        ? `/api/gallery/${id}` 
+        : `${baseURL}/gallery/${id}`;
+      
+      console.log('🔗 API 요청 URL:', apiUrl);
+      
+      const response = await axios.put(apiUrl, galleryData, {
         headers,
-        withCredentials: true
+        withCredentials: true,
+        timeout: 60000 // 대용량 이미지를 위해 타임아웃 60초로 설정
       });
       
       console.log('갤러리 항목 수정 성공:', response.status);
@@ -1857,6 +1882,7 @@ export const apiService = {
       if (axios.isAxiosError(error)) {
         console.error('API 오류 세부정보:', {
           status: error.response?.status,
+          statusText: error.response?.statusText,
           data: error.response?.data,
           message: error.message
         });
@@ -1869,6 +1895,8 @@ export const apiService = {
   deleteGalleryItem: async (id: string, token?: string) => {
     try {
       console.log(`갤러리 항목 삭제 시작 (ID: ${id})`);
+      console.log('🔗 현재 환경:', import.meta.env.MODE);
+      console.log('🔗 토큰 존재 여부:', !!token);
       
       const headers: any = {
         'Content-Type': 'application/json'
@@ -1877,9 +1905,18 @@ export const apiService = {
       // 토큰이 있으면 Authorization 헤더에 추가
       if (token) {
         headers.Authorization = `Bearer ${token}`;
+      } else {
+        console.warn('⚠️ 갤러리 항목 삭제: 인증 토큰이 없습니다!');
       }
       
-      const response = await axios.delete(`${baseURL}/gallery/${id}`, {
+      // 개발 환경에서는 프록시를 사용하고, 프로덕션에서는 전체 URL 사용
+      const apiUrl = import.meta.env.MODE === 'development' 
+        ? `/api/gallery/${id}` 
+        : `${baseURL}/gallery/${id}`;
+      
+      console.log('🔗 API 요청 URL:', apiUrl);
+      
+      const response = await axios.delete(apiUrl, {
         headers,
         withCredentials: true
       });
@@ -1891,6 +1928,7 @@ export const apiService = {
       if (axios.isAxiosError(error)) {
         console.error('API 오류 세부정보:', {
           status: error.response?.status,
+          statusText: error.response?.statusText,
           data: error.response?.data,
           message: error.message
         });
