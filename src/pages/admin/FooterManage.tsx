@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/components/admin/AdminLayout';
 import axios from 'axios';
 import { MdEmail } from 'react-icons/md';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 // API 기본 URL 설정 - 수정됨
 const API_BASE_URL = import.meta.env.MODE === 'production' 
@@ -43,6 +44,7 @@ interface FileInfo {
 
 const FooterManage: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, token } = useAdminAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [footerConfig, setFooterConfig] = useState<FooterConfig>({
@@ -95,7 +97,7 @@ const FooterManage: React.FC = () => {
       const response = await axios.get(`${API_BASE_URL}/footer`, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer admin-auth'
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -256,7 +258,7 @@ const FooterManage: React.FC = () => {
       const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'Authorization': 'Bearer admin-auth'
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -290,7 +292,7 @@ const FooterManage: React.FC = () => {
           axios.post(`${API_BASE_URL}/footer/upload`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
-              'Authorization': 'Bearer admin-auth'
+              'Authorization': `Bearer ${token}`
             }
           }).then(response => {
             console.log('Word 파일 업로드 성공:', response.data);
@@ -309,7 +311,7 @@ const FooterManage: React.FC = () => {
           axios.post(`${API_BASE_URL}/footer/upload`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
-              'Authorization': 'Bearer admin-auth'
+              'Authorization': `Bearer ${token}`
             }
           }).then(response => {
             console.log('HWP 파일 업로드 성공:', response.data);
@@ -328,7 +330,7 @@ const FooterManage: React.FC = () => {
           axios.post(`${API_BASE_URL}/footer/upload`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
-              'Authorization': 'Bearer admin-auth'
+              'Authorization': `Bearer ${token}`
             }
           }).then(response => {
             console.log('PDF 파일 업로드 성공:', response.data);
@@ -354,7 +356,7 @@ const FooterManage: React.FC = () => {
       }, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer admin-auth'
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -537,7 +539,7 @@ const FooterManage: React.FC = () => {
       const response = await axios.get(`${API_BASE_URL}/footer/download/${fileType}`, {
         responseType: 'blob',
         headers: {
-          'Authorization': 'Bearer admin-auth'
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -604,7 +606,7 @@ const FooterManage: React.FC = () => {
       // API를 통해 파일 삭제
       const response = await axios.delete(`${API_BASE_URL}/footer/delete/${fileType}`, {
         headers: {
-          'Authorization': 'Bearer admin-auth'
+          'Authorization': `Bearer ${token}`
         }
       });
       

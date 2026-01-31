@@ -391,7 +391,7 @@ const NoticesManage: React.FC = () => {
         // 1. 먼저 apiService로 시도
         console.log('📤 apiService.addNotice 호출 시작');
         console.log('📦 전송할 데이터 크기:', JSON.stringify(noticeData).length, 'bytes');
-        const response = await apiService.addNotice(noticeData);
+        const response = await apiService.addNotice(noticeData, token);
         console.log('✅ 서버 응답:', response);
         console.log('✅ 서버에 저장된 attachments:', response.attachments);
         success = true;
@@ -403,7 +403,7 @@ const NoticesManage: React.FC = () => {
           await axios.post(`${API_BASE_URL}/notices`, noticeData, {
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer admin-auth'
+              'Authorization': `Bearer ${token}`
             }
           });
           success = true;
@@ -416,7 +416,7 @@ const NoticesManage: React.FC = () => {
             await axios.post(`${API_BASE_URL.replace('/api', '/api/content')}/notices`, noticeData, {
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer admin-auth'
+                'Authorization': `Bearer ${token}`
               }
             });
             success = true;
@@ -500,7 +500,7 @@ const NoticesManage: React.FC = () => {
       try {
         // 1. 먼저 apiService로 시도
         console.log('apiService.updateNotice 호출 시작');
-        await apiService.updateNotice(noticeId, noticeData);
+        await apiService.updateNotice(noticeId, noticeData, token);
         success = true;
       } catch (apiError) {
         console.log('apiService 실패, 직접 axios 요청 시도');
@@ -510,7 +510,7 @@ const NoticesManage: React.FC = () => {
           await axios.put(`${API_BASE_URL}/notices/${noticeId}`, noticeData, {
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer admin-auth'
+              'Authorization': `Bearer ${token}`
             }
           });
           success = true;
@@ -523,7 +523,7 @@ const NoticesManage: React.FC = () => {
             await axios.put(`${API_BASE_URL.replace('/api', '/api/content')}/notices/${noticeId}`, noticeData, {
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer admin-auth'
+                'Authorization': `Bearer ${token}`
               }
             });
             success = true;
@@ -579,7 +579,7 @@ const NoticesManage: React.FC = () => {
       
       try {
         // 1. 먼저 apiService로 시도
-        await apiService.deleteNotice(id);
+        await apiService.deleteNotice(id, token);
         success = true;
       } catch (apiError) {
         console.log('apiService 실패, 직접 axios 요청 시도');
@@ -588,7 +588,7 @@ const NoticesManage: React.FC = () => {
           // 2. apiService 실패시 직접 axios로 시도
           await axios.delete(`${API_BASE_URL}/notices/${id}`, {
             headers: {
-              'Authorization': 'Bearer admin-auth'
+              'Authorization': `Bearer ${token}`
             }
           });
           success = true;
@@ -600,7 +600,7 @@ const NoticesManage: React.FC = () => {
             console.log('대체 경로로 시도: /api/content/notices');
             await axios.delete(`${API_BASE_URL.replace('/api', '/api/content')}/notices/${id}`, {
               headers: {
-                'Authorization': 'Bearer admin-auth'
+                'Authorization': `Bearer ${token}`
               }
             });
             success = true;

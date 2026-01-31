@@ -179,7 +179,7 @@ const CourseGoalManage = () => {
     
     if (objectiveToRemove._id) {
       try {
-        await apiService.deleteObjective(objectiveToRemove._id);
+        await apiService.deleteObjective(objectiveToRemove._id, token);
         toast({
           title: "삭제 완료",
           description: "목표가 성공적으로 삭제되었습니다.",
@@ -232,9 +232,9 @@ const CourseGoalManage = () => {
       // 기존 데이터 ID가 있는 경우 업데이트, 없는 경우 새로 생성
       const savePromises = objectivesToSave.map(async (obj) => {
         if (obj._id) {
-          return apiService.updateObjective(obj);
+          return apiService.updateObjective(obj, token);
         } else {
-          return apiService.updateObjective(obj);
+          return apiService.updateObjective(obj, token);
         }
       });
       

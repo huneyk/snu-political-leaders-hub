@@ -83,7 +83,7 @@ const FacultyManage = () => {
       console.log('MongoDB에서 강사 데이터 불러오기 시작...');
       
       // apiService를 사용하여 모든 강사 데이터 가져오기
-      const data = await apiService.getLecturersAll();
+      const data = await apiService.getLecturersAll(token);
       
       console.log('서버에서 불러온 강사 데이터:', data);
       
@@ -756,7 +756,7 @@ const FacultyManage = () => {
         for (const faculty of changes.deleted) {
           if (faculty._id) {
             try {
-              await apiService.deleteLecturer(faculty._id);
+              await apiService.deleteLecturer(faculty._id, token);
               operationCount++;
               console.log(`강사 ${faculty.name} 삭제 완료`);
             } catch (deleteError) {
@@ -789,7 +789,7 @@ const FacultyManage = () => {
            };
 
           try {
-            const response = await apiService.createLecturer(lecturerData);
+            const response = await apiService.createLecturer(lecturerData, token);
             console.log(`새 강사 ${faculty.name} 생성 완료`);
             
             // 생성된 강사의 _id를 현재 데이터에 업데이트
@@ -837,7 +837,7 @@ const FacultyManage = () => {
              };
 
             try {
-              await apiService.updateLecturer(faculty._id, updateData);
+              await apiService.updateLecturer(faculty._id, updateData, token);
               console.log(`강사 ${faculty.name} 업데이트 완료`);
             } catch (updateError) {
               console.error(`강사 ${faculty.name} 업데이트 중 오류:`, updateError);

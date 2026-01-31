@@ -477,6 +477,14 @@ export const apiService = {
   updateObjective: async (objectiveData: any, token?: string) => {
     try {
       let response;
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       
       // ID가 있으면 PUT 요청으로 업데이트
       if (objectiveData._id) {
@@ -484,7 +492,7 @@ export const apiService = {
         response = await axios.put(
           `${baseURL}/objectives/${objectiveData._id}`, 
           objectiveData, 
-          { headers: { 'Content-Type': 'application/json' } }
+          { headers }
         );
       } 
       // ID가 없으면 POST 요청으로 새로 생성
@@ -493,7 +501,7 @@ export const apiService = {
         response = await axios.post(
           `${baseURL}/objectives`, 
           objectiveData, 
-          { headers: { 'Content-Type': 'application/json' } }
+          { headers }
         );
       }
       
@@ -508,10 +516,17 @@ export const apiService = {
   deleteObjective: async (id: string, token?: string) => {
     try {
       console.log(`ID ${id}를 가진 목표 삭제 시도`);
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
       const response = await axios.delete(`${baseURL}/objectives/${id}`, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers
       });
       return response.data;
     } catch (error) {
@@ -590,10 +605,10 @@ export const apiService = {
         'Content-Type': 'application/json'
       };
       
-      // 테스트를 위해 인증 제거
-      // if (token) {
-      //   headers.Authorization = `Bearer ${token}`;
-      // }
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       
       const data = await makeApiRequest('/benefits', {
         method: 'GET',
@@ -618,10 +633,10 @@ export const apiService = {
         'Content-Type': 'application/json'
       };
       
-      // 테스트를 위해 인증 제거
-      // if (token) {
-      //   headers.Authorization = `Bearer ${token}`;
-      // }
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       
       const response = await axios.post(`${baseURL}/benefits`, benefitData, { headers });
       console.log('특전 생성 결과:', response.status);
@@ -642,10 +657,10 @@ export const apiService = {
         'Content-Type': 'application/json'
       };
       
-      // 테스트를 위해 인증 제거
-      // if (token) {
-      //   headers.Authorization = `Bearer ${token}`;
-      // }
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       
       const response = await axios.put(`${baseURL}/benefits/${id}`, benefitData, { headers });
       console.log('특전 업데이트 결과:', response.status);
@@ -666,10 +681,10 @@ export const apiService = {
         'Content-Type': 'application/json'
       };
       
-      // 테스트를 위해 인증 제거
-      // if (token) {
-      //   headers.Authorization = `Bearer ${token}`;
-      // }
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       
       const response = await axios.delete(`${baseURL}/benefits/${id}`, { headers });
       console.log('특전 삭제 결과:', response.status);
@@ -1564,16 +1579,23 @@ export const apiService = {
   },
 
   // 관리자용 모든 강사진 조회 API
-  getLecturersAll: async () => {
+  getLecturersAll: async (token?: string) => {
     try {
       console.log('관리자용 모든 강사진 데이터 조회 시작');
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       
       // /lecturers 엔드포인트 사용 (일반 페이지와 동일한 엔드포인트)
       const data = await makeApiRequest('/lecturers', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers
       });
       
       console.log('전체 강사진 데이터 조회 결과 성공');
@@ -1982,8 +2004,8 @@ export const apiService = {
     }
   },
 
-  // 공지사항 추가 - 인증 제거됨
-  addNotice: async (noticeData: any) => {
+  // 공지사항 추가
+  addNotice: async (noticeData: any, token?: string) => {
     try {
       console.log('새 공지사항 추가 시작');
       console.log('=== 서버로 전송할 데이터 상세 분석 ===');
@@ -1994,12 +2016,17 @@ export const apiService = {
       console.log('attachments 길이:', noticeData.attachments?.length);
       console.log('attachments 내용:', JSON.stringify(noticeData.attachments, null, 2));
       
-      // admin-auth 토큰 추가
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
       const response = await axios.post(`${baseURL}/notices`, noticeData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer admin-auth'
-        }
+        headers
       });
       
       console.log('공지사항 추가 성공:', response.status);
@@ -2018,8 +2045,8 @@ export const apiService = {
     }
   },
 
-  // 공지사항 수정 - 인증 제거됨
-  updateNotice: async (id: string, noticeData: any) => {
+  // 공지사항 수정
+  updateNotice: async (id: string, noticeData: any, token?: string) => {
     try {
       console.log(`공지사항 수정 시작 (ID: ${id})`);
       console.log('=== 서버로 전송할 수정 데이터 상세 분석 ===');
@@ -2030,12 +2057,17 @@ export const apiService = {
       console.log('attachments 길이:', noticeData.attachments?.length);
       console.log('attachments 내용:', JSON.stringify(noticeData.attachments, null, 2));
       
-      // admin-auth 토큰 추가
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
       const response = await axios.put(`${baseURL}/notices/${id}`, noticeData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer admin-auth'
-        }
+        headers
       });
       
       console.log('공지사항 수정 성공:', response.status);
@@ -2054,17 +2086,22 @@ export const apiService = {
     }
   },
 
-  // 공지사항 삭제 - 인증 제거됨
-  deleteNotice: async (id: string) => {
+  // 공지사항 삭제
+  deleteNotice: async (id: string, token?: string) => {
     try {
       console.log(`공지사항 삭제 시작 (ID: ${id})`);
       
-      // admin-auth 토큰 추가
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
       const response = await axios.delete(`${baseURL}/notices/${id}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer admin-auth'
-        }
+        headers
       });
       
       console.log('공지사항 삭제 성공:', response.status);
@@ -2244,18 +2281,25 @@ export const apiService = {
   },
 
   // 강사 생성 API
-  createLecturer: async (lecturerData) => {
+  createLecturer: async (lecturerData: any, token?: string) => {
     try {
       console.log('새 강사 정보 생성 시작');
       console.log('강사 정보:', lecturerData.name);
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       
       // /lecturers 엔드포인트 사용
       const data = await makeApiRequest('/lecturers', {
         method: 'POST',
         data: lecturerData,
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers
       });
       
       console.log('강사 정보 생성 결과 성공');
@@ -2267,17 +2311,24 @@ export const apiService = {
   },
   
   // 강사 정보 수정 API
-  updateLecturer: async (id, lecturerData) => {
+  updateLecturer: async (id: string, lecturerData: any, token?: string) => {
     try {
       console.log(`ID ${id}를 가진 강사 정보 수정 시작`);
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       
       // /lecturers/:id 엔드포인트 사용
       const data = await makeApiRequest(`/lecturers/${id}`, {
         method: 'PUT',
         data: lecturerData,
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers
       });
       
       console.log('강사 정보 수정 결과 성공');
@@ -2289,16 +2340,23 @@ export const apiService = {
   },
   
   // 강사 정보 삭제 API
-  deleteLecturer: async (id) => {
+  deleteLecturer: async (id: string, token?: string) => {
     try {
       console.log(`ID ${id}를 가진 강사 정보 삭제 시작`);
+      
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 토큰이 있으면 헤더에 추가
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       
       // /lecturers/:id 엔드포인트 사용
       const data = await makeApiRequest(`/lecturers/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers
       });
       
       console.log('강사 정보 삭제 결과 성공');
