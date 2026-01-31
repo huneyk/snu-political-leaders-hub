@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Notice = require('../models/Notice');
+const { isAdmin } = require('../middleware/authMiddleware');
 
 // 모든 공지사항 가져오기 (공개)
 router.get('/', async (req, res) => {
@@ -52,8 +53,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 공지사항 생성
-router.post('/', async (req, res) => {
+// 공지사항 생성 (관리자 전용)
+router.post('/', isAdmin, async (req, res) => {
   try {
     console.log('=== 공지사항 생성 요청 ===');
     console.log('전체 요청 데이터 크기:', JSON.stringify(req.body).length, 'bytes');
@@ -109,8 +110,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 공지사항 수정
-router.put('/:id', async (req, res) => {
+// 공지사항 수정 (관리자 전용)
+router.put('/:id', isAdmin, async (req, res) => {
   try {
     console.log('=== 공지사항 수정 요청 ===');
     console.log('수정할 ID:', req.params.id);
@@ -148,8 +149,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 공지사항 삭제 (인증 제거됨)
-router.delete('/:id', async (req, res) => {
+// 공지사항 삭제 (관리자 전용)
+router.delete('/:id', isAdmin, async (req, res) => {
   try {
     const deletedNotice = await Notice.findByIdAndDelete(req.params.id);
     

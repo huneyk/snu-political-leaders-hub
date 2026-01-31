@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Lecturer = require('../models/Lecturer');
+const { isAdmin } = require('../middleware/authMiddleware');
 
 // 모든 강사 정보 가져오기 (공개)
 router.get('/', async (req, res) => {
@@ -40,8 +41,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 강사 정보 추가 (인증 제거 - 다른 관리자 라우트와 일관성 유지)
-router.post('/', async (req, res) => {
+// 강사 정보 추가 (관리자 전용)
+router.post('/', isAdmin, async (req, res) => {
   try {
     const { name, biography, imageUrl, term, category, order } = req.body;
     
@@ -68,8 +69,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 강사 정보 업데이트 (인증 제거 - 다른 관리자 라우트와 일관성 유지)
-router.put('/:id', async (req, res) => {
+// 강사 정보 업데이트 (관리자 전용)
+router.put('/:id', isAdmin, async (req, res) => {
   try {
     const updatedLecturer = await Lecturer.findByIdAndUpdate(
       req.params.id,
@@ -92,8 +93,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 강사 정보 삭제 (인증 제거 - 다른 관리자 라우트와 일관성 유지)
-router.delete('/:id', async (req, res) => {
+// 강사 정보 삭제 (관리자 전용)
+router.delete('/:id', isAdmin, async (req, res) => {
   try {
     const deletedLecturer = await Lecturer.findByIdAndDelete(req.params.id);
     

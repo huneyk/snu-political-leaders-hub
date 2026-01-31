@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const multer = require('multer');
 const { GridFSBucket } = require('mongodb');
 const { Readable } = require('stream');
-const { authenticateToken } = require('../middleware/authMiddleware');
+const { authenticateToken, isAdmin } = require('../middleware/authMiddleware');
 
 // Multer 메모리 스토리지 설정 (GridFS에 저장하기 위해)
 const storage = multer.memoryStorage();
@@ -77,9 +77,9 @@ router.get('/', async (req, res) => {
 /**
  * @route   POST /api/footer/upload
  * @desc    Upload file to GridFS and update footer
- * @access  Public
+ * @access  Admin
  */
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', isAdmin, upload.single('file'), async (req, res) => {
   try {
     console.log('POST /api/footer/upload - 파일 업로드 요청 수신');
     
@@ -206,9 +206,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 /**
  * @route   POST /api/footer
  * @desc    Update footer information (메타데이터만)
- * @access  Public
+ * @access  Admin
  */
-router.post('/', async (req, res) => {
+router.post('/', isAdmin, async (req, res) => {
   try {
     console.log('POST /api/footer - 요청 수신');
     console.log('요청 본문:', req.body);
@@ -324,9 +324,9 @@ router.post('/', async (req, res) => {
 /**
  * @route   PUT /api/footer
  * @desc    Footer 정보 업데이트 (메타데이터만)
- * @access  Public
+ * @access  Admin
  */
-router.put('/', async (req, res) => {
+router.put('/', isAdmin, async (req, res) => {
   try {
     console.log('Footer 정보 업데이트 요청 수신 (PUT):', req.body);
     
@@ -566,9 +566,9 @@ router.get('/download/:fileType', async (req, res) => {
 /**
  * @route   DELETE /api/footer/delete/:fileType
  * @desc    Delete file from GridFS and update footer
- * @access  Public
+ * @access  Admin
  */
-router.delete('/delete/:fileType', async (req, res) => {
+router.delete('/delete/:fileType', isAdmin, async (req, res) => {
   try {
     const { fileType } = req.params; // 'wordFile', 'hwpFile', 'pdfFile'
     

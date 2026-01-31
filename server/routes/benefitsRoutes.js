@@ -25,8 +25,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 혜택 정보 추가 (인증 제거 - 다른 관리자 라우트와 일관성 유지)
-router.post('/', async (req, res) => {
+// 혜택 정보 추가 (관리자 전용)
+router.post('/', isAdmin, async (req, res) => {
   try {
     const { sectionTitle, title, description, iconType } = req.body;
     
@@ -52,8 +52,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 혜택 정보 업데이트 (인증 제거 - 다른 관리자 라우트와 일관성 유지)
-router.put('/:id', async (req, res) => {
+// 혜택 정보 업데이트 (관리자 전용)
+router.put('/:id', isAdmin, async (req, res) => {
   try {
     const updatedBenefit = await Benefit.findByIdAndUpdate(
       req.params.id,
@@ -76,8 +76,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 혜택 정보 삭제 (인증 제거 - 다른 관리자 라우트와 일관성 유지)
-router.delete('/:id', async (req, res) => {
+// 혜택 정보 삭제 (관리자 전용)
+router.delete('/:id', isAdmin, async (req, res) => {
   try {
     const deletedBenefit = await Benefit.findByIdAndDelete(req.params.id);
     

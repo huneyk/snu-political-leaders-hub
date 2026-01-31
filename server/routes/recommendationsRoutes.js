@@ -67,8 +67,10 @@ router.post('/', isAdmin, async (req, res) => {
   try {
     const { title, name, position, content } = req.body;
     
-    if (!title || !content) {
-      return res.status(400).json({ message: '제목과 내용은 필수 항목입니다.' });
+    // 프론트엔드에서 필수인 필드: name(작성자), content(내용), position(직위/소속)
+    // title은 선택사항
+    if (!name || !content || !position) {
+      return res.status(400).json({ message: '작성자, 내용, 직위/소속은 필수 항목입니다.' });
     }
     
     // 현재 가장 높은 order 값 조회

@@ -62,8 +62,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 새 목표 정보 추가 (관리자 전용 -> 인증 우회)
-router.post('/', async (req, res) => {
+// 새 목표 정보 추가 (관리자 전용)
+router.post('/', isAdmin, async (req, res) => {
   try {
     const { title, description } = req.body;
     
@@ -90,8 +90,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 목표 정보 수정 (관리자 전용 -> 인증 우회)
-router.put('/:id', async (req, res) => {
+// 목표 정보 수정 (관리자 전용)
+router.put('/:id', isAdmin, async (req, res) => {
   try {
     const updatedObjective = await Objective.findByIdAndUpdate(
       req.params.id,
@@ -110,8 +110,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 목표 정보 삭제 (관리자 전용 -> 인증 우회)
-router.delete('/:id', async (req, res) => {
+// 목표 정보 삭제 (관리자 전용)
+router.delete('/:id', isAdmin, async (req, res) => {
   try {
     const deletedObjective = await Objective.findByIdAndDelete(req.params.id);
     

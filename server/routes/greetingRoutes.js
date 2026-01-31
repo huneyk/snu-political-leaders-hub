@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Greeting = require('../models/Greeting');
+const { isAdmin } = require('../middleware/authMiddleware');
 
 // 인사말 조회
 router.get('/', async (req, res) => {
@@ -16,8 +17,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 인사말 업데이트
-router.put('/', async (req, res) => {
+// 인사말 업데이트 (관리자 전용)
+router.put('/', isAdmin, async (req, res) => {
   try {
     const { content } = req.body;
     
