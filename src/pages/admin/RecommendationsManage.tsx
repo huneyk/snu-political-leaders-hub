@@ -537,7 +537,7 @@ const RecommendationsManage = () => {
             disabled={isLoading || isSaving}
             className="bg-mainBlue hover:bg-blue-900"
           >
-            {isSaving ? '저장 중...' : 'MongoDB에 저장하기'}
+            {isSaving ? '저장 중...' : '저장'}
           </Button>
         </CardFooter>
       </Card>

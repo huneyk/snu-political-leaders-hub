@@ -2209,7 +2209,8 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      const response = await axios.post(`${baseURL}/content/recommendations`, recommendationData, {
+      // /api/recommendations 엔드포인트 사용 (recommendationsRoutes.js에서 처리)
+      const response = await axios.post(`${baseURL}/recommendations`, recommendationData, {
         headers
       });
       return response.data;
@@ -2231,7 +2232,8 @@ export const apiService = {
         headers.Authorization = `Bearer ${token}`;
       }
       
-      const response = await axios.delete(`${baseURL}/content/recommendations/${id}`, {
+      // /api/recommendations/:id 엔드포인트 사용 (recommendationsRoutes.js에서 처리)
+      const response = await axios.delete(`${baseURL}/recommendations/${id}`, {
         headers
       });
       return response.data;
