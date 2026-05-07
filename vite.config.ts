@@ -24,13 +24,10 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        // 코드 스플리팅 설정
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          router: ['react-router-dom'],
-          ui: ['@radix-ui/react-slot', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
-          utils: ['clsx', 'tailwind-merge'],
-        },
+        // manualChunks 제거: React/Radix UI를 분리하면 Rollup이 청크 간
+        // 초기화 순서를 보장하지 못해 production 번들에서
+        // "Cannot set properties of undefined (setting 'Children')" 오류가 발생함.
+        // Vite/Rollup의 자동 청크 분할에 위임한다.
         // 파일 이름 패턴 설정
         assetFileNames: (assetInfo) => {
           if (!assetInfo.name) return `assets/[name]-[hash][extname]`;
