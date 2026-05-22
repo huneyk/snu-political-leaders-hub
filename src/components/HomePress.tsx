@@ -111,7 +111,7 @@ const HomePress: React.FC = () => {
   }
 
   return (
-    <section className="py-12 bg-gray-50">
+    <section className="pt-2 pb-12 bg-gray-50">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
           {isLoading ? (
