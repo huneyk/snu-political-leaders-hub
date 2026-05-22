@@ -41,6 +41,7 @@ const GalleryManage = lazy(() => import("./pages/admin/GalleryManage"));
 const NoticesManage = lazy(() => import("./pages/admin/NoticesManage"));
 const PressManage = lazy(() => import("./pages/admin/PressManage"));
 const AdmissionManage = lazy(() => import("./pages/admin/AdmissionManage"));
+const RulesManage = lazy(() => import("./pages/admin/RulesManage"));
 const FooterManage = lazy(() => import("./pages/admin/FooterManage"));
 
 // Loading component
@@ -106,6 +107,7 @@ const App = () => (
             <Route path="/admin/notices" element={<NoticesManage />} />
             <Route path="/admin/press" element={<PressManage />} />
             <Route path="/admin/admission" element={<AdmissionManage />} />
+            <Route path="/admin/rules" element={<RulesManage />} />
             <Route path="/admin/footer" element={<FooterManage />} />
             
             <Route path="*" element={<NotFound />} />
