@@ -22,6 +22,7 @@ const ScheduleActivities = lazy(() => import("./pages/ScheduleActivities"));
 const Gallery = lazy(() => import("./pages/Gallery"));
 const GalleryByTerm = lazy(() => import("./pages/GalleryByTerm"));
 const Notices = lazy(() => import("./pages/Notices"));
+const Press = lazy(() => import("./pages/Press"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Admin pages - separate chunks for admin functionality
@@ -38,6 +39,7 @@ const UsersManage = lazy(() => import("./pages/admin/UsersManage"));
 const ScheduleManage = lazy(() => import("./pages/admin/ScheduleManage"));
 const GalleryManage = lazy(() => import("./pages/admin/GalleryManage"));
 const NoticesManage = lazy(() => import("./pages/admin/NoticesManage"));
+const PressManage = lazy(() => import("./pages/admin/PressManage"));
 const AdmissionManage = lazy(() => import("./pages/admin/AdmissionManage"));
 const FooterManage = lazy(() => import("./pages/admin/FooterManage"));
 
@@ -86,6 +88,7 @@ const App = () => (
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/gallery/term/:term" element={<GalleryByTerm />} />
             <Route path="/notices" element={<Notices />} />
+            <Route path="/press" element={<Press />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             
@@ -101,6 +104,7 @@ const App = () => (
             <Route path="/admin/schedule" element={<ScheduleManageWithButton />} />
             <Route path="/admin/gallery" element={<GalleryManage />} />
             <Route path="/admin/notices" element={<NoticesManage />} />
+            <Route path="/admin/press" element={<PressManage />} />
             <Route path="/admin/admission" element={<AdmissionManage />} />
             <Route path="/admin/footer" element={<FooterManage />} />
             

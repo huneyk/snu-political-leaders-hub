@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import ScrollReveal from '@/components/ScrollReveal';
 import Hero from '@/components/Hero';
 import HomeNotices from '@/components/HomeNotices';
+import HomePress from '@/components/HomePress';
 import HomeObjectives from '@/components/HomeObjectives';
 import SpecialLecturers from '@/components/SpecialLecturers';
 import HomeSchedule from '@/components/HomeSchedule';
@@ -122,6 +123,7 @@ const Index = () => {
         <Hero />
         <div>
           <HomeNotices key={noticesKey} />
+          <HomePress key={`press-${noticesKey}`} />
         </div>
         <SpecialLecturers />
         <ScrollReveal>

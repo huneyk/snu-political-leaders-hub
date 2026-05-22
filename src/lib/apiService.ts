@@ -2119,6 +2119,133 @@ export const apiService = {
     }
   },
 
+  // 언론보도(Press) 관련 API
+  getPress: async () => {
+    try {
+      console.log('언론보도 데이터 가져오기 시도');
+      const data = await makeApiRequest('/press', {
+        method: 'GET'
+      });
+      console.log('언론보도 데이터 응답:', data);
+      return data;
+    } catch (error) {
+      console.error('언론보도 데이터 가져오기 실패:', error);
+      throw error;
+    }
+  },
+
+  // 언론보도 추가
+  addPress: async (pressData: any, token?: string) => {
+    try {
+      console.log('새 언론보도 추가 시작');
+      console.log('=== 서버로 전송할 데이터 상세 분석 ===');
+      console.log('pressData 타입:', typeof pressData);
+      console.log('pressData 전체:', pressData);
+      console.log('attachments 존재 여부:', 'attachments' in pressData);
+      console.log('attachments 타입:', typeof pressData.attachments);
+      console.log('attachments 길이:', pressData.attachments?.length);
+      console.log('attachments 내용:', JSON.stringify(pressData.attachments, null, 2));
+
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await axios.post(`${baseURL}/press`, pressData, {
+        headers
+      });
+
+      console.log('언론보도 추가 성공:', response.status);
+      console.log('서버 응답 데이터:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('언론보도 추가 실패:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('API 오류 세부정보:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      throw error;
+    }
+  },
+
+  // 언론보도 수정
+  updatePress: async (id: string, pressData: any, token?: string) => {
+    try {
+      console.log(`언론보도 수정 시작 (ID: ${id})`);
+      console.log('=== 서버로 전송할 수정 데이터 상세 분석 ===');
+      console.log('pressData 타입:', typeof pressData);
+      console.log('pressData 전체:', pressData);
+      console.log('attachments 존재 여부:', 'attachments' in pressData);
+      console.log('attachments 타입:', typeof pressData.attachments);
+      console.log('attachments 길이:', pressData.attachments?.length);
+      console.log('attachments 내용:', JSON.stringify(pressData.attachments, null, 2));
+
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await axios.put(`${baseURL}/press/${id}`, pressData, {
+        headers
+      });
+
+      console.log('언론보도 수정 성공:', response.status);
+      console.log('서버 응답 데이터:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`언론보도 수정 실패 (ID: ${id}):`, error);
+      if (axios.isAxiosError(error)) {
+        console.error('API 오류 세부정보:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      throw error;
+    }
+  },
+
+  // 언론보도 삭제
+  deletePress: async (id: string, token?: string) => {
+    try {
+      console.log(`언론보도 삭제 시작 (ID: ${id})`);
+
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await axios.delete(`${baseURL}/press/${id}`, {
+        headers
+      });
+
+      console.log('언론보도 삭제 성공:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error(`언론보도 삭제 실패 (ID: ${id}):`, error);
+      if (axios.isAxiosError(error)) {
+        console.error('API 오류 세부정보:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      throw error;
+    }
+  },
+
   // 입학정보(Admission) 관련 API
   getAdmission: async () => {
     try {
@@ -2198,6 +2325,80 @@ export const apiService = {
       return data;
     } catch (error) {
       console.error('Error creating admission data:', error);
+      throw error;
+    }
+  },
+
+  // 운영 준칙(Rules) 관련 API
+  getRules: async () => {
+    try {
+      console.log('운영 준칙 데이터 가져오기 시작');
+      const data = await makeApiRequest('/rules', {
+        method: 'GET'
+      });
+      console.log('운영 준칙 API 응답 데이터:', data);
+      return data;
+    } catch (error) {
+      console.error('운영 준칙 데이터 가져오기 실패:', error);
+      throw error;
+    }
+  },
+
+  // 운영 준칙 업데이트 API (관리자용) - 활성 문서 갱신
+  updateRules: async (rulesData: any, token?: string) => {
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      let response;
+      if (rulesData._id) {
+        console.log(`PUT 요청으로 운영 준칙(ID ${rulesData._id}) 업데이트`);
+        response = await axios.put(`${baseURL}/rules/${rulesData._id}`, rulesData, { headers });
+      } else {
+        console.log('PUT 요청으로 활성 운영 준칙 업데이트');
+        response = await axios.put(`${baseURL}/rules`, rulesData, { headers });
+      }
+      return response.data;
+    } catch (error) {
+      console.error('운영 준칙 업데이트 실패:', error);
+      throw error;
+    }
+  },
+
+  // 운영 준칙 생성 API (관리자용)
+  createRules: async (rulesData: any, token?: string) => {
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const response = await axios.post(`${baseURL}/rules`, rulesData, { headers });
+      return response.data;
+    } catch (error) {
+      console.error('운영 준칙 생성 실패:', error);
+      throw error;
+    }
+  },
+
+  // 운영 준칙 삭제 API (관리자용)
+  deleteRules: async (id: string, token?: string) => {
+    try {
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const response = await axios.delete(`${baseURL}/rules/${id}`, { headers });
+      return response.data;
+    } catch (error) {
+      console.error('운영 준칙 삭제 실패:', error);
       throw error;
     }
   },

@@ -123,6 +123,7 @@ const Header = () => {
       ],
     },
     { name: '공지 사항', path: '/notices' },
+    { name: '언론 보도', path: '/press' },
   ];
 
   // 디버깅: 현재 galleryTerms 상태 로그

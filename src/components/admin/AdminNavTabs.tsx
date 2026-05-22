@@ -12,7 +12,8 @@ const AdminNavTabs = ({ activeTab }: AdminNavTabsProps) => {
   // Determine if we're on content management page
   const isContentPage = path.includes('/admin/content') || 
                        path.includes('/admin/gallery') || 
-                       path.includes('/admin/notices');
+                       path.includes('/admin/notices') ||
+                       path.includes('/admin/press');
   
   // Determine if we're on admission management page
   const isAdmissionPage = path.includes('/admin/admission');

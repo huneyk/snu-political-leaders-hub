@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { FileText, MessageSquare, Target, Award, Users, GraduationCap, BookOpen, Calendar, Image, Bell, FileDown, UserCheck, ScrollText } from 'lucide-react';
+import { FileText, MessageSquare, Target, Award, Users, GraduationCap, BookOpen, Calendar, Image, Bell, FileDown, UserCheck, ScrollText, Newspaper, Gavel } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const ContentTab = () => {
@@ -91,6 +91,14 @@ const ContentTab = () => {
             <span className="text-sm opacity-80">입학 지원 정보 수정</span>
           </button>
           <button 
+            onClick={() => handleNavigation('/admin/rules')}
+            className="h-32 w-full bg-mainBlue hover:bg-blue-900 text-white flex flex-col items-center justify-center gap-2 rounded-md transition-colors cursor-pointer"
+          >
+            <Gavel size={24} />
+            <span className="text-lg font-medium">운영 준칙 관리</span>
+            <span className="text-sm opacity-80">운영 준칙 페이지 내용 수정</span>
+          </button>
+          <button 
             onClick={() => handleNavigation('/admin/gallery')}
             className="h-32 w-full bg-mainBlue hover:bg-blue-900 text-white flex flex-col items-center justify-center gap-2 rounded-md transition-colors cursor-pointer"
           >
@@ -104,6 +112,13 @@ const ContentTab = () => {
           >
             <Bell className="h-6 w-6" />
             <span className="text-lg font-medium">공지사항 관리</span>
+          </Button>
+          <Button 
+            onClick={() => handleNavigation('/admin/press')}
+            className="w-full h-24 bg-blue-500 hover:bg-blue-600 flex items-center justify-center gap-3"
+          >
+            <Newspaper className="h-6 w-6" />
+            <span className="text-lg font-medium">언론보도 관리</span>
           </Button>
           <Button 
             onClick={() => handleNavigation('/admin/footer')}

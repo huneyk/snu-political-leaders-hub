@@ -6,5 +6,6 @@ export const getCurrentTab = (path: string): string => {
   if (path === '/admin/schedule' || path.includes('/admin/schedule/')) return 'schedule';
   if (path === '/admin/gallery' || path.includes('/admin/gallery/')) return 'gallery';
   if (path === '/admin/notices' || path.includes('/admin/notices/')) return 'notices';
+  if (path === '/admin/press' || path.includes('/admin/press/')) return 'press';
   return 'content';
 };

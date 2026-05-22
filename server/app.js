@@ -172,6 +172,7 @@ const GalleryThumbnail = require('./models/GalleryThumbnail');
 const galleryThumbnailService = require('./services/galleryThumbnailService');
 const { isAdmin } = require('./middleware/authMiddleware');
 const noticeRoutes = require('./routes/noticeRoutes');
+const pressRoutes = require('./routes/pressRoutes');
 const graduateRoutes = require('./routes/graduateRoutes');
 const footerRoutes = require('./routes/footerRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
@@ -184,6 +185,7 @@ const professorsRoutes = require('./routes/professorsRoutes');
 const recommendationsRoutes = require('./routes/recommendationsRoutes');
 const greetingRoutes = require('./routes/greetingRoutes');
 const imageUploadRoutes = require('./routes/imageUploadRoutes');
+const rulesRoutes = require('./routes/rulesRoutes');
 
 // ===== 🚨 CRITICAL: 갤러리 특수 라우트 (galleryRoutes 전에 정의) =====
 
@@ -368,6 +370,7 @@ app.use('/api/content', contentRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/notices', noticeRoutes);
+app.use('/api/press', pressRoutes);
 app.use('/api/graduates', graduateRoutes);
 app.use('/api/footer', footerRoutes);
 app.use('/api/upload', uploadRoutes);
@@ -380,6 +383,7 @@ app.use('/api/professors', professorsRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
 app.use('/api/greeting', greetingRoutes);
 app.use('/api/images', imageUploadRoutes);
+app.use('/api/rules', rulesRoutes);
 
 // 기본 경로 및 Health Check
 app.get('/api', (req, res) => {
